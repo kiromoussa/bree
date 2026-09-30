@@ -48,6 +48,13 @@ class LedgerConfig:
     w_held_at_exit: float = 0.2      # item visibly in hand when the person walked out
     w_no_register: float = 0.15      # person never went to the register
     ambiguous_factor: float = 0.5    # crowded pick: someone else may have taken it
+    no_receipt_factor: float = 0.6   # went to the register but no receipt matched: likely a POS gap
+    # Combining items into one confidence. "max_plus": strongest item + extra_item_bonus per
+    # additional unpaid item (capped). "noisy_or": 1 - prod(1 - s_i). Items in one basket are NOT
+    # independent evidence (one payment-matching failure leaves all of them unpaid), so max_plus.
+    combine: str = "max_plus"
+    extra_item_bonus: float = 0.05
+    extra_item_cap: float = 0.10
 
     alert_threshold: float = 0.7
     review_threshold: float = 0.4
@@ -98,6 +105,7 @@ class PersonRecord:
     unpaid: list[BasketItem] = field(default_factory=list)    # filled at reconciliation
     surplus: Counter = field(default_factory=Counter)         # paid-but-not-seen, by category
     group: list[int] = field(default_factory=list)
+    t_last: float = 0.0                                       # last event time (stale-track pruning)
     log: list[str] = field(default_factory=list)              # human-readable audit trail
 
 
@@ -116,6 +124,9 @@ class Ledger:
         self.dropped: list[dict] = []                # below review threshold (kept for eval/debug)
         self.now: float = 0.0
         self.pending: set[int] = set()               # exited, not yet reconciled
+        self.active: dict[int, PersonRecord] = {}    # people who can still matter for a decision
+        self.decisions: list[dict] = []              # every reconciliation, clean ones included
+        self._last_prune = 0.0
         self._alert_ids = itertools.count(1)
 
     # ------------------------------------------------------------------ input
@@ -124,6 +135,7 @@ class Ledger:
         """Feed one event. Returns any alerts that became final at this time."""
         emitted = self.tick(ev.t)
         p = self._person(ev.person_id, ev.t)
+        p.t_last = max(p.t_last, ev.t)
 
         if ev.type == EventType.ENTER:
             p.t_enter = min(p.t_enter, ev.t)
@@ -136,6 +148,9 @@ class Ledger:
         elif ev.type == EventType.PAY:
             self._on_register_visit(p, ev)
         elif ev.type == EventType.EXIT:
+            if p.reconciled:
+                p.log.append(f"{ev.t:7.1f}s second exit for an already reconciled track: ignored")
+                return emitted
             p.t_exit = ev.t
             self.pending.add(p.person_id)
             held = Counter(ev.meta.get("held_items", []))
@@ -158,12 +173,15 @@ class Ledger:
         """Advance the clock; finalize any exits whose waiting period is over."""
         self.now = max(self.now, t)
         self._expire_payments()
+        if self.now - self._last_prune > 60:
+            self._prune()
         emitted: list[Alert] = []
         progress = True
         while progress:  # reconciling one person can unblock another
             progress = False
             for p in sorted((self.people[i] for i in self.pending), key=lambda r: r.t_exit):
                 if p.reconciled:
+                    self.pending.discard(p.person_id)
                     continue
                 if self._ready(p):
                     emitted += self._reconcile(p)
@@ -175,6 +193,8 @@ class Ledger:
         Always > now: once the grace period has passed, the next deadline is max_hold."""
         times = []
         for i in self.pending:
+            if self.people[i].reconciled:
+                continue
             t_exit = self.people[i].t_exit
             grace_end = t_exit + self.cfg.exit_grace_s
             times.append(grace_end if self.now < grace_end else t_exit + self.cfg.max_hold_s)
@@ -191,8 +211,21 @@ class Ledger:
 
     def _person(self, pid: int, t: float) -> PersonRecord:
         if pid not in self.people:
-            self.people[pid] = PersonRecord(person_id=pid, t_enter=t)
+            self.people[pid] = PersonRecord(person_id=pid, t_enter=t, t_last=t)
+            self.active[pid] = self.people[pid]
         return self.people[pid]
+
+    def _prune(self) -> None:
+        """Drop people from the working set once they can no longer affect anyone's decision:
+        reconciled long enough ago, or a track that went silent inside the store (lost)."""
+        self._last_prune = self.now
+        keep_after_exit = self.cfg.max_hold_s + self.cfg.cooler_tap_window_s + self.cfg.group_window_s + 60
+        for pid, p in list(self.active.items()):
+            if p.reconciled and p.t_exit is not None and self.now - p.t_exit > keep_after_exit:
+                del self.active[pid]
+            elif p.t_exit is None and self.now - p.t_last > 3600:
+                p.log.append(f"{self.now:7.1f}s track silent for 1h without exit: dropped (not reconciled)")
+                del self.active[pid]
 
     def _category(self, ev: Event) -> str:
         return ev.item or self.catalog.category_of(ev.sku) or "unknown"
@@ -276,30 +309,55 @@ class Ledger:
             return pay.person_id
         zone = self.terminal_zones.get(pay.terminal, pay.terminal)
         kind = self.zone_kinds.get(zone, "register")
+        receipt = Counter(self.catalog.category_of(li.sku, li.category) for li in pay.items for _ in range(li.qty))
         if kind == "cooler":
-            # Tap-to-open cooler: whoever picked from this cooler closest in time to the tap.
-            best, best_dt = None, self.cfg.cooler_tap_window_s
+            # Tap at a cooler: someone who picked from this cooler around the tap. Ranking:
+            # receipt matches their (party's) unpaid picks best, then closest in time.
+            ranked = []
             for p in self._recent(pay.t - self.cfg.cooler_tap_window_s):
-                for item in p.basket:
-                    dt = abs(item.t_pick - pay.t)
-                    if item.zone == zone and dt <= best_dt:
-                        best, best_dt = p.person_id, dt
-            return best
-        # Register: whoever was at the register when the POS closed the sale.
-        # Ranking, in order: standing there at that exact time (vs. only within the
-        # slack), hasn't already paid during this visit, got to the counter first
-        # (the head of the queue is the one being served).
+                dts = [abs(it.t_pick - pay.t) for it in p.basket if it.zone == zone]
+                if dts and min(dts) <= self.cfg.cooler_tap_window_s:
+                    ranked.append((-self._receipt_overlap(p, receipt), min(dts), p.person_id))
+            return min(ranked)[2] if ranked else None
+        # Register: one of the people at the register when the POS closed the sale.
+        # Ranking, in order:
+        #   1. receipt matches their basket: most receipt items found among their unpaid
+        #      picks (the receipt says "soda + candy"; the person holding soda + candy paid)
+        #   2. standing there at that exact time (vs. only within the slack)
+        #   3. hasn't already paid during this visit
+        #   4. got to the counter first
         s = self.cfg.register_slack_s
         ranked = []
         for p in self._recent(pay.t - s):
             for v in p.register_visits:
                 if v.zone == zone and v.contains(pay.t, s):
-                    ranked.append((not v.contains(pay.t), v.n_payments > 0, v.t_start, p.person_id, v))
+                    overlap = self._receipt_overlap(p, receipt)
+                    ranked.append((-overlap, not v.contains(pay.t), v.n_payments > 0, v.t_start, p.person_id, v))
         if not ranked:
             return None
-        best = min(ranked, key=lambda r: r[:4])
-        best[4].n_payments += 1
-        return best[3]
+        best = min(ranked, key=lambda r: r[:5])
+        if best[0] == 0 and sum(receipt.values()) > 0:
+            # The receipt matches nobody's picks. Only credit it if exactly one person is at the
+            # counter and they have no unpaid picks at all (vision missed their picks). Otherwise
+            # don't guess: it stays unassigned and is claimed at reconciliation (basket match,
+            # then visit time).
+            alone = len({r[4] for r in ranked}) == 1
+            payer = self.people[best[4]]
+            if not (alone and not self._receipt_party_unpaid(payer)):
+                return None
+        best[5].n_payments += 1
+        return best[4]
+
+    def _receipt_party_unpaid(self, p: PersonRecord) -> Counter:
+        """Unpaid picks (by category) of p's party: p + people who came in with p."""
+        party = [p] + self._group_mates(p)
+        return Counter(it.category for q in party for it in q.basket) - \
+            Counter(li.category for q in party for li in q.paid)
+
+    def _receipt_overlap(self, p: PersonRecord, receipt: Counter) -> int:
+        """How many receipt items are among the unpaid picks of p's party
+        (one person often pays for the group)."""
+        return sum((receipt & self._receipt_party_unpaid(p)).values())
 
     def _expire_payments(self) -> None:
         keep = []
@@ -320,7 +378,7 @@ class Ledger:
 
     def _recent(self, since: float) -> list[PersonRecord]:
         """People who were in the store at or after `since` (keeps lookups O(active))."""
-        return [q for q in self.people.values() if q.t_exit is None or q.t_exit >= since]
+        return [q for q in self.active.values() if q.t_exit is None or q.t_exit >= since]
 
     def _ready(self, p: PersonRecord) -> bool:
         waited = self.now - p.t_exit
@@ -353,6 +411,8 @@ class Ledger:
             self.pending.discard(q.person_id)
             q.group = sorted(r.person_id for r in party)
 
+        self._claim_unassigned_receipts(p, party)
+
         # Pool baskets and payments across the party.
         basket = [(q, it) for q in party for it in q.basket]
         paid = [li for q in party for li in q.paid]
@@ -379,8 +439,53 @@ class Ledger:
         if not still_unpaid:
             for q in party:
                 q.log.append(f"{self.now:7.1f}s reconciled: all paid")
+            self.decisions.append({"person_id": p.person_id, "group": [q.person_id for q in party],
+                                   "confidence": 0.0, "tier": None, "t": self.now,
+                                   "t_exit": max(q.t_exit for q in party), "unpaid": []})
             return []
         return self._score_and_emit(p, party, still_unpaid, paid)
+
+    def _claim_unassigned_receipts(self, p: PersonRecord, party: list[PersonRecord]) -> None:
+        """Fallback when time/place attribution failed (register visit not seen, POS clock
+        off): a still-unassigned receipt from while the party was in the store, whose items
+        are mostly among the party's unpaid picks, is theirs."""
+        t0 = min(q.t_enter for q in party)
+        t1 = max(q.t_exit for q in party) + self.cfg.exit_grace_s
+        while True:
+            unpaid = Counter(it.category for q in party for it in q.basket) - \
+                Counter(li.category for q in party for li in q.paid)
+            best, best_overlap = None, 0
+            for pay in self.unassigned_payments:
+                if not (t0 <= pay.t <= t1) or self.zone_kinds.get(self.terminal_zones.get(pay.terminal, ""), "") == "cooler":
+                    continue
+                receipt = Counter(self.catalog.category_of(li.sku, li.category) for li in pay.items for _ in range(li.qty))
+                overlap = sum((receipt & unpaid).values())
+                if overlap > best_overlap and overlap >= 0.5 * sum(receipt.values()):
+                    best, best_overlap = pay, overlap
+            if best is None:
+                best = self._receipt_during_visit(party, t0, t1)
+                if best is None:
+                    return
+            self.unassigned_payments.remove(best)
+            for li in best.items:
+                for _ in range(li.qty):
+                    p.paid.append(LineItem(sku=li.sku, category=self.catalog.category_of(li.sku, li.category)))
+            p.log.append(f"{best.t:7.1f}s receipt {best.txn_id} claimed by basket match "
+                         f"(register visit not seen / POS clock off)")
+
+    def _receipt_during_visit(self, party: list[PersonRecord], t0: float, t1: float) -> Payment | None:
+        """Last resort for a party that stood at the register but has no receipt at all:
+        an unassigned register receipt printed while they were standing there."""
+        if any(q.paid for q in party):
+            return None
+        s = self.cfg.register_slack_s
+        for pay in self.unassigned_payments:
+            zone = self.terminal_zones.get(pay.terminal, pay.terminal)
+            if self.zone_kinds.get(zone, "register") != "register":
+                continue
+            if any(v.zone == zone and v.contains(pay.t, s) for q in party for v in q.register_visits):
+                return pay
+        return None
 
     def _subtract(self, basket: list[tuple[PersonRecord, BasketItem]], paid: list[LineItem]):
         """Multiset basket - paid. SKU matches first, then category."""
@@ -407,7 +512,7 @@ class Ledger:
         surplus = Counter(li.category for li in remaining)
         return unpaid, surplus
 
-    def _score_item(self, item: BasketItem, visited_register: bool) -> tuple[float, list[str]]:
+    def _score_item(self, item: BasketItem, visited_register: bool, paid_any: bool = True) -> tuple[float, list[str]]:
         c = self.cfg
         why = [f"{item.category}: taken from {item.zone} at {item.t_pick:.1f}s "
                f"(pick conf {item.confidence:.2f}) and not paid for"]
@@ -420,6 +525,8 @@ class Ledger:
             why.append(f"{item.category}: visible in hand at exit")
         if not visited_register:
             score += c.w_no_register
+        elif not paid_any:
+            score *= c.no_receipt_factor
         if item.ambiguous_with:
             score *= c.ambiguous_factor
             why.append(f"{item.category}: crowded pick, may belong to person(s) {item.ambiguous_with}")
@@ -429,30 +536,40 @@ class Ledger:
                         unpaid_owned: list[tuple[PersonRecord, BasketItem]], paid: list[LineItem]) -> list[Alert]:
         visited = any(q.register_visits for q in party) or bool(paid)
         items, reasons = [], []
-        miss = 1.0
+        miss, scores = 1.0, []
         best_owner, best_score = p, -1.0
         for owner, item in unpaid_owned:
-            s, why = self._score_item(item, visited)
+            s, why = self._score_item(item, visited, bool(paid))
             if s > best_score:
                 best_owner, best_score = owner, s
             miss *= (1.0 - s)
+            scores.append(s)
             reasons += why
             items.append(UnpaidItem(item.category, item.sku, item.t_pick, item.zone, item.confidence,
                                     item.concealed, item.held_at_exit, item.ambiguous_with, round(s, 3)))
         if not visited:
             reasons.append("never went to the register; no payment matched")
+        elif not paid:
+            reasons.append("went to the register but no receipt matched (possible POS feed gap: downweighted)")
         elif paid:
             reasons.append(f"paid for {len(paid)} item(s), but not these")
-        conf = round(1.0 - miss, 3)
+        if self.cfg.combine == "noisy_or":
+            conf = round(1.0 - miss, 3)
+        else:
+            bonus = min(self.cfg.extra_item_cap, self.cfg.extra_item_bonus * (len(scores) - 1))
+            conf = round(min(1.0, max(scores) + bonus), 3)
 
         tier = ("alert" if conf >= self.cfg.alert_threshold
                 else "review" if conf >= self.cfg.review_threshold else None)
         who = best_owner   # in a group: the person holding the strongest unpaid item
         for q in party:
             q.log.append(f"{self.now:7.1f}s reconciled: {len(unpaid_owned)} unpaid, confidence {conf:.2f} -> {tier}")
+        decision = {"person_id": who.person_id, "group": [q.person_id for q in party], "confidence": conf,
+                    "tier": tier, "t": self.now, "t_exit": max(q.t_exit for q in party),
+                    "unpaid": [i.category for i in items]}
+        self.decisions.append(decision)
         if tier is None:
-            self.dropped.append({"person_id": who.person_id, "confidence": conf,
-                                 "group": [q.person_id for q in party]})
+            self.dropped.append(decision)
             return []
         t_exit = max(q.t_exit for q in party)
         alert = Alert(

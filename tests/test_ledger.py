@@ -327,3 +327,12 @@ def test_audit_log_explains_decision():
     log = "\n".join(L.people[1].log)
     for word in ("pick energy", "exit", "reconciled"):
         assert word in log
+
+
+def test_second_exit_after_reconciliation_is_ignored_and_replay_terminates():
+    L = ledger()
+    ev = [enter(0, 1), pick(5, 1, "energy"), conceal(6, 1, "energy"), leave(20, 1), leave(200, 1),
+          enter(300, 2), leave(400, 2)]
+    alerts = L.replay(ev)
+    assert len(alerts) == 1 and not L.pending
+    assert "second exit" in " ".join(L.people[1].log)

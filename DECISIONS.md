@@ -18,3 +18,14 @@ Every judgment call made while building this unattended, with the reason. Newest
 - **Hold decisions instead of guessing.** After exit, wait `exit_grace_s = 5 s` for late POS messages. Hold longer (up to 120 s) while (a) someone who entered within 4 s of this person (likely same party — one person often pays for the group) is still inside, or (b) someone who reached into the same cooler at the same moment (crowded pick) is still inside. Parties are reconciled with pooled baskets and payments; crowded-pick items are handed to the other candidate if that person paid for one extra.
 - **Conceal without a seen pick** adds the item to the basket (at the conceal confidence), since the pick was evidently missed.
 - **Put-back of an item not in the basket is ignored** (e.g. their own drink brought from the car).
+
+## Perception (Stage 2)
+- **Top-down pose instead of full-frame pose.** Measured on frame 150 of OpenCV's `vtest.avi` (real pedestrians, ~70 px tall): `yolo26n-pose` full-frame at 640 px found **0 of ~7** people (3 at 960 px); `yolo11n-pose` also 0; the `yolo26n` detector found 8. Running `yolo26n-pose` on each detected person's crop (padded 25%/10%, resized to 160 px) gave keypoints for **7/7** with mean wrist confidence 0.56-0.86. CCTV people are small, so the pipeline is: one detector pass (people + product classes together) -> pose on person crops -> ByteTrack.
+- **ByteTrack = Ultralytics' `BYTETracker`, called directly** on detection arrays (not `model.track`), so the YOLO backend and the toy backend share one tracker. `supervision.ByteTrack` was the alternative but is deprecated in the pinned supervision version (removed in 0.31). Persons and products have separate tracker instances; lost-track buffer 2 s for people, 0.5 s for products.
+- **Products from COCO are a stand-in.** COCO only has `bottle`, `cup`, `cell phone` that matter here. A store-specific product detector (categories in the store YAML) is the real plan; the backend takes a class->category map so it drops in.
+- **Timestamps**: file input uses frame_index / fps (camera time); live input uses wall clock since start. The ledger runs on camera time.
+
+## Privacy
+- Heads are **pixelated** (5x5 blocks) in every image we write (annotated video, alert clips), located from nose/eye/ear keypoints, falling back to the top of the person box.
+- Per-frame logs contain boxes, track IDs, and keypoints only. No crops, no embeddings, no face features. There is no re-identification across visits.
+- Evidence frames live in memory only (2 s ring buffer + short snippets around a person's pick/conceal/put-back/exit). They are written to disk **only** for people who get an alert or review flag, and dropped as soon as a person is reconciled clean.

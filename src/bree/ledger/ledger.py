@@ -610,6 +610,7 @@ class Ledger:
         for q in party:
             q.log.append(f"{self.now:7.1f}s reconciled: {len(unpaid_owned)} unpaid, confidence {conf:.2f} -> {tier}")
         decision = {"person_id": who.person_id, "group": [q.person_id for q in party], "confidence": conf,
+                    "alert_eligible": not (self.cfg.require_corroboration and corroborated <= unmatched_paid),
                     "tier": tier, "t": self.now, "t_exit": max(q.t_exit for q in party),
                     "unpaid": [i.category for i in items]}
         self.decisions.append(decision)

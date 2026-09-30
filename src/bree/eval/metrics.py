@@ -132,7 +132,8 @@ def threshold_sweep(world: World, obs, ledger, thresholds=(0.4, 0.5, 0.6, 0.65, 
     for thr in thresholds:
         tp, fp = set(), 0
         for d in ledger.decisions:
-            if d["confidence"] < thr:
+            # Same rule as the ledger: uncorroborated decisions are capped at review.
+            if d["confidence"] < thr or not d.get("alert_eligible", True):
                 continue
             pid = obs.exit_owner.get(d["person_id"])
             if pid in thieves:

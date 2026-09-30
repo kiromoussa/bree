@@ -101,7 +101,7 @@ def print_tables(res: dict) -> str:
                          f"{_fmt(r['recall_alert_or_review'], True)} | {r['false_alerts_per_hour']:.2f} | {r['reviews_on_honest_per_hour']:.2f} | "
                          f"{_fmt(r['basket_exact_match'], True)} | {r['decision_latency_s_p50']} / {r['decision_latency_s_p95']} |")
         base = next(r for r in ev["runs"] if r["payment_mode"] == "pos" and r["noise"] == "baseline")
-        lines.append("\nAlert-threshold sweep (POS feed, baseline noise):")
+        lines.append("\nAlert-threshold sweep (POS feed, baseline noise; uncorroborated decisions stay capped at review):")
         lines.append("| threshold | precision | recall | false alerts / hour |")
         lines.append("|---|---|---|---|")
         for d in base["threshold_sweep"]:

@@ -47,7 +47,7 @@ def cmd_demo(args) -> None:
 
 def cmd_bench(args) -> None:
     from bree.eval.bench import run_bench
-    parts = tuple(args.only.split(",")) if args.only else ("event", "toy", "real")
+    parts = tuple(args.only.split(",")) if args.only else ("event", "toy", "real", "realdata")
     run_bench(ROOT, quick=args.quick, parts=parts)
 
 

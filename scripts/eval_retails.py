@@ -15,26 +15,14 @@ from pathlib import Path
 
 import numpy as np
 
-from bree.conceal import frame_scores, load_bundle, load_retails, metrics, model_track_scorer, rule_scores
+from bree.conceal import MERGE_S, MIN_RUN, THRESH, trigger_frames, video_triggers, frame_scores, load_bundle, load_retails, metrics, model_track_scorer, rule_scores
 
 R = Path("data/retails/RetailS")
-FPS, MIN_RUN, MERGE_S = 15.0, 8, 10.0
-THRESH = {"model": (0.5, 0.7, 0.9), "rule": (0.25, 0.5, 0.75)}
+FPS = 15.0
 N_NORMAL = int(sys.argv[1]) if len(sys.argv) > 1 else 60
 
 bundle = load_bundle(Path("models/conceal_poselift.pt"))
 scorers = {"model": model_track_scorer(bundle), "rule": rule_scores}
-
-
-def triggers(scores: np.ndarray, frames: np.ndarray, th: float) -> int:
-    n, run, last_t = 0, 0, -1e9
-    for s, f in zip(scores, frames):
-        run = run + 1 if s >= th else 0
-        if run == MIN_RUN:
-            if f / FPS - last_t > MERGE_S:
-                n += 1
-            last_t = f / FPS
-    return n
 
 
 res = {"dataset": "RetailS (TeCSAR-UNCC), evaluation only, no license stated",
@@ -67,9 +55,12 @@ hours = sum(v.n_frames for v in normal) / FPS / 3600
 res["normal"] = {"n_videos": len(normal), "hours": hours, "files": [v.name for v in normal],
                  "cameras": sorted({v.cam for v in normal})}
 for k, sc in scorers.items():
-    per_track = [(sc(t), t.frames) for v in normal for t in v.tracks.values()]
-    res["normal"][k] = {"triggers_per_hour_at": {str(th): sum(triggers(s, f, th) for s, f in per_track) / hours
-                                                  for th in THRESH[k]}}
+    long_tracks = [(v, t) for v in normal for t in v.tracks.values() if len(t.frames) >= 2 * FPS]
+    res["normal"][k] = {"triggers_per_hour_at": {str(th): sum(len(video_triggers(v, sc, th)) for v in normal) / hours
+                                                  for th in THRESH[k]},
+                        "tracks_2s_plus": len(long_tracks),
+                        "track_trigger_rate_at": {str(th): sum(bool(trigger_frames(sc(t), t.frames, th)) for _, t in long_tracks)
+                                                  / max(len(long_tracks), 1) for th in THRESH[k]}}
     print("normal", k, res["normal"][k], flush=True)
 
 Path("results/conceal_retails.json").write_text(json.dumps(res, indent=1))

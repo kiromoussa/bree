@@ -1,0 +1,33 @@
+{
+ "source": "MERL Shopping Dataset, test subjects 27-41 (real video, overhead lab store, 1 shopper/video)",
+ "license": "MERL research dataset (see data/LICENSES.md): evaluation only",
+ "hardware": {
+  "device": "mps",
+  "device_name": "Apple Silicon (MPS)",
+  "cpu_count": 10,
+  "detect_model": "yolo26s.pt",
+  "pose_model": "yolo26s-pose.pt",
+  "imgsz": 640
+ },
+ "stride": 2,
+ "n_videos": 1,
+ "minutes": 2.3,
+ "reach_recall": 0.7333333333333333,
+ "missed_reach_rate": 0.2666666666666667,
+ "reach_instances": 15,
+ "false_reach_runs_per_min": 12.389380530973453,
+ "extra_person_tracks_per_video": 14.0,
+ "extra_person_tracks_per_min": 6.194690265486726,
+ "detect_pose_track_ms_per_frame": 33.63307721786362,
+ "per_video": [
+  {
+   "video": "27_1",
+   "minutes": 2.26,
+   "reach_instances": 15,
+   "reach_found": 11,
+   "detected_reach_runs": 61,
+   "false_reach_runs": 28,
+   "person_track_ids": 15
+  }
+ ]
+}

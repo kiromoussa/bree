@@ -36,3 +36,11 @@ def test_metrics():
     assert roc_auc(y, np.array([0.5, 0.5, 0.5, 0.5])) == 0.5
     assert pr_auc(y, np.array([0.1, 0.2, 0.8, 0.9])) == 1.0
     assert eer(y, np.array([0.1, 0.2, 0.8, 0.9])) == 0.0
+
+
+def test_nan_keypoints_become_undetected():
+    from bree.conceal import clean_kps
+    k = np.ones((2, 17, 3), np.float32)
+    k[0, 3, 0] = np.nan
+    c = clean_kps(k)
+    assert not np.isnan(c).any() and c[0, 3].tolist() == [0, 0, 0] and c[1, 3, 2] == 1

@@ -32,6 +32,14 @@ class Track:
     bbox: np.ndarray     # (T, 4) x1, y1, x2, y2
 
 
+def clean_kps(kps: np.ndarray) -> np.ndarray:
+    """PoseLift ships some NaN keypoints: treat them as not detected (conf 0)."""
+    bad = np.isnan(kps).any(-1)
+    kps = np.nan_to_num(kps)
+    kps[bad] = 0.0
+    return kps
+
+
 @dataclass
 class Video:
     name: str            # e.g. "3_262"
@@ -55,7 +63,7 @@ def load_poselift(root: Path) -> list[Video]:
             tracks = {}
             for pid, rows in per.items():
                 rows.sort(key=lambda r: r[0])
-                kps = np.asarray([r[2] for r in rows], dtype=np.float32)[:, :, [1, 0, 2]]   # (y,x,c) -> (x,y,c)
+                kps = clean_kps(np.asarray([r[2] for r in rows], dtype=np.float32)[:, :, [1, 0, 2]])   # (y,x,c) -> (x,y,c)
                 tracks[pid] = Track(np.array([r[0] for r in rows]), kps,
                                     np.asarray([r[1] for r in rows], dtype=np.float32))
             n = max(d) + 1 if d else 0
@@ -82,7 +90,7 @@ def load_retails(json_dir: Path, gt_dir: Path | None = None, split: str = "test"
             fr = sorted(frames, key=int)
             if not fr:
                 continue
-            kps = np.asarray([frames[k]["keypoints"] for k in fr], np.float32).reshape(-1, 17, 3)[:, :, [1, 0, 2]]
+            kps = clean_kps(np.asarray([frames[k]["keypoints"] for k in fr], np.float32).reshape(-1, 17, 3)[:, :, [1, 0, 2]])
             idx = np.array([int(k) for k in fr])
             tracks[int(pid)] = Track(idx, kps, kpt_box(kps))
             n = max(n, idx.max() + 1)
@@ -170,18 +178,18 @@ def build_model():
     return ConcealNet()
 
 
-def training_windows(videos: list[Video]) -> tuple[np.ndarray, np.ndarray]:
+def training_windows(videos: list[Video], stride: int = 3) -> tuple[np.ndarray, np.ndarray]:
+    """Windows ending every `stride` frames (neighbouring windows are near-duplicates)."""
     X, y = [], []
     for v in videos:
         for t in v.tracks.values():
-            ok = t.frames < v.n_frames
-            w = windows(track_features(t))[ok]
-            X.append(w)
+            ok = np.flatnonzero(t.frames < v.n_frames)[::stride]
+            X.append(windows(track_features(t))[ok])
             y.append(v.labels[t.frames[ok]])
     return np.concatenate(X), np.concatenate(y).astype(np.float32)
 
 
-def train_model(videos: list[Video], epochs: int = 25, seed: int = 0, device: str = "cpu"):
+def train_model(videos: list[Video], epochs: int = 20, seed: int = 0, device: str = "cpu", batch: int = 512):
     import torch
     torch.manual_seed(seed)
     rng = np.random.default_rng(seed)
@@ -195,7 +203,7 @@ def train_model(videos: list[Video], epochs: int = 25, seed: int = 0, device: st
     lossf = torch.nn.BCEWithLogitsLoss(pos_weight=pos_w)
     for _ in range(epochs):
         m.train()
-        for b in np.array_split(rng.permutation(len(X)), max(len(X) // 256, 1)):
+        for b in np.array_split(rng.permutation(len(X)), max(len(X) // batch, 1)):
             opt.zero_grad()
             loss = lossf(m(Xn[b].to(device)), Y[b].to(device))
             loss.backward()
@@ -226,6 +234,34 @@ def load_bundle(path: Path):
     m.load_state_dict(d["state"])
     m.eval()
     return {"model": m, "mu": d["mu"], "sd": d["sd"], "meta": d["meta"]}
+
+
+# ---------- triggers (what an operator would see) ----------
+
+THRESH = {"model": (0.5, 0.7, 0.9), "rule": (0.25, 0.5, 0.75)}   # fixed up front, never tuned on eval data
+MIN_RUN, MERGE_S = 8, 10.0                                       # 0.5 s over threshold at 15 fps; merge within 10 s
+
+
+def trigger_frames(scores: np.ndarray, frames: np.ndarray, th: float, fps: float = 15.0) -> list[int]:
+    """Frames where one track's score has stayed >= th for MIN_RUN frames; triggers closer than MERGE_S merge."""
+    out, run, last_t = [], 0, -1e9
+    for s, f in zip(scores, frames):
+        run = run + 1 if s >= th else 0
+        if run == MIN_RUN:
+            if f / fps - last_t > MERGE_S:
+                out.append(int(f))
+            last_t = f / fps
+    return out
+
+
+def video_triggers(v: Video, per_track, th: float) -> list[int]:
+    return sorted(f for t in v.tracks.values() if len(t.frames) for f in trigger_frames(per_track(t), t.frames, th))
+
+
+def event_hit(v: Video, per_track, th: float, pad: int = 15) -> bool:
+    """Shoplifting video: did any trigger land inside a labelled interval (+-pad frames)?"""
+    pos = np.flatnonzero(v.labels)
+    return any(((pos >= f - pad) & (pos <= f + pad)).any() for f in video_triggers(v, per_track, th))
 
 
 # ---------- metrics ----------

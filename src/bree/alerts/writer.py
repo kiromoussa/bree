@@ -84,7 +84,11 @@ class EvidenceBuffer:
         imgs = [cv2.imdecode(np.frombuffer(j, np.uint8), cv2.IMREAD_COLOR) for j in dedup]
         h, w = imgs[0].shape[:2]
         path.parent.mkdir(parents=True, exist_ok=True)
-        vw = cv2.VideoWriter(str(path), cv2.VideoWriter_fourcc(*"mp4v"), max(1.0, self.fps), (w, h))
+        # H.264 plays in browsers (review page); not every OpenCV build has it, so fall back to mp4v.
+        for fourcc in ("avc1", "mp4v"):
+            vw = cv2.VideoWriter(str(path), cv2.VideoWriter_fourcc(*fourcc), max(1.0, self.fps), (w, h))
+            if vw.isOpened():
+                break
         for im in imgs:
             vw.write(im)
         vw.release()

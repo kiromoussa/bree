@@ -96,6 +96,48 @@ def cmd_dashboard(args) -> None:
         httpd.shutdown()
 
 
+def cmd_shadow(args) -> None:
+    from bree.shadow import load_shadow_config, run_shadow
+    cfg = load_shadow_config(args.config)
+    if args.backend:
+        cfg.backend = args.backend
+    if args.review_port is not None:
+        cfg.review_port = args.review_port
+    print(f"shadow mode: {len(cfg.cameras)} camera(s) {[c.name for c in cfg.cameras]}, "
+          f"POS folder {cfg.pos_export_dir or '(none)'}, output {cfg.output_dir}. Nothing is shown to staff.")
+    log = run_shadow(cfg, once=args.once)
+    print(json.dumps(log.summary(), indent=2))
+
+
+def cmd_shadow_labels(args) -> None:
+    from bree.shadow import ShadowLog, load_shadow_config
+    log = ShadowLog(args.dir or load_shadow_config(args.config).output_dir)
+    if args.export:
+        rows = [r for r in log.labelled() if r["label"]]
+        Path(args.export).write_text("".join(json.dumps(r) + "\n" for r in rows))
+        print(f"{len(rows)} labelled would-be alert(s) -> {args.export}")
+    if args.serve:
+        import time
+        from bree.dashboard.server import serve
+        httpd = serve(None, "127.0.0.1", args.port, review=log)
+        print(f"review page: http://127.0.0.1:{httpd.server_address[1]}/review  (Ctrl-C to stop)")
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            httpd.shutdown()
+    if args.summary or not (args.export or args.serve):
+        s = log.summary()
+        print(f"{s['labelled']} of {s['would_be_alerts']} would-be alerts labelled")
+        print(f"{'tier':7s} {'total':>5s} {'theft':>5s} {'false':>5s} {'unsure':>6s} {'todo':>5s} {'precision':>9s}")
+        for tier in ("alert", "review", "all"):
+            r = s[tier]
+            prec = "n/a" if r["precision"] is None else f"{r['precision']:.3f}"
+            print(f"{tier:7s} {r['total']:5d} {r['real_theft']:5d} {r['false_alert']:5d} {r['unsure']:6d} "
+                  f"{r['unlabelled']:5d} {prec:>9s}")
+        print("precision = real theft / (real theft + false alert); 'unsure' is left out")
+
+
 def cmd_export(args) -> None:
     from bree.edge.export import export_and_benchmark
     print(json.dumps(export_and_benchmark(ROOT, args.imgsz), indent=2))
@@ -112,7 +154,25 @@ def register(sub) -> None:
     db.add_argument("--port", type=int, default=8080)
     db.set_defaults(func=cmd_dashboard)
 
-    ex = sub.add_parser("export", help="export YOLO models to ONNX and compare CPU latency")
+    sh = sub.add_parser("shadow", help="pilot shadow mode: run silently, log would-be alerts for review")
+    sh.add_argument("--config", required=True, help="shadow YAML (see configs/shadow_example.yaml)")
+    sh.add_argument("--backend", choices=["yolo", "toy"], default=None, help="override the config")
+    sh.add_argument("--review-port", type=int, default=None, help="override the config; 0 = no review page")
+    sh.add_argument("--once", action="store_true",
+                    help="run each source once and stop (recorded footage); default reconnects forever")
+    sh.set_defaults(func=cmd_shadow)
+
+    sl = sub.add_parser("shadow-labels", help="labels from the shadow review page: summary, export, serve")
+    src = sl.add_mutually_exclusive_group(required=True)
+    src.add_argument("--config", help="shadow YAML (uses its output_dir)")
+    src.add_argument("--dir", help="shadow output folder")
+    sl.add_argument("--summary", action="store_true", help="counts + precision so far (default)")
+    sl.add_argument("--export", default=None, help="write labelled would-be alerts (with labels) to this .jsonl")
+    sl.add_argument("--serve", action="store_true", help="serve only the review page")
+    sl.add_argument("--port", type=int, default=8080)
+    sl.set_defaults(func=cmd_shadow_labels)
+
+    ex = sub.add_parser("export",help="export YOLO models to ONNX and compare CPU latency")
     ex.add_argument("--imgsz", type=int, default=640)
     ex.set_defaults(func=cmd_export)
 

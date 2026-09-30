@@ -75,3 +75,12 @@ Three independent reviewers: one fact-checked REPORT.md against the result files
 - **Replay hang fixed**: `t_exit + max_hold - t_exit` can round just below `max_hold`, so a decision was never "ready" while its deadline equalled `now` (seen on 2 of 6 seeds). Epsilon + a no-progress guard in the replay loops.
 - **Reporting**: the ablation now runs at the same 200 h as the main table; a 5-seed spread is reported next to single-seed numbers; the threshold sweep applies the same corroboration cap as the ledger.
 - **Known, not fixed**: counter tie-break can favour a loiterer who arrived first; co-entry within 4 s is weak evidence of a group; no alert retraction when a late receipt arrives; `Ledger.people` grows for the process lifetime; handoffs to non-group people aren't moved between baskets.
+
+## Phase 2
+- **Shadow mode reuses `run_pipeline` per camera** with no staff-facing output: no console alerts, no live dashboard, no annotated video, no per-frame log. The only images written are the ledger's existing head-pixelated alert clips (now H.264 when OpenCV has it, so browsers play them; mp4v otherwise).
+- **Every alert and review decision is logged**, not just alerts: review-tier labels tell us whether the 0.4 to 0.7 band is worth anything.
+- **Alerts now carry `basket` and `audit_log`** (the ledger's reasoning lines) so a reviewer sees why without opening `ledger_log.txt`.
+- **POS export folder is polled, not watched** (stdlib only, every 2 s). A line is read once it ends in a newline or the file stopped growing between two scans. Files present at start are skipped (old receipts). Each camera only gets receipts for terminals in its own store config.
+- **Labels are append-only JSONL** with reviewer name and time; the latest label per alert wins, so a changed mind is kept in history. Precision leaves "unsure" out.
+- **Raw recording is off by default** and prints a warning when on: raw segments contain faces, are rolled every few minutes, and deleted past the retention window. The review page serves only alert clips inside the output folder.
+- **Known limits**: cameras are reconciled independently (multi-camera handoff is still not wired); a receipt later than `exit_grace_s` does not retract a would-be alert (raise it for batched POS exports); people still inside when shadow mode is stopped are not reconciled.

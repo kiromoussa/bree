@@ -625,6 +625,8 @@ class Ledger:
             unpaid_items=items, reasons=reasons,
             paid_items=[{"sku": li.sku, "category": li.category} for li in paid],
             visited_register=visited, group=[q.person_id for q in party] if len(party) > 1 else [],
+            basket=[it.category for q in party for it in q.basket],
+            audit_log=[(f"P{q.person_id} " if len(party) > 1 else "") + line for q in party for line in q.log],
         )
         self.alerts.append(alert)
         return [alert]

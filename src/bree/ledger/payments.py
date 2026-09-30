@@ -11,6 +11,7 @@ since the video started, for replaying recorded footage). The store config maps
 
 Sources:
   JsonlPayments  - a .jsonl file; replay by timestamp, or tail it live (POS export drop)
+  FolderPayments - a folder the POS drops export files into (shadow mode); polled for new files
   StdinPayments  - JSON lines on stdin (`pos_bridge | bree run ... --payments stdin`)
   HttpPayments   - POST /payments on a local port (webhook from a POS / tap reader)
   MockPayments   - an in-memory list (tests, simulator)
@@ -21,6 +22,7 @@ import json
 import queue
 import sys
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Protocol
@@ -73,7 +75,9 @@ class _QueueSource:
         if not line:
             return
         try:
-            self.q.put(parse_payment(json.loads(line), self.stream_start_wall))
+            data = json.loads(line)
+            for d in data if isinstance(data, list) else [data]:
+                self.q.put(parse_payment(d, self.stream_start_wall))
         except (ValueError, json.JSONDecodeError) as e:
             self.errors.append(f"bad payment {line[:80]!r}: {e}")
 
@@ -99,7 +103,6 @@ class JsonlPayments(_QueueSource):
                 self._ingest_line(line)
 
     def _tail(self) -> None:
-        import time
         with self.path.open() as f:
             while True:
                 line = f.readline()
@@ -107,6 +110,56 @@ class JsonlPayments(_QueueSource):
                     self._ingest_line(line)
                 else:
                     time.sleep(0.2)
+
+
+class FolderPayments(_QueueSource):
+    """Every *.jsonl / *.json file in `folder`, same line format as above (a line may also be a list).
+
+    Scanned at most every `every_s` seconds from `poll()`, so no thread. Picks up new files and
+    lines appended to files it has seen. A line is read once it ends in a newline, or once the
+    file stopped growing between two scans (last line written without one). Files already in the
+    folder at start are skipped: they are receipts from before the camera was running.
+    Only payments at `terminals` are returned (the ones this camera's store config knows).
+    """
+
+    def __init__(self, folder: str | Path, stream_start_wall: float | None = None, every_s: float = 2.0,
+                 terminals=None, skip_existing: bool = True):
+        super().__init__(stream_start_wall)
+        self.folder = Path(folder)
+        self.every_s = every_s
+        self.terminals = set(terminals) if terminals else None
+        self._read: dict[str, int] = {}     # file name -> bytes consumed
+        self._size: dict[str, int] = {}     # file name -> size at the previous scan
+        self._next_scan = 0.0
+        if skip_existing:
+            for f in self._files():
+                self._read[f.name] = self._size[f.name] = f.stat().st_size
+
+    def _files(self) -> list[Path]:
+        return sorted(f for f in self.folder.glob("*") if f.suffix in (".jsonl", ".json") and f.is_file())
+
+    def scan(self) -> None:
+        for f in self._files():
+            size, done = f.stat().st_size, self._read.get(f.name, 0)
+            if size < done:                  # truncated or replaced: read it again
+                done = 0
+            stable = self._size.get(f.name) == size
+            self._size[f.name] = size
+            if size == done:
+                continue
+            with f.open("rb") as fh:
+                fh.seek(done)
+                chunk = fh.read(size - done)
+            end = len(chunk) if stable else chunk.rfind(b"\n") + 1
+            for line in chunk[:end].decode("utf-8", "replace").splitlines():
+                self._ingest_line(line)
+            self._read[f.name] = done + end
+
+    def poll(self, t: float) -> list[Payment]:
+        if time.monotonic() >= self._next_scan:
+            self.scan()
+            self._next_scan = time.monotonic() + self.every_s
+        return [p for p in super().poll(t) if self.terminals is None or p.terminal in self.terminals]
 
 
 class StdinPayments(_QueueSource):

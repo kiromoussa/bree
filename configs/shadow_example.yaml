@@ -1,0 +1,37 @@
+# Shadow mode for the pilot: `bree shadow --config configs/shadow_example.yaml`
+#
+# Runs the full pipeline on each camera, shows NOTHING to staff, and logs every would-be
+# alert (alert and review tier) with a head-pixelated clip to <output_dir>/would_be_alerts.jsonl.
+# Label them at http://127.0.0.1:<review_port>/review. Copy this file per store; keep real
+# RTSP credentials out of git.
+
+cameras:
+  - name: register_cam                   # unique, used in alert ids and folder names
+    rtsp_url: rtsp://user:pass@192.168.1.20:554/stream1
+    store: configs/store_gas_station_small.yaml   # this camera's zones, terminals, catalog
+  # - name: cooler_cam
+  #   rtsp_url: rtsp://user:pass@192.168.1.21:554/stream1
+  #   store: configs/store_cooler_cam.yaml
+
+# Folder the POS drops its export files into. Polled every 2 s for new *.jsonl / *.json files
+# (and lines appended to them); same format as `--payments`, one receipt per line, with `ts`
+# in unix seconds. Each camera only gets receipts for terminals in its store config.
+pos_export_dir: /srv/bree/pos_exports
+
+output_dir: out/shadow
+backend: yolo                            # yolo | toy
+review_port: 8080                        # always bound to 127.0.0.1; 0 = no review page
+
+# LedgerConfig overrides. If the POS exports in batches, raise exit_grace_s to the batch
+# delay (and payment_expiry_s past 300 s) so receipts arrive before the decision; otherwise
+# paying customers become would-be alerts.
+ledger:
+  exit_grace_s: 5.0
+
+# Raw recording of the camera feed, for re-running improved models on the same footage.
+# OFF by default. Raw segments are NOT pixelated: they contain faces. Only turn this on with
+# the operator's written OK, and keep retention short. The review page never serves them.
+record_raw:
+  enabled: false
+  segment_minutes: 5
+  retention_hours: 24

@@ -8,6 +8,8 @@
   bree bench                               everything measurable -> results/bench.json
   bree export                              YOLO -> ONNX for edge devices
   bree dashboard                           local web dashboard
+  bree shadow --config configs/shadow.yaml pilot shadow mode: silent, would-be alerts + review page
+  bree shadow-labels --config ...          labelled shadow data: summary, export, review page
 """
 from __future__ import annotations
 

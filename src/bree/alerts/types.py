@@ -32,6 +32,8 @@ class Alert:
     visited_register: bool = False
     group: list[int] = field(default_factory=list)
     clip_path: str | None = None
+    basket: list[str] = field(default_factory=list)       # everything the party picked (categories)
+    audit_log: list[str] = field(default_factory=list)    # the ledger's reasoning, line by line
 
     @property
     def latency_s(self) -> float:

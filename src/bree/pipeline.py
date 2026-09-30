@@ -62,7 +62,8 @@ def _obs_to_json(obs: FrameObs, events: list[Event]) -> dict:
 def run_pipeline(source: str, store: StoreConfig, backend: PerceptionBackend, out_dir: str | Path,
                  payments: PaymentSource | None = None, save_video: bool = True,
                  max_frames: int | None = None, ledger_overrides: dict | None = None,
-                 on_alert=None, on_frame=None, verbose: bool = True, realtime: bool = False) -> RunSummary:
+                 on_alert=None, on_frame=None, verbose: bool = True, realtime: bool = False,
+                 log_frames: bool = True) -> RunSummary:
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     src = VideoSource(source, max_frames=max_frames)
@@ -138,7 +139,8 @@ def run_pipeline(source: str, store: StoreConfig, backend: PerceptionBackend, ou
         for k, v in zip(timings, (f1 - f0, f2 - f1, f3 - f2, f4 - f3, f5 - f4)):
             timings[k] += v
         persons_seen.update(p.track_id for p in persons)
-        frames_log.write(json.dumps(_obs_to_json(obs, events)) + "\n")
+        if log_frames:   # off for long shadow runs: one line per frame, forever
+            frames_log.write(json.dumps(_obs_to_json(obs, events)) + "\n")
         summary.frames += 1
         last_frame_wall = fr.wall
         if on_frame:

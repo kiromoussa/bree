@@ -46,6 +46,29 @@ One JSON object per payment, e.g.
 - `--payments payments.jsonl` (file), `--payments stdin`, or `--payments http:8765` then
   `curl -X POST localhost:8765/payments -d '{...}'`.
 
+## Shadow mode (pilot)
+
+Runs the full pipeline on the store cameras and shows **nothing** to staff. Every would-be
+alert (alert and review tier) goes to `<output_dir>/would_be_alerts.jsonl` with a head-pixelated
+clip, the basket, unpaid items, confidence, whether concealment was seen, and the ledger's audit log.
+
+```bash
+cp configs/shadow_example.yaml configs/shadow_store1.yaml   # camera RTSP URLs, zones per camera, POS folder
+.venv/bin/python -m bree.cli shadow --config configs/shadow_store1.yaml
+# review page (127.0.0.1 only): http://127.0.0.1:8080/review
+.venv/bin/python -m bree.cli shadow-labels --config configs/shadow_store1.yaml            # counts + precision so far
+.venv/bin/python -m bree.cli shadow-labels --config configs/shadow_store1.yaml --export labelled.jsonl
+.venv/bin/python -m bree.cli shadow-labels --config configs/shadow_store1.yaml --serve    # review page only
+```
+
+- **POS**: the POS drops export files (`*.jsonl` / `*.json`, the payment format above, with `ts`)
+  into `pos_export_dir`; shadow mode polls it every 2 s. Files already there at start are skipped.
+- **Review**: on `/review`, Kiro and the operator mark each would-be alert *Real theft*, *False alert*
+  or *Unsure*, with an optional note. Labels are appended to `labels.jsonl` with reviewer name and
+  time; the latest label per alert counts. Precision = real / (real + false).
+- **Cameras** reconnect forever; `--once` runs each source once (recorded footage, with `t` in receipts).
+- **Raw recording** (`record_raw`) is off by default. Raw segments are **not** pixelated and contain faces.
+
 ## Demo, tests, benchmark
 
 ```bash

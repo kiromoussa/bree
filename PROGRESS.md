@@ -19,7 +19,11 @@ Read this first after a context reset. Then BUILD_SPEC.md.
 ## Data
 - PoseLift: a subagent cloned a third-party mirror into data/poselift (+ data/poselift_repo). The auto-mode safety check then BLOCKED using the unofficial mirror. DO NOT use data/poselift in any result. Tell the user in REPORT.
 
-## Next steps
-1. Clean re-run of `make bench` (nothing else running) and `bree export` for ONNX timings.
-2. Write REPORT.md from results/bench.json only.
-3. Adversarial review: agents try to break the ledger + check every REPORT number against results/bench.json.
+## Status at end of night
+- All stages done except the concealment classifier (skipped, no labelled data). 80 tests pass.
+- Final `make bench` run done; REPORT.md written from results/bench.json + results/export.json and fact-checked by an independent reviewer; ledger + engine hardened after two adversarial reviews (see DECISIONS.md, last section).
+
+## Next steps (for the pilot)
+1. Get pilot footage + POS export; draw zones per camera; run `bree run` in shadow mode.
+2. Hand-label a few hours -> measured VisionNoise rates -> re-run `make bench`.
+3. Store-specific product detector; wire multicam into `bree run`; alert retraction on late receipts.

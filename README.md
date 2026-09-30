@@ -52,7 +52,7 @@ One JSON object per payment, e.g.
 make demo       # 8 rendered TOY clips end to end (pixels -> tracker -> events -> ledger -> alerts) + scorecard
 make test       # unit tests: ledger, event engine, simulator, payments; + vision smoke tests
 make sim        # event-level simulator: ledger accuracy under perfect / baseline / 2x vision noise
-make bench      # everything -> results/bench.json + results/bench.md (~8 min on 4 CPU cores)
+make bench      # everything -> results/bench.json + results/bench.md (~10 min on 4 CPU cores)
 make dashboard  # local web page with live alerts + baskets (http://127.0.0.1:8080)
 make export     # YOLO -> ONNX for edge devices
 ```

@@ -29,3 +29,10 @@ Every judgment call made while building this unattended, with the reason. Newest
 - Heads are **pixelated** (5x5 blocks) in every image we write (annotated video, alert clips), located from nose/eye/ear keypoints, falling back to the top of the person box.
 - Per-frame logs contain boxes, track IDs, and keypoints only. No crops, no embeddings, no face features. There is no re-identification across visits.
 - Evidence frames live in memory only (2 s ring buffer + short snippets around a person's pick/conceal/put-back/exit). They are written to disk **only** for people who get an alert or review flag, and dropped as soon as a person is reconciled clean.
+- **Products are tracked by centre distance, not ByteTrack.** Found on the toy clips: a 14x18 px item carried in a hand moves ~12 px/frame, IoU between frames ~0.2, so ByteTrack never confirmed the track and the walkout was missed entirely. `CentroidTracker` matches within the same category, gated at 3x the object's diagonal (min 30 px). People stay on ByteTrack.
+- **A pick is credited to the reach of the hand that holds the item** (not the most recent reach of either hand). Found in tests: a shopper standing next to a gondola has their resting hand inside its polygon.
+- **An in-hand item is only "released" if we kept seeing the person** for 0.5 s after the item left the hand. If the person vanished too (walked out the door), the item is still theirs and is reported as `held_items` on EXIT. Found in tests.
+
+## Toy clips (Stage 3/4 end-to-end check)
+- No store footage yet, so `bree render-toy` renders 8 scripted 2D scenarios in the example store layout (normal pay, walkout, conceal + partial pay, put-back, crowded cooler, lingerer, pocket-then-pay, group where one pays). Every frame says "TOY DATA".
+- The toy backend detects from **pixels** (colour lookup table + connected components) and synthesises COCO keypoints from blob geometry + detected hands. It never reads the renderer's ground truth, so tracker/engine/ledger/alert code paths are exercised for real. It says nothing about YOLO accuracy on real footage.

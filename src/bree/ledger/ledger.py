@@ -380,7 +380,7 @@ class Ledger:
             for q in party:
                 q.log.append(f"{self.now:7.1f}s reconciled: all paid")
             return []
-        return self._score_and_emit(p, party, [it for _, it in still_unpaid], paid)
+        return self._score_and_emit(p, party, still_unpaid, paid)
 
     def _subtract(self, basket: list[tuple[PersonRecord, BasketItem]], paid: list[LineItem]):
         """Multiset basket - paid. SKU matches first, then category."""
@@ -426,12 +426,15 @@ class Ledger:
         return min(score, 1.0), why
 
     def _score_and_emit(self, p: PersonRecord, party: list[PersonRecord],
-                        unpaid: list[BasketItem], paid: list[LineItem]) -> list[Alert]:
+                        unpaid_owned: list[tuple[PersonRecord, BasketItem]], paid: list[LineItem]) -> list[Alert]:
         visited = any(q.register_visits for q in party) or bool(paid)
         items, reasons = [], []
         miss = 1.0
-        for item in unpaid:
+        best_owner, best_score = p, -1.0
+        for owner, item in unpaid_owned:
             s, why = self._score_item(item, visited)
+            if s > best_score:
+                best_owner, best_score = owner, s
             miss *= (1.0 - s)
             reasons += why
             items.append(UnpaidItem(item.category, item.sku, item.t_pick, item.zone, item.confidence,
@@ -444,9 +447,9 @@ class Ledger:
 
         tier = ("alert" if conf >= self.cfg.alert_threshold
                 else "review" if conf >= self.cfg.review_threshold else None)
-        who = min(party, key=lambda q: q.person_id) if len(party) > 1 else p
+        who = best_owner   # in a group: the person holding the strongest unpaid item
         for q in party:
-            q.log.append(f"{self.now:7.1f}s reconciled: {len(unpaid)} unpaid, confidence {conf:.2f} -> {tier}")
+            q.log.append(f"{self.now:7.1f}s reconciled: {len(unpaid_owned)} unpaid, confidence {conf:.2f} -> {tier}")
         if tier is None:
             self.dropped.append({"person_id": who.person_id, "confidence": conf,
                                  "group": [q.person_id for q in party]})

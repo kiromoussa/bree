@@ -1,8 +1,9 @@
-"""Multi-object tracking with ByteTrack (Ultralytics implementation).
+"""Multi-object tracking.
 
-We call Ultralytics' BYTETracker directly on plain detection arrays, so the same
-tracker serves the YOLO backend and the toy backend. Persons and products get
-separate tracker instances (separate ID spaces).
+People: ByteTrack (Ultralytics' BYTETracker, called directly on detection
+arrays so the YOLO and toy backends share it).
+Products: centroid tracker (bree/track/centroid.py), because IoU association
+fails for small objects moving in a hand.
 """
 from __future__ import annotations
 
@@ -14,6 +15,7 @@ from ultralytics.utils.checks import check_yaml
 
 from bree.detect.base import Detections
 from bree.events.observations import PersonObs, ProductObs
+from bree.track.centroid import CentroidTracker
 
 
 def _bytetrack(fps: float, buffer_s: float) -> BYTETracker:
@@ -23,10 +25,9 @@ def _bytetrack(fps: float, buffer_s: float) -> BYTETracker:
 
 
 class Tracker:
-    def __init__(self, fps: float, person_buffer_s: float = 2.0, product_buffer_s: float = 0.5):
+    def __init__(self, fps: float, person_buffer_s: float = 2.0, product_buffer_s: float = 0.35):
         self.persons = _bytetrack(fps, person_buffer_s)
-        self.products = _bytetrack(fps, product_buffer_s)
-        self.product_classes: dict[str, int] = {}
+        self.products = CentroidTracker(max_missed=max(1, int(round(product_buffer_s * fps))))
 
     def _run(self, tracker: BYTETracker, det: Detections, shape, cls_ids: np.ndarray) -> np.ndarray:
         if len(det) == 0:
@@ -41,10 +42,7 @@ class Tracker:
             idx = int(row[7])
             kp = persons.keypoints[idx] if persons.keypoints is not None else None
             out_p.append(PersonObs(int(row[4]), tuple(map(float, persons.boxes[idx])), float(row[5]), kp))
-        ids = np.array([self.product_classes.setdefault(l, len(self.product_classes)) for l in products.labels])
-        out_i = []
-        for row in self._run(self.products, products, shape, ids):
-            idx = int(row[7])
-            out_i.append(ProductObs(int(row[4]), tuple(map(float, products.boxes[idx])),
-                                    products.labels[idx], float(row[5])))
+        ids = self.products.update(products.boxes, products.labels)
+        out_i = [ProductObs(tid, tuple(map(float, products.boxes[i])), products.labels[i], float(products.confs[i]))
+                 for i, tid in enumerate(ids)]
         return out_p, out_i

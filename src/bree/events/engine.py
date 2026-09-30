@@ -68,6 +68,7 @@ class HeldItem:
     product_id: int
     category: str
     t_first: float
+    wrist: str | None = None                      # hand that first held it ("left"/"right")
     frames: int = 1
     confirmed: bool = False
     confs: list[float] = field(default_factory=list)
@@ -261,7 +262,7 @@ class EventEngine:
             # Not held yet. Stock sitting on a shelf is ignored until it leaves the zone in a hand.
             if not near or self.store.zone_at(c[0], c[1], "shelf", "cooler") is not None:
                 continue
-            h = HeldItem(pr.track_id, pr.category, self.t)
+            h = HeldItem(pr.track_id, pr.category, self.t, wrist=wrist)
             self.owner[pr.track_id] = ps.pid
             ps.held[pr.track_id] = h
             self._touch(ps, h, pr, count=False)
@@ -302,7 +303,7 @@ class EventEngine:
                 self.owner.pop(other.product_id, None)
                 self.log.append(f"{self.t:.1f}s person {ps.pid} {h.category} re-linked after occlusion")
                 return []
-        reach = self._recent_reach(ps, h.t_first)
+        reach = self._recent_reach(ps, h.t_first, h.wrist)
         if reach is None:
             self.log.append(f"{self.t:.1f}s person {ps.pid} holding {h.category} with no reach (brought in / re-acquired)")
             return []
@@ -313,9 +314,11 @@ class EventEngine:
                          candidates=[ps.pid] + others if others else [],
                          meta={"product_track": h.product_id, "t_confirmed": self.t})]
 
-    def _recent_reach(self, ps: PersonState, t: float) -> Reach | None:
+    def _recent_reach(self, ps: PersonState, t: float, wrist: str | None = None) -> Reach | None:
+        """Latest reach (by the holding hand, if known) that ended within reach_window_s of t."""
+        reaches = [rc for rc in ps.reaches if rc.wrist == wrist] or ps.reaches
         best = None
-        for rc in ps.reaches:
+        for rc in reaches:
             end = rc.t_end if rc.t_end is not None else t
             if rc.t_start <= t and t - end <= self.r.reach_window_s:
                 if best is None or end > (best.t_end or t):
@@ -340,7 +343,9 @@ class EventEngine:
         events = []
         for ps in self.people.values():
             for h in list(ps.held.values()):
-                if self.t - h.t_near < self.r.release_s:
+                # Released = we kept seeing the person for release_s after the item left their
+                # hand. If the person vanished too (walked out, occluded), the item is still theirs.
+                if ps.t_last - h.t_near < self.r.release_s:
                     continue
                 if not h.confirmed:           # never really held
                     del ps.held[h.product_id]

@@ -9,7 +9,7 @@ Rule: only data with a clear commercial license may train the shipped model. Eve
 | MERL Shopping | merl.com/pub/tmarks/MERL_Shopping_Dataset (official) | (c) 2016 MERL. "Permission to use ... without fee for research and educational purposes". No commercial grant. | **Evaluation only** (pose/track layer measurements). |
 | UCF-Crime | Official Dropbox folder of the authors (Chen Chen, UNC Charlotte); the old visionlab.uncc.edu page no longer resolves | Research dataset, no commercial license. | **Evaluation only.** |
 | SKU-110K | Ultralytics mirror of the official release (trax-geometry S3) | Released for research (CVPR 2019, Trax). No clear commercial grant. | Not used yet (download paused for bandwidth). Would be **evaluation only** until checked. |
-| Simuletic CCTV shoplifting | Kaggle | CC BY 4.0 per the Kaggle listing | Not downloaded (no Kaggle token). CC BY 4.0 would allow training with attribution. |
-| DCSASS | Kaggle | Derived from UCF-Crime: research only | Not downloaded (no Kaggle token). Evaluation only. |
+| Simuletic CCTV shoplifting | Kaggle | CC BY 4.0 per the Kaggle listing | Downloaded; the free release is only 8 clips, so not used for training. CC BY 4.0 would allow training with attribution. |
+| DCSASS | Kaggle | Derived from UCF-Crime: research only | Downloaded. **Evaluation only** (895 Shoplifting-category clips). |
 | OpenCV `vtest.avi` | github.com/opencv/opencv samples | OpenCV sample data (Apache-2.0 repo) | FPS / tracking smoke tests only. |
 | Kiro's own (`staged/`, `cloudstation/`, `operator/`) | n/a | Ours, subject to consent of the people filmed | Train + eval once it exists. None yet. |

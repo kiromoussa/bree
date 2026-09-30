@@ -9,7 +9,7 @@
               - a seeded sample of Testing_Normal_Videos -> would-be triggers per hour (same trigger
                 definition as scripts/eval_retails.py). These are general surveillance scenes, not stores.
 Writes results/conceal_ucf.json.
-Usage: python scripts/eval_ucf.py [n_normal_videos=40]
+Usage: python scripts/eval_ucf.py [n_normal_videos=15]
 """
 import json
 import re
@@ -26,7 +26,7 @@ from bree.conceal import (THRESH, Track, Video, frame_scores, load_bundle, metri
 U = Path("data/ucf_crime")
 CACHE = Path("out/ucf_tracks")
 FPS = 15.0
-N_NORMAL = int(sys.argv[1]) if len(sys.argv) > 1 else 40
+N_NORMAL = int(sys.argv[1]) if len(sys.argv) > 1 else 15
 
 
 def members(zpath, pattern):

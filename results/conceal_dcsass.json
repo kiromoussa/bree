@@ -1,0 +1,56 @@
+{
+ "dataset": "DCSASS Shoplifting (Kaggle, cut from UCF-Crime), evaluation only",
+ "perception": {
+  "device": "mps",
+  "device_name": "Apple Silicon (MPS)",
+  "cpu_count": 10,
+  "detect_model": "yolo26s.pt",
+  "pose_model": "yolo26s-pose.pt",
+  "imgsz": 640
+ },
+ "n_clips": 896,
+ "n_shoplifting": 155,
+ "note": "clip-level labels; clips come from 28 source videos, so clips are not independent",
+ "model": {
+  "auc_roc": 0.5116320578120238,
+  "auc_pr": 0.19531345066201464,
+  "eer": 0.4894257977449828,
+  "n_frames": 896,
+  "n_pos": 155,
+  "clip_trigger_rate": {
+   "0.5": {
+    "shoplifting": 0.025806451612903226,
+    "normal": 0.021592442645074223
+   },
+   "0.7": {
+    "shoplifting": 0.025806451612903226,
+    "normal": 0.010796221322537112
+   },
+   "0.9": {
+    "shoplifting": 0.012903225806451613,
+    "normal": 0.005398110661268556
+   }
+  }
+ },
+ "rule": {
+  "auc_roc": 0.411527578250838,
+  "auc_pr": 0.1438227908326146,
+  "eer": 0.5878934308475905,
+  "n_frames": 896,
+  "n_pos": 155,
+  "clip_trigger_rate": {
+   "0.25": {
+    "shoplifting": 0.5290322580645161,
+    "normal": 0.6491228070175439
+   },
+   "0.5": {
+    "shoplifting": 0.3225806451612903,
+    "normal": 0.44804318488529016
+   },
+   "0.75": {
+    "shoplifting": 0.22580645161290322,
+    "normal": 0.3468286099865047
+   }
+  }
+ }
+}

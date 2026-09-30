@@ -1,5 +1,5 @@
 {
-  "generated_unix": 1790737727.8590403,
+  "generated_unix": 1790738707.5197985,
   "machine": "Linux-6.18.44-fc-v50-x86_64-with-glibc2.39",
   "quick": false,
   "event_level": {
@@ -52,10 +52,10 @@
         },
         "crowd_pairs": 21,
         "events": 58568,
-        "ledger_events_per_s": 43719,
+        "ledger_events_per_s": 42740,
         "wall_s": {
-          "simulate": 2.57,
-          "ledger": 1.34
+          "simulate": 2.6,
+          "ledger": 1.37
         },
         "payment_mode": "pos",
         "noise": "perfect"
@@ -65,120 +65,120 @@
         "thieves": 495,
         "honest": 9909,
         "store_hours": 200,
-        "alerts": 371,
-        "precision": 0.687,
-        "recall": 0.515,
-        "recall_alert_or_review": 0.842,
-        "false_alerts": 116,
-        "false_alerts_per_hour": 0.58,
-        "false_alerts_per_1000_honest_visitors": 11.71,
-        "reviews_on_honest_per_hour": 3.78,
-        "flagged_item_precision": 0.327,
-        "basket_exact_match": 0.764,
-        "basket_item_precision": 0.891,
-        "basket_item_recall": 0.894,
+        "alerts": 351,
+        "precision": 0.709,
+        "recall": 0.503,
+        "recall_alert_or_review": 0.832,
+        "false_alerts": 102,
+        "false_alerts_per_hour": 0.51,
+        "false_alerts_per_1000_honest_visitors": 10.29,
+        "reviews_on_honest_per_hour": 3.995,
+        "flagged_item_precision": 0.313,
+        "basket_exact_match": 0.755,
+        "basket_item_precision": 0.889,
+        "basket_item_recall": 0.89,
         "decision_latency_s_p50": 5.0,
-        "decision_latency_s_p95": 47.58,
+        "decision_latency_s_p95": 35.75,
         "recall_by_theft_type": {
           "thief_conceal_partial": {
             "thieves": 176,
-            "alerted": 96,
-            "alert_or_review": 139
+            "alerted": 101,
+            "alert_or_review": 146
           },
           "thief_open_partial": {
             "thieves": 104,
-            "alerted": 6,
-            "alert_or_review": 76
+            "alerted": 5,
+            "alert_or_review": 75
           },
           "thief_walkout": {
             "thieves": 215,
-            "alerted": 153,
-            "alert_or_review": 202
+            "alerted": 143,
+            "alert_or_review": 191
           }
         },
         "false_alerts_by_shopper_type": {
-          "normal": 56,
-          "cooler_tap": 21,
-          "group": 26,
-          "browse_putback": 11,
-          "pocket_then_pay": 1,
+          "normal": 52,
+          "browse_putback": 17,
+          "cooler_tap": 11,
+          "group": 18,
+          "pocket_then_pay": 3,
           "linger": 1
         },
         "sim_notes": {
           "id_switches": 308,
           "id_swaps": 195,
-          "missed_picks": 1484,
-          "missed_putbacks": 349,
-          "category_confusions": 561,
-          "false_conceals": 506,
-          "false_picks": 275,
-          "missed_exits": 209,
-          "missed_conceals": 263,
-          "crowded_picks": 231,
-          "crowd_swaps": 54,
-          "pos_dropped": 84
+          "missed_picks": 1580,
+          "missed_putbacks": 371,
+          "category_confusions": 560,
+          "false_conceals": 483,
+          "false_picks": 299,
+          "missed_exits": 213,
+          "missed_conceals": 258,
+          "crowded_picks": 230,
+          "crowd_swaps": 50,
+          "pos_dropped": 86
         },
         "crowd_pairs": 21,
-        "events": 57228,
-        "ledger_events_per_s": 41328,
+        "events": 57160,
+        "ledger_events_per_s": 39031,
         "wall_s": {
-          "simulate": 2.43,
-          "ledger": 1.38
+          "simulate": 2.47,
+          "ledger": 1.46
         },
         "threshold_sweep": [
           {
             "threshold": 0.4,
-            "precision": 0.324,
-            "recall": 0.842,
-            "false_alerts_per_hour": 4.36
+            "precision": 0.314,
+            "recall": 0.832,
+            "false_alerts_per_hour": 4.505
           },
           {
             "threshold": 0.5,
-            "precision": 0.507,
-            "recall": 0.723,
-            "false_alerts_per_hour": 1.74
+            "precision": 0.496,
+            "recall": 0.693,
+            "false_alerts_per_hour": 1.745
           },
           {
             "threshold": 0.6,
-            "precision": 0.627,
-            "recall": 0.646,
-            "false_alerts_per_hour": 0.95
+            "precision": 0.61,
+            "recall": 0.61,
+            "false_alerts_per_hour": 0.965
           },
           {
             "threshold": 0.65,
-            "precision": 0.649,
-            "recall": 0.545,
-            "false_alerts_per_hour": 0.73
+            "precision": 0.666,
+            "recall": 0.543,
+            "false_alerts_per_hour": 0.675
           },
           {
             "threshold": 0.7,
-            "precision": 0.687,
-            "recall": 0.515,
-            "false_alerts_per_hour": 0.58
+            "precision": 0.709,
+            "recall": 0.503,
+            "false_alerts_per_hour": 0.51
           },
           {
             "threshold": 0.75,
-            "precision": 0.698,
-            "recall": 0.457,
-            "false_alerts_per_hour": 0.49
+            "precision": 0.724,
+            "recall": 0.44,
+            "false_alerts_per_hour": 0.415
           },
           {
             "threshold": 0.8,
-            "precision": 0.697,
-            "recall": 0.325,
-            "false_alerts_per_hour": 0.35
+            "precision": 0.715,
+            "recall": 0.329,
+            "false_alerts_per_hour": 0.325
           },
           {
             "threshold": 0.85,
-            "precision": 0.703,
-            "recall": 0.224,
-            "false_alerts_per_hour": 0.235
+            "precision": 0.72,
+            "recall": 0.218,
+            "false_alerts_per_hour": 0.21
           },
           {
             "threshold": 0.9,
-            "precision": 0.732,
-            "recall": 0.143,
-            "false_alerts_per_hour": 0.13
+            "precision": 0.792,
+            "recall": 0.154,
+            "false_alerts_per_hour": 0.1
           }
         ],
         "payment_mode": "pos",
@@ -189,65 +189,65 @@
         "thieves": 495,
         "honest": 9909,
         "store_hours": 200,
-        "alerts": 237,
-        "precision": 0.502,
-        "recall": 0.24,
-        "recall_alert_or_review": 0.671,
-        "false_alerts": 118,
-        "false_alerts_per_hour": 0.59,
-        "false_alerts_per_1000_honest_visitors": 11.91,
-        "reviews_on_honest_per_hour": 5.58,
-        "flagged_item_precision": 0.189,
-        "basket_exact_match": 0.582,
-        "basket_item_precision": 0.798,
+        "alerts": 245,
+        "precision": 0.457,
+        "recall": 0.226,
+        "recall_alert_or_review": 0.651,
+        "false_alerts": 133,
+        "false_alerts_per_hour": 0.665,
+        "false_alerts_per_1000_honest_visitors": 13.42,
+        "reviews_on_honest_per_hour": 5.31,
+        "flagged_item_precision": 0.195,
+        "basket_exact_match": 0.58,
+        "basket_item_precision": 0.799,
         "basket_item_recall": 0.795,
         "decision_latency_s_p50": 5.0,
-        "decision_latency_s_p95": 81.61,
+        "decision_latency_s_p95": 62.75,
         "recall_by_theft_type": {
           "thief_conceal_partial": {
             "thieves": 176,
-            "alerted": 39,
-            "alert_or_review": 105
+            "alerted": 36,
+            "alert_or_review": 99
           },
           "thief_open_partial": {
             "thieves": 104,
-            "alerted": 9,
-            "alert_or_review": 49
+            "alerted": 4,
+            "alert_or_review": 51
           },
           "thief_walkout": {
             "thieves": 215,
-            "alerted": 71,
-            "alert_or_review": 178
+            "alerted": 72,
+            "alert_or_review": 172
           }
         },
         "false_alerts_by_shopper_type": {
-          "cooler_tap": 14,
-          "normal": 69,
-          "browse_putback": 14,
-          "group": 17,
-          "pocket_then_pay": 2,
-          "linger": 2
+          "normal": 74,
+          "pocket_then_pay": 4,
+          "group": 23,
+          "cooler_tap": 16,
+          "browse_putback": 15,
+          "linger": 1
         },
         "sim_notes": {
           "id_switches": 626,
           "id_swaps": 363,
-          "missed_picks": 3060,
-          "missed_exits": 384,
-          "false_conceals": 973,
-          "missed_conceals": 507,
-          "category_confusions": 1069,
-          "missed_putbacks": 734,
-          "false_picks": 637,
-          "crowded_picks": 204,
-          "crowd_swaps": 96,
-          "pos_dropped": 175
+          "missed_picks": 3095,
+          "missed_exits": 419,
+          "false_conceals": 914,
+          "missed_conceals": 483,
+          "category_confusions": 1035,
+          "missed_putbacks": 724,
+          "false_picks": 648,
+          "crowded_picks": 192,
+          "crowd_swaps": 110,
+          "pos_dropped": 174
         },
         "crowd_pairs": 21,
-        "events": 55895,
-        "ledger_events_per_s": 32926,
+        "events": 55869,
+        "ledger_events_per_s": 31557,
         "wall_s": {
-          "simulate": 2.31,
-          "ledger": 1.7
+          "simulate": 2.42,
+          "ledger": 1.77
         },
         "payment_mode": "pos",
         "noise": "pessimistic_2x"
@@ -297,10 +297,10 @@
         },
         "crowd_pairs": 21,
         "events": 58568,
-        "ledger_events_per_s": 42548,
+        "ledger_events_per_s": 39926,
         "wall_s": {
-          "simulate": 2.37,
-          "ledger": 1.38
+          "simulate": 2.66,
+          "ledger": 1.47
         },
         "payment_mode": "dwell",
         "noise": "perfect"
@@ -310,65 +310,65 @@
         "thieves": 495,
         "honest": 9909,
         "store_hours": 200,
-        "alerts": 253,
-        "precision": 0.621,
-        "recall": 0.317,
-        "recall_alert_or_review": 0.42,
-        "false_alerts": 96,
-        "false_alerts_per_hour": 0.48,
-        "false_alerts_per_1000_honest_visitors": 9.69,
-        "reviews_on_honest_per_hour": 1.56,
-        "flagged_item_precision": 0.371,
-        "basket_exact_match": 0.764,
-        "basket_item_precision": 0.891,
-        "basket_item_recall": 0.894,
+        "alerts": 231,
+        "precision": 0.628,
+        "recall": 0.293,
+        "recall_alert_or_review": 0.398,
+        "false_alerts": 86,
+        "false_alerts_per_hour": 0.43,
+        "false_alerts_per_1000_honest_visitors": 8.68,
+        "reviews_on_honest_per_hour": 1.53,
+        "flagged_item_precision": 0.357,
+        "basket_exact_match": 0.755,
+        "basket_item_precision": 0.889,
+        "basket_item_recall": 0.89,
         "decision_latency_s_p50": 5.0,
-        "decision_latency_s_p95": 74.95,
+        "decision_latency_s_p95": 70.04,
         "recall_by_theft_type": {
           "thief_conceal_partial": {
             "thieves": 176,
-            "alerted": 3,
-            "alert_or_review": 4
+            "alerted": 1,
+            "alert_or_review": 3
           },
           "thief_open_partial": {
             "thieves": 104,
             "alerted": 2,
-            "alert_or_review": 3
+            "alert_or_review": 4
           },
           "thief_walkout": {
             "thieves": 215,
-            "alerted": 152,
-            "alert_or_review": 201
+            "alerted": 142,
+            "alert_or_review": 190
           }
         },
         "false_alerts_by_shopper_type": {
-          "normal": 43,
-          "group": 22,
-          "browse_putback": 9,
-          "cooler_tap": 20,
-          "pocket_then_pay": 1,
+          "normal": 44,
+          "browse_putback": 15,
+          "cooler_tap": 11,
+          "group": 13,
+          "pocket_then_pay": 2,
           "linger": 1
         },
         "sim_notes": {
           "id_switches": 308,
           "id_swaps": 195,
-          "missed_picks": 1484,
-          "missed_putbacks": 349,
-          "category_confusions": 561,
-          "false_conceals": 506,
-          "false_picks": 275,
-          "missed_exits": 209,
-          "missed_conceals": 263,
-          "crowded_picks": 231,
-          "crowd_swaps": 54,
-          "pos_dropped": 84
+          "missed_picks": 1580,
+          "missed_putbacks": 371,
+          "category_confusions": 560,
+          "false_conceals": 483,
+          "false_picks": 299,
+          "missed_exits": 213,
+          "missed_conceals": 258,
+          "crowded_picks": 230,
+          "crowd_swaps": 50,
+          "pos_dropped": 86
         },
         "crowd_pairs": 21,
-        "events": 57228,
-        "ledger_events_per_s": 35981,
+        "events": 57160,
+        "ledger_events_per_s": 37076,
         "wall_s": {
-          "simulate": 2.3,
-          "ledger": 1.59
+          "simulate": 2.36,
+          "ledger": 1.54
         },
         "payment_mode": "dwell",
         "noise": "baseline"
@@ -378,65 +378,64 @@
         "thieves": 495,
         "honest": 9909,
         "store_hours": 200,
-        "alerts": 167,
-        "precision": 0.449,
-        "recall": 0.152,
-        "recall_alert_or_review": 0.38,
-        "false_alerts": 92,
-        "false_alerts_per_hour": 0.46,
-        "false_alerts_per_1000_honest_visitors": 9.28,
-        "reviews_on_honest_per_hour": 2.835,
-        "flagged_item_precision": 0.221,
-        "basket_exact_match": 0.582,
-        "basket_item_precision": 0.798,
+        "alerts": 185,
+        "precision": 0.411,
+        "recall": 0.154,
+        "recall_alert_or_review": 0.376,
+        "false_alerts": 109,
+        "false_alerts_per_hour": 0.545,
+        "false_alerts_per_1000_honest_visitors": 11.0,
+        "reviews_on_honest_per_hour": 2.73,
+        "flagged_item_precision": 0.216,
+        "basket_exact_match": 0.58,
+        "basket_item_precision": 0.799,
         "basket_item_recall": 0.795,
         "decision_latency_s_p50": 5.0,
-        "decision_latency_s_p95": 116.95,
+        "decision_latency_s_p95": 118.39,
         "recall_by_theft_type": {
           "thief_conceal_partial": {
             "thieves": 176,
-            "alerted": 2,
-            "alert_or_review": 6
+            "alerted": 3,
+            "alert_or_review": 10
           },
           "thief_open_partial": {
             "thieves": 104,
-            "alerted": 2,
-            "alert_or_review": 3
+            "alerted": 1,
+            "alert_or_review": 4
           },
           "thief_walkout": {
             "thieves": 215,
-            "alerted": 71,
-            "alert_or_review": 179
+            "alerted": 72,
+            "alert_or_review": 172
           }
         },
         "false_alerts_by_shopper_type": {
-          "cooler_tap": 14,
-          "normal": 50,
+          "group": 21,
+          "normal": 62,
+          "cooler_tap": 16,
           "browse_putback": 8,
-          "group": 17,
-          "linger": 2,
-          "pocket_then_pay": 1
+          "pocket_then_pay": 2
         },
         "sim_notes": {
           "id_switches": 626,
           "id_swaps": 363,
-          "missed_picks": 3060,
-          "missed_exits": 384,
-          "false_conceals": 973,
-          "missed_conceals": 507,
-          "category_confusions": 1069,
-          "missed_putbacks": 734,
-          "false_picks": 637,
-          "crowded_picks": 204,
-          "crowd_swaps": 96,
-          "pos_dropped": 175
+          "missed_picks": 3095,
+          "missed_exits": 419,
+          "false_conceals": 914,
+          "missed_conceals": 483,
+          "category_confusions": 1035,
+          "missed_putbacks": 724,
+          "false_picks": 648,
+          "crowded_picks": 192,
+          "crowd_swaps": 110,
+          "pos_dropped": 174
         },
         "crowd_pairs": 21,
-        "events": 55895,
-        "ledger_events_per_s": 31618,
+        "events": 55869,
+        "ledger_events_per_s": 30191,
         "wall_s": {
-          "simulate": 2.25,
-          "ledger": 1.77
+          "simulate": 2.19,
+          "ledger": 1.85
         },
         "payment_mode": "dwell",
         "noise": "pessimistic_2x"
@@ -565,5 +564,162 @@
       "payment_mode": "pos"
     }
   },
-  "bench_wall_s": 47.3
+  "toy_video": {
+    "data": "TOY DATA: 8 rendered 2D clips (bree render-toy)",
+    "rows": [
+      {
+        "clip": "conceal_partial_pay",
+        "person": "A",
+        "thief": true,
+        "stolen": [
+          "candy_bar"
+        ],
+        "tier": "alert",
+        "confidence": 0.775,
+        "flagged_items": [
+          "candy_bar"
+        ],
+        "decision_latency_s": 5.0
+      },
+      {
+        "clip": "crowd_cooler",
+        "person": "A",
+        "thief": false,
+        "stolen": [],
+        "tier": null,
+        "confidence": null,
+        "flagged_items": [],
+        "decision_latency_s": null
+      },
+      {
+        "clip": "crowd_cooler",
+        "person": "B",
+        "thief": false,
+        "stolen": [],
+        "tier": null,
+        "confidence": null,
+        "flagged_items": [],
+        "decision_latency_s": null
+      },
+      {
+        "clip": "group_one_pays",
+        "person": "A",
+        "thief": false,
+        "stolen": [],
+        "tier": null,
+        "confidence": null,
+        "flagged_items": [],
+        "decision_latency_s": null
+      },
+      {
+        "clip": "group_one_pays",
+        "person": "B",
+        "thief": false,
+        "stolen": [],
+        "tier": null,
+        "confidence": null,
+        "flagged_items": [],
+        "decision_latency_s": null
+      },
+      {
+        "clip": "linger",
+        "person": "A",
+        "thief": false,
+        "stolen": [],
+        "tier": null,
+        "confidence": null,
+        "flagged_items": [],
+        "decision_latency_s": null
+      },
+      {
+        "clip": "normal_pay",
+        "person": "A",
+        "thief": false,
+        "stolen": [],
+        "tier": null,
+        "confidence": null,
+        "flagged_items": [],
+        "decision_latency_s": null
+      },
+      {
+        "clip": "pocket_then_pay",
+        "person": "A",
+        "thief": false,
+        "stolen": [],
+        "tier": null,
+        "confidence": null,
+        "flagged_items": [],
+        "decision_latency_s": null
+      },
+      {
+        "clip": "put_back",
+        "person": "A",
+        "thief": false,
+        "stolen": [],
+        "tier": null,
+        "confidence": null,
+        "flagged_items": [],
+        "decision_latency_s": null
+      },
+      {
+        "clip": "walkout",
+        "person": "A",
+        "thief": true,
+        "stolen": [
+          "energy_drink"
+        ],
+        "tier": "alert",
+        "confidence": 0.775,
+        "flagged_items": [
+          "energy_drink"
+        ],
+        "decision_latency_s": 5.0
+      }
+    ],
+    "score": {
+      "people": 10,
+      "thieves": 2,
+      "alerts_on_thieves": 2,
+      "missed_thieves": 0,
+      "alerts_on_honest": 0,
+      "reviews_on_honest": 0,
+      "reviews_on_thieves": 0
+    },
+    "frames": 3652,
+    "pipeline_fps": 12.09,
+    "stage_ms_mean": {
+      "detect": 70.25,
+      "track": 2.07,
+      "events": 0.44,
+      "ledger": 0.03,
+      "render": 8.25
+    },
+    "alert_processing_latency_ms": [
+      446.63,
+      261.8
+    ]
+  },
+  "real_fps": {
+    "data": "OpenCV samples/data/vtest.avi (real pedestrians, 768x576 @ 10 fps, no theft labels)",
+    "hardware": {
+      "device": "cpu",
+      "device_name": "x86_64",
+      "cpu_count": 4,
+      "detect_model": "yolo26n.pt",
+      "pose_model": "yolo26n-pose.pt",
+      "imgsz": 640
+    },
+    "frames": 795,
+    "pipeline_fps": 10.13,
+    "stage_ms_mean": {
+      "detect": 88.27,
+      "track": 1.2,
+      "events": 0.74,
+      "ledger": 0.02,
+      "render": 6.97
+    },
+    "persons_tracked": 45,
+    "note": "zones are the example store's, so events on this street scene are meaningless; FPS only"
+  },
+  "bench_wall_s": 48.0
 }

@@ -1,0 +1,26 @@
+{
+  "frame": "/home/user/bree/data/real/vtest.avi",
+  "results": [
+    {
+      "model": "yolo26n.pt",
+      "imgsz": 640,
+      "onnx": "models/yolo26n.onnx",
+      "onnx_mb": 9.93,
+      "cpu_ms_pytorch": 43.8,
+      "cpu_ms_onnxruntime": 46.1,
+      "detections_pytorch": 9,
+      "detections_onnx": 9
+    },
+    {
+      "model": "yolo26n-pose.pt",
+      "imgsz": 160,
+      "onnx": "models/yolo26n-pose.onnx",
+      "onnx_mb": 11.86,
+      "cpu_ms_pytorch": 13.9,
+      "cpu_ms_onnxruntime": 8.2,
+      "detections_pytorch": 2,
+      "detections_onnx": 2
+    }
+  ],
+  "tensorrt_note": "Build TensorRT engines on the target: `yolo export model=yolo26n.pt format=engine half=True imgsz=640` on the Jetson itself."
+}

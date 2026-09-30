@@ -206,7 +206,7 @@ class WorldBuilder:
         for c in order:
             t += float(self.rng.uniform(8, 35))                  # walk + look
             if c is None:
-                p.touches.append((t, str(self.rng.choice(list(set(CATEGORY_ZONE.values()))))))
+                p.touches.append((t, str(self.rng.choice(sorted(set(CATEGORY_ZONE.values()))))))
             else:
                 self._take(p, t, c)
         return t

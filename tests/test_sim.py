@@ -65,3 +65,16 @@ def test_noise_makes_things_worse_not_better():
     noisy = run_event_bench(STORE, SimConfig(hours=40), VisionNoise().scaled(2), seed=3)
     assert noisy["recall"] < clean["recall"]
     assert noisy["basket_exact_match"] < clean["basket_exact_match"]
+
+
+def test_reproducible_across_processes():
+    """Same seed -> same numbers in a fresh interpreter (guards against set/hash ordering)."""
+    import subprocess, sys
+    code = ("from pathlib import Path;from bree.eval.metrics import run_event_bench;"
+            "from bree.events.zones import load_store_config;from bree.sim.events_sim import SimConfig, VisionNoise;"
+            f"s=load_store_config(r'{ROOT / 'configs' / 'store_gas_station_small.yaml'}');"
+            "r=run_event_bench(s, SimConfig(hours=15), VisionNoise(), 4);"
+            "print(r['precision'], r['recall'], r['false_alerts'], r['events'])")
+    outs = {subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,
+                           env={"PYTHONHASHSEED": str(h), "PATH": ""}).stdout for h in (1, 2, 3)}
+    assert len(outs) == 1 and outs.pop().strip()

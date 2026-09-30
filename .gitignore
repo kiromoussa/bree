@@ -10,6 +10,7 @@ models/*.onnx
 runs/
 out/
 results/*
+!results/export.json
 !results/bench.json
 !results/*.md
 *.mp4

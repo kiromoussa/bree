@@ -48,6 +48,58 @@ class Video:
     n_frames: int
     tracks: dict[int, Track]
     labels: np.ndarray   # (n_frames,) 0/1
+    fps: float = 15.0
+
+
+def split_gaps(tracks: dict[int, Track], max_gap: int = 2) -> dict[int, Track]:
+    """Split a track wherever frames are missing for more than max_gap frames (PoseLift tracks jump up to
+    740 frames), so windows, velocities and trigger runs never span a gap."""
+    out = {}
+    for pid, t in tracks.items():
+        cuts = np.flatnonzero(np.diff(t.frames) > max_gap + 1) + 1
+        for k, idx in enumerate(np.split(np.arange(len(t.frames)), cuts)):
+            out[pid * 1000 + k] = Track(t.frames[idx], t.kps[idx], t.bbox[idx])
+    return out
+
+
+def occupied(v: Video) -> np.ndarray:
+    """(n_frames,) True where at least one pose exists. Empty frames score 0 for free, so AUCs are reported
+    on occupied frames (and on all frames for reference)."""
+    m = np.zeros(v.n_frames, bool)
+    for t in v.tracks.values():
+        m[t.frames[t.frames < v.n_frames]] = True
+    return m
+
+
+def incident_chains(videos: list[Video], max_px: float = 20.0) -> dict[str, int]:
+    """PoseLift clips are consecutive cuts of continuous recordings: clip N's last pose and clip N+1's first
+    pose (same camera, next id) are the same person at the same moment. Join such neighbours into one
+    chain id so an incident never sits on both sides of a train/test split."""
+    def ends(v):
+        firsts = [(t.frames[0], t.kps[0]) for t in v.tracks.values() if len(t.frames)]
+        lasts = [(t.frames[-1], t.kps[-1]) for t in v.tracks.values() if len(t.frames)]
+        return ([k for f, k in firsts if f == min(f for f, _ in firsts)] if firsts else [],
+                [k for f, k in lasts if f == max(f for f, _ in lasts)] if lasts else [])
+    by_cam: dict[str, list[Video]] = {}
+    for v in videos:
+        by_cam.setdefault(v.cam, []).append(v)
+    chain, cid = {}, 0
+    for cam, vs in by_cam.items():
+        vs.sort(key=lambda v: int(v.name.split("_")[1]))
+        for a, b in zip([None] + vs[:-1], vs):
+            joined = False
+            if a is not None and int(b.name.split("_")[1]) == int(a.name.split("_")[1]) + 1:
+                _, la = ends(a)
+                fb, _ = ends(b)
+                for ka in la:
+                    for kb in fb:
+                        ok = (ka[:, 2] > 0) & (kb[:, 2] > 0)
+                        if ok.sum() >= 5 and np.median(np.linalg.norm(ka[ok, :2] - kb[ok, :2], axis=1)) < max_px:
+                            joined = True
+            if not joined:
+                cid += 1
+            chain[b.name] = cid
+    return chain
 
 
 def load_poselift(root: Path) -> list[Video]:
@@ -66,6 +118,7 @@ def load_poselift(root: Path) -> list[Video]:
                 kps = clean_kps(np.asarray([r[2] for r in rows], dtype=np.float32)[:, :, [1, 0, 2]])   # (y,x,c) -> (x,y,c)
                 tracks[pid] = Track(np.array([r[0] for r in rows]), kps,
                                     np.asarray([r[1] for r in rows], dtype=np.float32))
+            tracks = split_gaps(tracks)
             n = max(d) + 1 if d else 0
             if split == "test":
                 g = np.load(root / "GT" / f"{f.stem}.npy").astype(np.int8)
@@ -94,6 +147,7 @@ def load_retails(json_dir: Path, gt_dir: Path | None = None, split: str = "test"
             idx = np.array([int(k) for k in fr])
             tracks[int(pid)] = Track(idx, kps, kpt_box(kps))
             n = max(n, idx.max() + 1)
+        tracks = split_gaps(tracks)
         labels = np.zeros(n, np.int8)
         if gt_dir is not None:
             g = np.load(Path(gt_dir) / f"{f.stem}.npy").astype(np.int8)
@@ -239,15 +293,16 @@ def load_bundle(path: Path):
 # ---------- triggers (what an operator would see) ----------
 
 THRESH = {"model": (0.5, 0.7, 0.9), "rule": (0.25, 0.5, 0.75)}   # fixed up front, never tuned on eval data
-MIN_RUN, MERGE_S = 8, 10.0                                       # 0.5 s over threshold at 15 fps; merge within 10 s
+MIN_RUN_S, MERGE_S = 0.5, 10.0                                   # 0.5 s over threshold on one track; merge within 10 s
 
 
 def trigger_frames(scores: np.ndarray, frames: np.ndarray, th: float, fps: float = 15.0) -> list[int]:
-    """Frames where one track's score has stayed >= th for MIN_RUN frames; triggers closer than MERGE_S merge."""
+    """Frames where one track's score has stayed >= th for MIN_RUN_S; triggers closer than MERGE_S merge."""
+    need = max(int(round(MIN_RUN_S * fps)), 1)
     out, run, last_t = [], 0, -1e9
     for s, f in zip(scores, frames):
         run = run + 1 if s >= th else 0
-        if run == MIN_RUN:
+        if run == need:
             if f / fps - last_t > MERGE_S:
                 out.append(int(f))
             last_t = f / fps
@@ -255,11 +310,13 @@ def trigger_frames(scores: np.ndarray, frames: np.ndarray, th: float, fps: float
 
 
 def video_triggers(v: Video, per_track, th: float) -> list[int]:
-    return sorted(f for t in v.tracks.values() if len(t.frames) for f in trigger_frames(per_track(t), t.frames, th))
+    return sorted(f for t in v.tracks.values() if len(t.frames)
+                  for f in trigger_frames(per_track(t), t.frames, th, v.fps))
 
 
-def event_hit(v: Video, per_track, th: float, pad: int = 15) -> bool:
-    """Shoplifting video: did any trigger land inside a labelled interval (+-pad frames)?"""
+def event_hit(v: Video, per_track, th: float, pad: int = 0) -> bool:
+    """Shoplifting video: did a trigger fire on a labelled frame? Labels are per frame, not per person, so
+    any person's trigger counts; read it next to the clean-clip trigger rate."""
     pos = np.flatnonzero(v.labels)
     return any(((pos >= f - pad) & (pos <= f + pad)).any() for f in video_triggers(v, per_track, th))
 
@@ -299,6 +356,10 @@ def eer(y: np.ndarray, s: np.ndarray) -> float:
     return float((best[0] + best[1]) / 2)
 
 
-def metrics(y: np.ndarray, s: np.ndarray) -> dict:
+def metrics(y: np.ndarray, s: np.ndarray, mask: np.ndarray | None = None) -> dict:
+    """Headline numbers on frames with at least one pose (mask); `all_frames` keeps the unmasked AUC."""
+    out = {"all_frames_auc_roc": roc_auc(y, s)}
+    if mask is not None:
+        y, s = y[mask], s[mask]
     return {"auc_roc": roc_auc(y, s), "auc_pr": pr_auc(y, s), "eer": eer(y, s),
-            "n_frames": int(len(y)), "n_pos": int(y.sum())}
+            "n_frames": int(len(y)), "n_pos": int(y.sum()), **out}

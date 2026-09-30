@@ -20,7 +20,8 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from bree.conceal import MERGE_S, MIN_RUN, THRESH, video_triggers, Track, Video, frame_scores, load_bundle, metrics, model_track_scorer, rule_scores
+from bree.conceal import (THRESH, Track, Video, frame_scores, load_bundle, metrics, model_track_scorer, occupied,
+                          rule_scores, split_gaps, video_triggers)
 
 U = Path("data/ucf_crime")
 CACHE = Path("out/ucf_tracks")
@@ -79,7 +80,7 @@ def to_video(npz: Path, labels_src=None) -> Video:
     if labels_src:   # official temporal annotation, in source-frame numbers
         for s, e in labels_src:
             labels[s // step:e // step + 1] = 1
-    return Video(npz.stem, "ucf", "test", n15, tracks, labels)
+    return Video(npz.stem, "ucf", "test", n15, split_gaps(tracks), labels, fps=float(d["src_fps"]) / step)
 
 
 
@@ -112,15 +113,16 @@ if __name__ == "__main__":
 
     bundle = load_bundle(Path("models/conceal_poselift.pt"))
     scorers = {"model": model_track_scorer(bundle), "rule": rule_scores}
-    hours = sum(v.n_frames for v in norm_v) / FPS / 3600
+    hours = sum(v.n_frames / v.fps for v in norm_v) / 3600   # effective fps = source fps / step (not always 15)
     res = {"dataset": "UCF-Crime official test split (Dropbox of the authors), evaluation only",
            "perception": {**hw.to_dict(), "fps": FPS}, "model": "models/conceal_poselift.pt",
            "shoplifting": {"videos": [v.name for v in shop_v]},
            "normal": {"videos": [v.name for v in norm_v], "hours": hours}}
     y = np.concatenate([v.labels for v in shop_v])
+    occ = np.concatenate([occupied(v) for v in shop_v])
     for k, sc in scorers.items():
         s = np.concatenate([frame_scores(v, sc) for v in shop_v])
-        res["shoplifting"][k] = metrics(y, s)
+        res["shoplifting"][k] = metrics(y, s, occ)
         res["normal"][k] = {"triggers_per_hour_at": {str(th): sum(len(video_triggers(v, sc, th)) for v in norm_v) / hours
                                                       for th in THRESH[k]}}
         print(k, res["shoplifting"][k], res["normal"][k], flush=True)

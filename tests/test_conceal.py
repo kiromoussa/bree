@@ -50,3 +50,25 @@ def test_pr_auc_ignores_order_of_ties():
     y1, y2 = np.array([1, 0, 1, 0]), np.array([0, 1, 0, 1])
     s = np.array([0.5, 0.5, 0.5, 0.5])
     assert pr_auc(y1, s) == pr_auc(y2, s) == 0.5
+
+
+def test_split_gaps_cuts_tracks_at_missing_frames():
+    from bree.conceal import split_gaps
+    t = _track(6, True)
+    t.frames = np.array([0, 1, 2, 10, 11, 12])
+    parts = split_gaps({7: t})
+    assert sorted(len(p.frames) for p in parts.values()) == [3, 3]
+
+
+def test_triggers_need_half_a_second_at_the_video_fps():
+    from bree.conceal import trigger_frames
+    s, f = np.ones(20), np.arange(20)
+    assert trigger_frames(s, f, 0.5, fps=15) == [7]      # 8 frames = 0.5 s at 15 fps
+    assert trigger_frames(s, f, 0.5, fps=10) == [4]      # 5 frames at 10 fps
+
+
+def test_metrics_mask_drops_empty_frames():
+    from bree.conceal import metrics
+    y = np.array([0, 0, 1, 1]); s = np.array([0.0, 0.6, 0.5, 0.9]); m = np.array([False, True, True, True])
+    r = metrics(y, s, m)
+    assert r["n_frames"] == 3 and r["all_frames_auc_roc"] > r["auc_roc"]

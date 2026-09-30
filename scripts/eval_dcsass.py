@@ -23,7 +23,7 @@ if __name__ == "__main__":
     hw = detect_hardware()
     backend = YoloBackend(f"models/{hw.pose_model}", f"models/{hw.detect_model}", {}, device=hw.device,
                           imgsz=hw.imgsz, products=False)
-    rows = [r for r in csv.reader(open(D / "Labels/Shoplifting.csv")) if len(r) == 3 and r[2] in "01"]
+    rows = [r for r in csv.reader(open(D / "Labels/Shoplifting.csv")) if len(r) == 3 and r[2] in ("0", "1")]
     clips = []
     for name, _, lab in rows:
         f = D / "Shoplifting" / f"{name.rsplit('_', 1)[0]}.mp4" / f"{name}.mp4"

@@ -123,24 +123,27 @@ def _real_tables(rd: dict) -> list[str]:
         L.append(f"\n## Pose/track layer on MERL Shopping ({m['n_videos']} test videos, {m['minutes']:.0f} min, overhead camera, {m['hardware']['device']})")
         L.append(f"Reach recall {100*m['reach_recall']:.1f}% of {m['reach_instances']} labelled reaches; "
                  f"{m['false_reach_runs_per_min']:.2f} false reaches / min; {m['extra_person_tracks_per_video']:.1f} extra person track ids per single-shopper video.")
-    for key, title in (("conceal_poselift", "PoseLift (held-out videos)"),):
-        c = rd.get(key)
-        if c:
-            cv = c["protocols"]["cv5_by_video"]["pooled_out_of_fold_over_seeds"]
-            L.append(f"\n## Concealment: {title}, 5-fold by video x 3 seeds ({cv['model']['n_frames']} frames, {cv['model']['n_pos']} shoplifting)")
-            L.append("| scorer | AUC-ROC | AUC-PR | EER |")
-            L.append("|---|---|---|---|")
-            for k in ("rule", "model"):
-                r = cv[k]
-                L.append(f"| {k} | {r['auc_roc']['mean']:.3f} +- {r['auc_roc']['std']:.3f} | {r['auc_pr']['mean']:.3f} +- {r['auc_pr']['std']:.3f} | {r['eer']['mean']:.3f} +- {r['eer']['std']:.3f} |")
-            ev = c["protocols"]["cv5_by_video"].get("events_pooled_over_folds_and_seeds", {})
-            for k, by in ev.items():
-                L.append(f"{k} events: " + "; ".join(f"th {th}: {c2['pos_hit']}/{c2['pos']} shoplifting clips caught, "
-                                                    f"{c2['neg_triggered']}/{c2['neg']} clean clips triggered" for th, c2 in by.items()))
-            lo = c["protocols"].get("leave_one_camera_out", [])
-            if lo:
-                L.append("Leave one camera out, AUC-ROC rule / model: " + ", ".join(
-                    f"cam {r['camera']} {r['rule']['auc_roc']:.2f} / {r['model']['auc_roc']:.2f}" for r in lo))
+    c = rd.get("conceal_poselift")
+    if c:
+        p = c["protocols"]
+        cv = p["cv5_by_incident_chain"]["pooled_out_of_fold_over_seeds"]
+        L.append(f"\n## Concealment: PoseLift held-out incident chains, 5 folds x 3 seeds ({cv['model']['n_frames']} frames with a pose, {cv['model']['n_pos']} shoplifting)")
+        L.append("| scorer | AUC-ROC | AUC-PR | EER | AUC-ROC incl. empty frames | per-fold AUC-ROC mean [min-max] |")
+        L.append("|---|---|---|---|---|---|")
+        for k in ("rule", "model"):
+            r = cv[k]
+            f = r["per_fold_auc_roc"]
+            L.append(f"| {k} | {r['auc_roc']['mean']:.3f} +- {r['auc_roc']['std']:.3f} | {r['auc_pr']['mean']:.3f} | {r['eer']['mean']:.3f} | "
+                     f"{r['all_frames_auc_roc']['mean']:.3f} | {f['mean']:.3f} [{f['min']:.2f}-{f['max']:.2f}] |")
+        for k, by in p["cv5_by_incident_chain"]["events_per_unique_clip_mean_over_seeds"].items():
+            L.append(f"{k} events per unique clip: " + "; ".join(
+                f"th {th}: {c2['pos_hit']:.1f}/{c2['pos']:.0f} shoplifting clips, {c2['neg_triggered']:.1f}/{c2['neg']:.0f} clean clips triggered"
+                for th, c2 in by.items()))
+        lo = p.get("leave_one_camera_out", [])
+        if lo:
+            L.append("Leave one camera out, AUC-ROC rule / model: " + ", ".join(
+                f"cam {r['camera']} {r['rule']['auc_roc']:.2f} / {r['model']['auc_roc']:.2f}" for r in lo)
+                + f" (mean {p['leave_one_camera_out_mean_auc_roc']['rule']:.3f} / {p['leave_one_camera_out_mean_auc_roc']['model']:.3f})")
     for key, title in (("conceal_retails", "RetailS (evaluation only)"), ("conceal_ucf", "UCF-Crime through our pipeline (evaluation only)")):
         c = rd.get(key)
         if not c:

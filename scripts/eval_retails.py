@@ -15,7 +15,8 @@ from pathlib import Path
 
 import numpy as np
 
-from bree.conceal import MERGE_S, MIN_RUN, THRESH, trigger_frames, video_triggers, frame_scores, load_bundle, load_poselift, load_retails, metrics, model_track_scorer, rule_scores
+from bree.conceal import (MERGE_S, MIN_RUN_S, THRESH, event_hit, frame_scores, load_bundle, load_poselift, load_retails,
+                          metrics, model_track_scorer, occupied, rule_scores, trigger_frames, video_triggers)
 
 R = Path("data/retails/RetailS")
 FPS = 15.0
@@ -27,7 +28,7 @@ scorers = {"model": model_track_scorer(bundle), "rule": rule_scores}
 
 res = {"dataset": "RetailS (TeCSAR-UNCC), evaluation only, no license stated",
        "model": "models/conceal_poselift.pt (trained on all PoseLift)", "trigger_rule":
-       f">= {MIN_RUN} consecutive frames over threshold per track, merged within {MERGE_S:.0f} s, {FPS:.0f} fps"}
+       f">= {MIN_RUN_S} s over threshold on one track (tracks split at frame gaps), merged within {MERGE_S:.0f} s, {FPS:.0f} fps"}
 
 staged = load_retails(R / "RetailS_test_staged/pose/test", R / "RetailS_test_staged/gt/test_frame_mask")
 poselift_names = {p.stem for p in Path("data/poselift/PoseLift/Pickle_files/Test").glob("*.pkl")}
@@ -35,12 +36,18 @@ overlap = [v.name for v in staged if f"{int(v.name.split('_')[0])}_{int(v.name.s
     if all(len(v.name.split("_")) == 2 for v in staged) else []
 res["staged"] = {"n_videos": len(staged), "names_overlapping_poselift_test": overlap}
 y = np.concatenate([v.labels for v in staged])
+occ = np.concatenate([occupied(v) for v in staged])
+pos_clips = [v for v in staged if v.labels.any()]
+neg_clips = [v for v in staged if not v.labels.any()]
 for k, sc in scorers.items():
     s = np.concatenate([frame_scores(v, sc) for v in staged])
-    res["staged"][k] = metrics(y, s)
-    res["staged"][k]["recall_at"] = {str(t): float((s[y == 1] >= t).mean()) for t in THRESH[k]}
-    res["staged"][k]["frame_fpr_at"] = {str(t): float((s[y == 0] >= t).mean()) for t in THRESH[k]}
-    print("staged", k, {m: round(v, 3) for m, v in res["staged"][k].items() if isinstance(v, float)}, flush=True)
+    res["staged"][k] = metrics(y, s, occ)
+    res["staged"][k]["recall_at"] = {str(t): float((s[occ & (y == 1)] >= t).mean()) for t in THRESH[k]}
+    res["staged"][k]["frame_fpr_at"] = {str(t): float((s[occ & (y == 0)] >= t).mean()) for t in THRESH[k]}
+    res["staged"][k]["events"] = {str(t): {"pos": len(pos_clips), "pos_hit": sum(event_hit(v, sc, t) for v in pos_clips),
+                                            "neg": len(neg_clips), "neg_triggered": sum(bool(video_triggers(v, sc, t)) for v in neg_clips)}
+                                  for t in THRESH[k]}
+    print("staged", k, {m: round(v, 3) for m, v in res["staged"][k].items() if isinstance(v, float)}, res["staged"][k]["events"], flush=True)
 
 files = sorted((R / "RetailS_train/pose/train").glob("*.json"))
 pick = sorted(np.random.default_rng(0).choice(len(files), min(N_NORMAL, len(files)), replace=False))

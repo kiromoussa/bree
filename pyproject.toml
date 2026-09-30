@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bree-vision"
+version = "0.1.0"
+description = "BREE store vision: cashierless checkout + theft detection from the same event pipeline"
+readme = "README.md"
+requires-python = ">=3.11"
+# Core deps are pinned. The event/ledger/sim core only needs numpy + pyyaml;
+# the vision extras pull in torch/ultralytics.
+dependencies = [
+    "numpy==2.4.6",
+    "pyyaml==6.0.3",
+]
+
+[project.optional-dependencies]
+vision = [
+    "torch==2.14.0",
+    "torchvision==0.29.0",
+    "ultralytics==8.4.166",
+    "supervision==0.30.6",
+    "opencv-python-headless==5.0.0.93",
+    "lap==0.5.13",
+]
+export = [
+    "onnx==1.23.1",
+    "onnxruntime==1.30.0",
+]
+dev = [
+    "pytest==9.1.1",
+]
+
+[project.scripts]
+bree = "bree.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = [
+    "vision: needs torch/ultralytics and model weights (smoke tests)",
+]

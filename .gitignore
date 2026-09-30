@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+data/*
+!data/README.md
+models/*.pt
+models/*.onnx
+runs/
+out/
+results/*
+!results/bench.json
+!results/*.md
+*.mp4
+*.avi
+!docs/**/*.gif

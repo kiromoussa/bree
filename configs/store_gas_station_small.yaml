@@ -1,0 +1,88 @@
+# Example layout: small gas station convenience store, ONE ceiling camera in the
+# corner above the register, looking back toward the cooler wall.
+#
+#   +-----------------------------------------------------------+
+#   |   COOLER BANK (5 doors, back wall)                        |
+#   |                                                           |
+#   |    [shelf A]      [shelf B]      [shelf C]                |
+#   |                                                +--------+ |
+#   |                                                |REGISTER| |
+#   | DOOR                                           +--------+ |
+#   +-----------------------------------------------------------+
+#
+# Polygons are camera pixel coordinates (x, y) for a 1280x720 stream. These are
+# placeholders: for each real store, draw them on a still frame from that camera
+# (scripts/draw_zones.py prints clicked coordinates).
+store:
+  name: "Example gas station c-store (single camera)"
+
+camera:
+  id: cam_main
+  resolution: [1280, 720]
+  fps: 15
+
+zones:
+  - name: cooler_bank          # reach-in coolers along the back wall
+    kind: cooler
+    polygon: [[180, 40], [1100, 40], [1100, 150], [180, 150]]
+  - name: shelf_A              # candy / snacks gondola
+    kind: shelf
+    polygon: [[250, 230], [390, 230], [390, 460], [250, 460]]
+  - name: shelf_B              # chips / jerky gondola
+    kind: shelf
+    polygon: [[520, 230], [660, 230], [660, 460], [520, 460]]
+  - name: shelf_C              # auto / phone accessories / lighters
+    kind: shelf
+    polygon: [[790, 230], [930, 230], [930, 460], [790, 460]]
+  - name: register             # customer side of the counter
+    kind: register
+    polygon: [[1000, 420], [1270, 420], [1270, 700], [1000, 700]]
+  - name: door
+    kind: exit
+    polygon: [[0, 520], [170, 520], [170, 720], [0, 720]]
+
+# External payment terminals and the zone each one sits in.
+terminals:
+  pos_1: register              # POS at the counter
+  cooler_tap_1: cooler_bank    # card/RFID tap reader on the cooler doors (cashierless mode)
+
+# What the detector outputs -> item category used by the ledger.
+# COCO has "bottle" and little else useful; a store-specific product model replaces this.
+product_classes:
+  bottle: soda_bottle
+  cup: soda_bottle
+  cell phone: phone_accessory
+
+# SKU -> category. The POS reports SKUs; vision reports categories.
+catalog:
+  COKE-20OZ:     {category: soda_bottle, price: 2.49}
+  PEPSI-20OZ:    {category: soda_bottle, price: 2.49}
+  WATER-1L:      {category: water_bottle, price: 1.99}
+  REDBULL-12OZ:  {category: energy_drink, price: 3.99}
+  MONSTER-16OZ:  {category: energy_drink, price: 3.49}
+  BUD-6PK:       {category: beer_pack, price: 10.99}
+  SNICKERS:      {category: candy_bar, price: 1.79}
+  REESES:        {category: candy_bar, price: 1.79}
+  LAYS-CLASSIC:  {category: chips_bag, price: 2.29}
+  DORITOS-NACHO: {category: chips_bag, price: 2.29}
+  JACKLINKS-3OZ: {category: jerky, price: 7.99}
+  USB-C-CABLE:   {category: phone_accessory, price: 12.99}
+  BIC-LIGHTER:   {category: lighter, price: 2.49}
+
+# Event-engine thresholds (see src/bree/events/engine.py: EngineRules).
+rules:
+  foot_point: bottom
+  hold_radius_px: 60
+  hold_min_frames: 3
+  reach_window_s: 1.5
+  crowd_window_s: 1.0
+  release_s: 0.5
+  register_dwell_s: 2.5
+  person_lost_s: 1.5
+
+# Ledger settings (see src/bree/ledger/ledger.py: LedgerConfig).
+ledger:
+  payment_mode: pos            # "pos" if we get a POS feed, "dwell" if not
+  alert_threshold: 0.7
+  review_threshold: 0.4
+  exit_grace_s: 5.0

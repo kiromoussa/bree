@@ -1,0 +1,366 @@
+"""Rule-based store event engine: per-frame perception -> store events.
+
+Readable heuristics, one rule per event. All thresholds live in `EngineRules`
+and can be overridden from the store YAML (`rules:` section).
+
+  ENTER    first frame a person track appears.
+  PICK     a product track shows up in someone's hand (within hold_radius of a
+           wrist, outside any shelf/cooler zone) for hold_min_frames, shortly
+           after that person's wrist was inside a shelf/cooler zone. The pick is
+           credited to that zone. If other people reached into the same zone at
+           about the same time, they are listed as candidates (crowded pick).
+  PUT_BACK an in-hand product leaves the hand while the hand or the product is
+           inside a shelf/cooler zone.
+  CONCEAL  an in-hand product vanishes (track lost) while it was inside the
+           person's torso box (shoulders-to-hips: pockets, waistband, bag at the
+           hip) and the person is NOT at the register.
+  PAY      person's feet stay in the register zone for register_dwell_s
+           (phase=start), then leave it (phase=end). The actual payment content
+           comes from the POS via the ledger.
+  EXIT     person track ends while their feet were in the exit zone, after
+           having been inside the store. Carries the items still in hand.
+
+What happens to an in-hand product that is released anywhere else (on the
+counter, or just lost to occlusion) is logged but produces no event.
+"""
+from __future__ import annotations
+
+import math
+from dataclasses import dataclass, field
+
+from bree.events.observations import FrameObs, PersonObs, ProductObs
+from bree.events.types import Event, EventType
+from bree.events.zones import StoreConfig
+
+
+@dataclass
+class EngineRules:
+    kpt_conf: float = 0.3
+    foot_point: str = "bottom"      # "bottom" for angled CCTV, "center" for top-down views
+    hold_radius_px: float = 60.0    # product centre within this of a wrist = in that hand
+    hold_min_frames: int = 3        # consecutive-ish frames in hand before we believe it
+    reach_window_s: float = 1.5     # in-hand item appearing this soon after a reach = pick from that zone
+    crowd_window_s: float = 1.0     # others reaching into the same zone within this = ambiguous pick
+    release_s: float = 0.5          # in-hand item away from the hand this long = released
+    relink_s: float = 1.0           # same-category item reappearing in hand this soon = same item (occlusion)
+    torso_margin: float = 0.25
+    register_dwell_s: float = 2.5
+    register_leave_s: float = 0.7   # brief steps out of the register zone don't end the visit
+    person_lost_s: float = 1.5      # person unseen this long = gone (exit if at the door, else lost)
+    min_store_time_s: float = 2.0   # shorter tracks never count as a store visit
+
+    @staticmethod
+    def from_dict(d: dict) -> "EngineRules":
+        known = EngineRules.__dataclass_fields__
+        return EngineRules(**{k: v for k, v in d.items() if k in known})
+
+
+@dataclass
+class Reach:
+    zone: str
+    wrist: str
+    t_start: float
+    t_end: float | None = None      # None while the wrist is still in the zone
+
+
+@dataclass
+class HeldItem:
+    product_id: int
+    category: str
+    t_first: float
+    frames: int = 1
+    confirmed: bool = False
+    confs: list[float] = field(default_factory=list)
+    t_near: float = 0.0                           # last time it was within reach of the holder's hand
+    near_zone: str | None = None                  # shelf/cooler zone hand or item was in, at t_near
+    near_torso: bool = False                      # item inside holder's torso box at t_near
+    at_register: bool = False                     # holder at register at t_near
+    released: bool = False
+
+
+@dataclass
+class PersonState:
+    pid: int
+    t_first: float
+    t_last: float
+    last: PersonObs
+    been_inside: bool = False                     # feet seen outside the exit zone
+    in_exit_zone: bool = False
+    wrist_zone: dict[str, str | None] = field(default_factory=dict)
+    reaches: list[Reach] = field(default_factory=list)
+    register_since: float | None = None
+    register_last_in: float | None = None
+    register_open: bool = False
+    held: dict[int, HeldItem] = field(default_factory=dict)
+    done: bool = False
+
+
+class EventEngine:
+    def __init__(self, store: StoreConfig, rules: EngineRules | None = None):
+        self.store = store
+        self.r = rules or EngineRules.from_dict(store.rules)
+        self.people: dict[int, PersonState] = {}
+        self.owner: dict[int, int] = {}          # product track id -> person id holding it
+        self.log: list[str] = []                 # non-event observations (occlusion losses etc.)
+        self.t = 0.0
+        self.frame = 0
+
+    # ------------------------------------------------------------------ main
+
+    def update(self, obs: FrameObs) -> list[Event]:
+        self.t, self.frame = obs.t, obs.frame
+        events: list[Event] = []
+        seen = set()
+        for po in obs.persons:
+            seen.add(po.track_id)
+            events += self._update_person(po)
+        events += self._update_products(obs.products)
+        events += self._check_releases()
+        events += self._check_gone(seen)
+        return events
+
+    def flush(self) -> list[Event]:
+        """End of stream: everyone still visible is treated as gone now."""
+        self.t += self.r.person_lost_s + 1e-3
+        return self._check_releases() + self._check_gone(set())
+
+    # --------------------------------------------------------------- persons
+
+    def _ev(self, type_: EventType, pid: int, **kw) -> Event:
+        return Event(type=type_, t=kw.pop("t", self.t), person_id=pid, frame=self.frame, **kw)
+
+    def _update_person(self, po: PersonObs) -> list[Event]:
+        events = []
+        ps = self.people.get(po.track_id)
+        if ps is None:
+            ps = PersonState(po.track_id, self.t, self.t, po)
+            self.people[po.track_id] = ps
+            events.append(self._ev(EventType.ENTER, po.track_id))
+        if ps.done:
+            return events
+        ps.t_last, ps.last = self.t, po
+
+        fx, fy = po.foot_point(self.r.foot_point)
+        exit_zone = self.store.zone_at(fx, fy, "exit")
+        ps.in_exit_zone = exit_zone is not None
+        if not ps.in_exit_zone:
+            ps.been_inside = True
+
+        # Register dwell -> PAY start / end.
+        reg = self.store.zone_at(fx, fy, "register")
+        if reg is not None:
+            if ps.register_since is None:
+                ps.register_since = self.t
+            ps.register_last_in = self.t
+            if not ps.register_open and self.t - ps.register_since >= self.r.register_dwell_s:
+                ps.register_open = True
+                events.append(self._ev(EventType.PAY, ps.pid, zone=reg.name,
+                                       meta={"phase": "start", "t_start": ps.register_since,
+                                             "source": "register_dwell"}))
+        elif ps.register_last_in is not None and self.t - ps.register_last_in > self.r.register_leave_s:
+            events += self._close_register(ps)
+
+        # Wrists in shelf/cooler zones -> reaches.
+        wrists = dict(po.wrists(self.r.kpt_conf))
+        for name in ("left", "right"):
+            p = wrists.get(name)
+            z = self.store.zone_at(p[0], p[1], "shelf", "cooler") if p else None
+            prev = ps.wrist_zone.get(name)
+            zname = z.name if z else None
+            if zname != prev:
+                if prev is not None:
+                    for rch in reversed(ps.reaches):
+                        if rch.zone == prev and rch.wrist == name and rch.t_end is None:
+                            rch.t_end = self.t
+                            break
+                if zname is not None:
+                    ps.reaches.append(Reach(zname, name, self.t))
+            ps.wrist_zone[name] = zname
+        # Keep reach history short.
+        horizon = self.t - max(self.r.reach_window_s, self.r.crowd_window_s) - 5.0
+        ps.reaches = [rc for rc in ps.reaches if rc.t_end is None or rc.t_end >= horizon]
+        return events
+
+    def _close_register(self, ps: PersonState) -> list[Event]:
+        events = []
+        if ps.register_open:
+            events.append(self._ev(EventType.PAY, ps.pid, t=ps.register_last_in, zone="register",
+                                   meta={"phase": "end", "t_start": ps.register_since,
+                                         "t_end": ps.register_last_in, "source": "register_dwell"}))
+            reg = self.store.zones_of("register")
+            if reg:
+                events[-1].zone = reg[0].name
+        ps.register_since = ps.register_last_in = None
+        ps.register_open = False
+        return events
+
+    def _check_gone(self, seen: set[int]) -> list[Event]:
+        events = []
+        for ps in self.people.values():
+            if ps.done or ps.pid in seen or self.t - ps.t_last < self.r.person_lost_s:
+                continue
+            ps.done = True
+            events += self._close_register(ps)
+            long_enough = ps.t_last - ps.t_first >= self.r.min_store_time_s
+            if ps.in_exit_zone and ps.been_inside and long_enough:
+                held = [h.category for h in ps.held.values() if h.confirmed and not h.released]
+                events.append(self._ev(EventType.EXIT, ps.pid, t=ps.t_last,
+                                       zone=self._exit_zone_name(),
+                                       meta={"held_items": held, "t_detected": self.t}))
+            else:
+                self.log.append(f"{self.t:.1f}s person {ps.pid} track lost inside store (no exit)")
+            for pid in list(ps.held):
+                self.owner.pop(pid, None)
+        return events
+
+    def _exit_zone_name(self) -> str | None:
+        z = self.store.zones_of("exit")
+        return z[0].name if z else None
+
+    # -------------------------------------------------------------- products
+
+    def _nearest_wrist(self, c: tuple[float, float]) -> tuple[PersonState | None, str | None, float]:
+        best, best_w, best_d = None, None, math.inf
+        for ps in self.people.values():
+            if ps.done or ps.t_last != self.t:
+                continue
+            for name, (wx, wy) in ps.last.wrists(self.r.kpt_conf):
+                d = math.hypot(c[0] - wx, c[1] - wy)
+                if d < best_d:
+                    best, best_w, best_d = ps, name, d
+        return best, best_w, best_d
+
+    def _update_products(self, products: list[ProductObs]) -> list[Event]:
+        events = []
+        for pr in products:
+            c = pr.center
+            ps, wrist, d = self._nearest_wrist(c)
+            near = ps is not None and d <= self.r.hold_radius_px
+            owner_id = self.owner.get(pr.track_id)
+
+            if owner_id is not None:
+                owner = self.people[owner_id]
+                h = owner.held[pr.track_id]
+                owner_near = near and ps.pid == owner_id
+                if not owner_near:
+                    # maybe the owner's other hand / slightly further: check owner's wrists directly
+                    owner_near = any(math.hypot(c[0] - wx, c[1] - wy) <= self.r.hold_radius_px
+                                     for _, (wx, wy) in owner.last.wrists(self.r.kpt_conf)) \
+                        if owner.t_last == self.t else False
+                if owner_near:
+                    self._touch(owner, h, pr)
+                elif near and ps.pid != owner_id and h.confirmed:
+                    # Handed to someone else. Move it without events (v1).
+                    self.log.append(f"{self.t:.1f}s item {pr.track_id} handed {owner_id}->{ps.pid}")
+                    del owner.held[pr.track_id]
+                    self.owner[pr.track_id] = ps.pid
+                    ps.held[pr.track_id] = h
+                    self._touch(ps, h, pr)
+                continue
+
+            # Not held yet. Stock sitting on a shelf is ignored until it leaves the zone in a hand.
+            if not near or self.store.zone_at(c[0], c[1], "shelf", "cooler") is not None:
+                continue
+            h = HeldItem(pr.track_id, pr.category, self.t)
+            self.owner[pr.track_id] = ps.pid
+            ps.held[pr.track_id] = h
+            self._touch(ps, h, pr, count=False)
+        # Confirm pending holds.
+        for ps in self.people.values():
+            for h in list(ps.held.values()):
+                if not h.confirmed and h.frames >= self.r.hold_min_frames:
+                    events += self._confirm(ps, h)
+        return events
+
+    def _touch(self, ps: PersonState, h: HeldItem, pr: ProductObs, count: bool = True) -> None:
+        if count:
+            h.frames += 1
+        h.confs.append(pr.conf)
+        h.t_near = self.t
+        c = pr.center
+        z = self.store.zone_at(c[0], c[1], "shelf", "cooler")
+        if z is None:
+            # hand inside a merch zone counts too (item held right at the shelf edge)
+            zs = [zn for zn in ps.wrist_zone.values() if zn]
+            h.near_zone = zs[0] if zs else None
+        else:
+            h.near_zone = z.name
+        x1, y1, x2, y2 = ps.last.torso_box(self.r.torso_margin, self.r.kpt_conf)
+        h.near_torso = x1 <= c[0] <= x2 and y1 <= c[1] <= y2
+        fx, fy = ps.last.foot_point(self.r.foot_point)
+        h.at_register = self.store.zone_at(fx, fy, "register") is not None
+
+    def _confirm(self, ps: PersonState, h: HeldItem) -> list[Event]:
+        h.confirmed = True
+        # Same-category item that we recently lost from this hand? Then it's the same item
+        # coming back from an occlusion, not a new pick.
+        for other in list(ps.held.values()):
+            if (other is not h and other.confirmed and not other.released
+                    and other.category == h.category and self.t - other.t_near <= self.r.relink_s
+                    and other.t_near < h.t_first):
+                del ps.held[other.product_id]
+                self.owner.pop(other.product_id, None)
+                self.log.append(f"{self.t:.1f}s person {ps.pid} {h.category} re-linked after occlusion")
+                return []
+        reach = self._recent_reach(ps, h.t_first)
+        if reach is None:
+            self.log.append(f"{self.t:.1f}s person {ps.pid} holding {h.category} with no reach (brought in / re-acquired)")
+            return []
+        others = self._crowd(ps, reach)
+        conf = sum(h.confs) / len(h.confs)
+        return [self._ev(EventType.PICK, ps.pid, t=h.t_first, item=h.category, zone=reach.zone,
+                         confidence=round(conf, 3),
+                         candidates=[ps.pid] + others if others else [],
+                         meta={"product_track": h.product_id, "t_confirmed": self.t})]
+
+    def _recent_reach(self, ps: PersonState, t: float) -> Reach | None:
+        best = None
+        for rc in ps.reaches:
+            end = rc.t_end if rc.t_end is not None else t
+            if rc.t_start <= t and t - end <= self.r.reach_window_s:
+                if best is None or end > (best.t_end or t):
+                    best = rc
+        return best
+
+    def _crowd(self, ps: PersonState, reach: Reach) -> list[int]:
+        w = self.r.crowd_window_s
+        r_end = reach.t_end if reach.t_end is not None else self.t
+        out = []
+        for q in self.people.values():
+            if q.pid == ps.pid or q.done:
+                continue
+            for rc in q.reaches:
+                q_end = rc.t_end if rc.t_end is not None else self.t
+                if rc.zone == reach.zone and rc.t_start <= r_end + w and q_end >= reach.t_start - w:
+                    out.append(q.pid)
+                    break
+        return out
+
+    def _check_releases(self) -> list[Event]:
+        events = []
+        for ps in self.people.values():
+            for h in list(ps.held.values()):
+                if self.t - h.t_near < self.r.release_s:
+                    continue
+                if not h.confirmed:           # never really held
+                    del ps.held[h.product_id]
+                    self.owner.pop(h.product_id, None)
+                    continue
+                if h.released or ps.done:
+                    continue
+                h.released = True
+                del ps.held[h.product_id]
+                self.owner.pop(h.product_id, None)
+                if h.near_zone is not None:
+                    events.append(self._ev(EventType.PUT_BACK, ps.pid, t=h.t_near, item=h.category,
+                                           zone=h.near_zone, meta={"product_track": h.product_id}))
+                elif h.near_torso and not h.at_register:
+                    conf = sum(h.confs) / len(h.confs)
+                    events.append(self._ev(EventType.CONCEAL, ps.pid, t=h.t_near, item=h.category,
+                                           confidence=round(0.8 * conf, 3),
+                                           meta={"product_track": h.product_id}))
+                elif h.at_register:
+                    self.log.append(f"{h.t_near:.1f}s person {ps.pid} set down {h.category} at register")
+                else:
+                    self.log.append(f"{h.t_near:.1f}s person {ps.pid} lost sight of {h.category} (no event)")
+        return events

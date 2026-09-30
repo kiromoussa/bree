@@ -278,12 +278,14 @@ def roc_auc(y: np.ndarray, s: np.ndarray) -> float:
 
 
 def pr_auc(y: np.ndarray, s: np.ndarray) -> float:
-    """Average precision."""
+    """Average precision; tied scores form one threshold step (order-independent)."""
     o = np.argsort(-s, kind="stable")
-    y = y[o].astype(bool)
-    tp = np.cumsum(y)
-    prec = tp / np.arange(1, len(y) + 1)
-    return float(prec[y].sum() / max(y.sum(), 1))
+    y, s = y[o].astype(bool), s[o]
+    last = np.r_[s[1:] != s[:-1], True]             # last index of each tie group
+    tp = np.cumsum(y)[last]
+    n = np.flatnonzero(last) + 1
+    new_tp = np.diff(np.r_[0, tp])
+    return float((new_tp * tp / n).sum() / max(y.sum(), 1))
 
 
 def eer(y: np.ndarray, s: np.ndarray) -> float:

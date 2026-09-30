@@ -34,14 +34,20 @@ def members(zpath, pattern):
 
 
 def extract(zpath: Path, member: str, backend, Tracker) -> Path:
-    name = Path(member).stem
-    out = CACHE / f"{name}.npz"
+    out = CACHE / f"{Path(member).stem}.npz"
     if out.exists():
         return out
     tmp = Path("out/ucf_tmp.mp4")
     with zipfile.ZipFile(zpath) as z, open(tmp, "wb") as f:
         f.write(z.read(member))
-    cap = cv2.VideoCapture(str(tmp))
+    return extract_file(tmp, out, backend, Tracker)
+
+
+def extract_file(video: Path, out: Path, backend, Tracker) -> Path:
+    """Detector + pose + tracker at 15 fps -> cached person tracks (boxes, keypoints, ids; no pixels)."""
+    if out.exists():
+        return out
+    cap = cv2.VideoCapture(str(video))
     src_fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
     step = max(int(round(src_fps / FPS)), 1)
     tracker = Tracker(src_fps / step)

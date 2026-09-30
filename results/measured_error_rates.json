@@ -1,0 +1,106 @@
+{
+ "vision_noise": {
+  "p_pick_detected": {
+   "assumed": 0.92,
+   "value": 0.6417657045840407,
+   "measured": true,
+   "source": "UPPER BOUND. MERL Shopping test split (28 real videos, overhead camera): share of 589 labelled reaches where our pose model put a wrist in the shelf zone. A pick also needs the product detected, which MERL can't measure (its products aren't COCO classes)."
+  },
+  "pick_conf_mean": {
+   "assumed": 0.85,
+   "value": 0.85,
+   "measured": false,
+   "source": "not measured: no labelled real data for this yet"
+  },
+  "p_false_pick_on_touch": {
+   "assumed": 0.05,
+   "value": 0.05,
+   "measured": false,
+   "source": "not measured: no labelled real data for this yet"
+  },
+  "p_putback_detected": {
+   "assumed": 0.85,
+   "value": 0.85,
+   "measured": false,
+   "source": "not measured: needs store footage with these events labelled (pilot shadow mode or staged session)"
+  },
+  "p_conceal_detected": {
+   "assumed": 0.6,
+   "value": 0.2764227642276423,
+   "measured": true,
+   "source": "PoseLift (real store, Apache-2.0), 5-fold by video x 3 seeds: 34/123 held-out shoplifting clips where the classifier (threshold 0.5) triggered inside the labelled interval."
+  },
+  "p_false_conceal": {
+   "assumed": 0.03,
+   "value": 0.16258169934640523,
+   "measured": true,
+   "source": "RetailS normal footage (36.4 h, real shoppers, evaluation only): share of 2448 person tracks (>= 2 s) with a classifier trigger at threshold 0.5. The simulator applies it per carried item, so this is a per-shopper stand-in."
+  },
+  "p_category_confusion": {
+   "assumed": 0.04,
+   "value": 0.04,
+   "measured": false,
+   "source": "not measured: needs store footage with these events labelled (pilot shadow mode or staged session)"
+  },
+  "p_crowd_candidates": {
+   "assumed": 0.9,
+   "value": 0.9,
+   "measured": false,
+   "source": "not measured: no labelled real data for this yet"
+  },
+  "p_crowd_swap": {
+   "assumed": 0.25,
+   "value": 0.25,
+   "measured": false,
+   "source": "not measured: needs store footage with these events labelled (pilot shadow mode or staged session)"
+  },
+  "p_visible_at_exit": {
+   "assumed": 0.65,
+   "value": 0.65,
+   "measured": false,
+   "source": "not measured: needs store footage with these events labelled (pilot shadow mode or staged session)"
+  },
+  "p_false_held_at_exit": {
+   "assumed": 0.03,
+   "value": 0.03,
+   "measured": false,
+   "source": "not measured: no labelled real data for this yet"
+  },
+  "p_register_visit_detected": {
+   "assumed": 0.97,
+   "value": 0.97,
+   "measured": false,
+   "source": "not measured: needs store footage with these events labelled (pilot shadow mode or staged session)"
+  },
+  "p_exit_detected": {
+   "assumed": 0.98,
+   "value": 0.98,
+   "measured": false,
+   "source": "not measured: needs store footage with these events labelled (pilot shadow mode or staged session)"
+  },
+  "p_id_switch": {
+   "assumed": 0.03,
+   "value": 1.0,
+   "measured": true,
+   "source": "MERL test split: share of single-shopper videos (~2 min each) whose shopper got more than one track id. Overhead view, harder than an angled ceiling camera, so likely pessimistic for a real store."
+  },
+  "p_id_swap": {
+   "assumed": 0.01,
+   "value": 0.01,
+   "measured": false,
+   "source": "not measured: no labelled real data for this yet"
+  },
+  "p_pos_dropped": {
+   "assumed": 0.01,
+   "value": 0.01,
+   "measured": false,
+   "source": "not measured: needs the operator's POS export"
+  },
+  "pos_jitter_s": {
+   "assumed": 2.0,
+   "value": 2.0,
+   "measured": false,
+   "source": "not measured: needs the operator's POS export"
+  }
+ }
+}

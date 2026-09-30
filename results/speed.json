@@ -1,0 +1,62 @@
+{
+ "machine": "Apple M1 Max (macOS-26.5.1-arm64-arm-64bit)",
+ "video": "data/merl/Videos_MERL_Shopping_Dataset/27_1_crop.mp4",
+ "frames": 300,
+ "runs": [
+  {
+   "runtime": "pytorch cpu",
+   "detect_model": "yolo26n.pt",
+   "pose_model": "yolo26n-pose.pt",
+   "device": "cpu",
+   "fps": 22.216806533177547,
+   "ms_per_frame": 45.01096944363477,
+   "frames": 300
+  },
+  {
+   "runtime": "pytorch mps",
+   "detect_model": "yolo26n.pt",
+   "pose_model": "yolo26n-pose.pt",
+   "device": "mps",
+   "fps": 41.15685941532377,
+   "ms_per_frame": 24.297286386912067,
+   "frames": 300
+  },
+  {
+   "runtime": "onnxruntime cpu",
+   "detect_model": "yolo26n_640.onnx",
+   "pose_model": "yolo26n-pose_160.onnx",
+   "device": "cpu",
+   "fps": 23.312881040035087,
+   "ms_per_frame": 42.89474124981401,
+   "frames": 300
+  },
+  {
+   "runtime": "pytorch cpu",
+   "detect_model": "yolo26s.pt",
+   "pose_model": "yolo26s-pose.pt",
+   "device": "cpu",
+   "fps": 13.237975172422797,
+   "ms_per_frame": 75.54025347344577,
+   "frames": 300
+  },
+  {
+   "runtime": "pytorch mps",
+   "detect_model": "yolo26s.pt",
+   "pose_model": "yolo26s-pose.pt",
+   "device": "mps",
+   "fps": 40.465059757505784,
+   "ms_per_frame": 24.71267819676238,
+   "frames": 300
+  },
+  {
+   "runtime": "onnxruntime cpu",
+   "detect_model": "yolo26s_640.onnx",
+   "pose_model": "yolo26s-pose_160.onnx",
+   "device": "cpu",
+   "fps": 10.097189062880357,
+   "ms_per_frame": 99.03746416675858,
+   "frames": 300
+  }
+ ],
+ "note": "TensorRT needs an NVIDIA GPU (A100 / Jetson); not measurable on this machine."
+}

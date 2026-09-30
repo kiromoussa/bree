@@ -30,7 +30,7 @@ from bree.sim.events_sim import SimConfig, VisionNoise
 TEST_SEED = 2
 SPREAD_SEEDS = [2, 3, 4, 5, 6]
 NOISE_LEVELS = {"perfect": 0.0, "baseline": 1.0, "pessimistic_2x": 2.0}
-REAL_FILES = ("measured_error_rates", "merl_measure", "conceal_poselift", "conceal_retails", "conceal_ucf", "speed")
+REAL_FILES = ("measured_error_rates", "merl_measure", "conceal_poselift", "conceal_retails", "conceal_ucf", "conceal_dcsass", "speed")
 
 
 def measured_noise(root: Path) -> VisionNoise | None:
@@ -53,6 +53,8 @@ def event_level(store, hours: float, seed: int = TEST_SEED, measured: VisionNois
     levels = [(n, VisionNoise().scaled(k)) for n, k in NOISE_LEVELS.items()]
     if measured is not None:
         levels.append(("measured", measured))
+        # MERL's ID-switch rate comes from a straight-overhead camera (worst case): show its effect separately.
+        levels.append(("measured, id switch assumed", replace(measured, p_id_switch=VisionNoise().p_id_switch)))
         out["noise_model_measured"] = asdict(measured)
     for mode in ("pos", "dwell"):
         for name, noise in levels:
@@ -152,6 +154,15 @@ def _real_tables(rd: dict) -> list[str]:
             trig = ", ".join(f"{th}: {v:.2f}" for th, v in c["normal"][k]["triggers_per_hour_at"].items())
             L.append(f"| {k} | {t['auc_roc']:.3f} | {t['auc_pr']:.3f} | {t['eer']:.3f} | {trig} |")
         L.append(f"Test clips: {len(test.get('videos', [])) or test.get('n_videos')}; normal footage: {c['normal']['hours']:.1f} h.")
+    c = rd.get("conceal_dcsass")
+    if c:
+        L.append(f"\n## Concealment: DCSASS shoplifting clips through our pipeline (evaluation only, {c['n_clips']} clips, {c['n_shoplifting']} shoplifting)")
+        L.append("| scorer | clip AUC-ROC | AUC-PR | EER | clips triggered, shoplifting / normal |")
+        L.append("|---|---|---|---|---|")
+        for k in ("rule", "model"):
+            t = c[k]
+            trig = ", ".join(f"{th}: {100*v['shoplifting']:.0f}% / {100*v['normal']:.0f}%" for th, v in t["clip_trigger_rate"].items())
+            L.append(f"| {k} | {t['auc_roc']:.3f} | {t['auc_pr']:.3f} | {t['eer']:.3f} | {trig} |")
     me = rd.get("measured_error_rates")
     if me:
         L.append("\n## Measured vs assumed vision error rates (simulator parameters)")

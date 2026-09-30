@@ -44,3 +44,9 @@ def test_nan_keypoints_become_undetected():
     k[0, 3, 0] = np.nan
     c = clean_kps(k)
     assert not np.isnan(c).any() and c[0, 3].tolist() == [0, 0, 0] and c[1, 3, 2] == 1
+
+
+def test_pr_auc_ignores_order_of_ties():
+    y1, y2 = np.array([1, 0, 1, 0]), np.array([0, 1, 0, 1])
+    s = np.array([0.5, 0.5, 0.5, 0.5])
+    assert pr_auc(y1, s) == pr_auc(y2, s) == 0.5

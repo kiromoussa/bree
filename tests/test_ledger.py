@@ -415,3 +415,13 @@ def test_malformed_pay_meta_does_not_crash():
     L.on_event(Event(E.PAY, 20, 1, zone="register", meta={"t_start": 20, "t_end": None}))
     L.on_event(Event(E.PAY, 21, 2, zone="register", meta={"phase": "start", "t_start": None}))
     L.on_payment(pos(22, "COKE"))
+
+
+def test_max_hold_deadline_float_rounding_does_not_hang():
+    """t_exit + max_hold - t_exit can round to just below max_hold (seen in the simulator)."""
+    L = ledger()
+    t_exit = 16335.684158477141
+    ev = [enter(15942.460351798292, 1), enter(15942.5, 2), pick(16000, 1, "soda"), conceal(16001, 1, "soda"),
+          leave(t_exit, 1), enter(t_exit + 120.0, 3)]
+    alerts = L.replay(ev)
+    assert len(alerts) == 1 and not L.pending

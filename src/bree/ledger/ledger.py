@@ -219,7 +219,11 @@ class Ledger:
         """End of stream: advance the clock through every pending deadline."""
         out = []
         while self.pending:
+            before = (self.now, len(self.pending))
             out += self.tick(self.next_deadline())
+            if (self.now, len(self.pending)) == before:
+                out += self.tick(self.now + self.cfg.max_hold_s + 1.0)   # force everything out
+                break
         return out
 
     # ------------------------------------------------------------ basket ops
@@ -405,7 +409,7 @@ class Ledger:
         return [q for q in self.active.values() if q.t_exit is None or q.t_exit >= since]
 
     def _ready(self, p: PersonRecord) -> bool:
-        waited = self.now - p.t_exit
+        waited = self.now - p.t_exit + 1e-6          # epsilon: t_exit + hold - t_exit can round below hold
         if waited < self.cfg.exit_grace_s:
             return False
         if waited >= self.cfg.max_hold_s:
@@ -639,7 +643,10 @@ class Ledger:
             # Advance the clock through any decision deadlines before this item,
             # exactly as a live system ticking every frame would.
             while (d := self.next_deadline()) is not None and d <= t:
+                before = (self.now, len(self.pending))
                 out += self.tick(d)
+                if (self.now, len(self.pending)) == before:   # no progress possible: never spin
+                    break
             out += self.on_payment(x) if isinstance(x, Payment) else self.on_event(x)
         out += self.finalize()
         return out

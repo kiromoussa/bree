@@ -49,6 +49,12 @@ class LedgerConfig:
     w_no_register: float = 0.15      # person never went to the register
     ambiguous_factor: float = 0.5    # crowded pick: someone else may have taken it
     no_receipt_factor: float = 0.6   # went to the register but no receipt matched: likely a POS gap
+    min_conceal_conf: float = 0.3    # conceal detections below this are ignored
+    conceal_conf_ref: float = 0.6    # w_conceal is scaled by min(1, conceal_conf / this)
+    # "alert" needs corroboration: at least one unpaid item that was concealed or seen in hand
+    # at the exit, and more such items than unmatched paid items (a receipt we couldn't match to
+    # the basket is most likely a vision/POS category mismatch). Otherwise at most "review".
+    require_corroboration: bool = True
     # Combining items into one confidence. "max_plus": strongest item + extra_item_bonus per
     # additional unpaid item (capped). "noisy_or": 1 - prod(1 - s_i). Items in one basket are NOT
     # independent evidence (one payment-matching failure leaves all of them unpaid), so max_plus.
@@ -76,6 +82,7 @@ class BasketItem:
     confidence: float
     ambiguous_with: list[int] = field(default_factory=list)
     concealed: bool = False
+    conceal_conf: float = 0.0
     held_at_exit: bool = False
     source: str = "pick"             # "pick" or "conceal" (pick missed, inferred from concealment)
     dwell_paid: bool = False         # dwell mode only: covered by a register visit
@@ -126,6 +133,7 @@ class Ledger:
         self.pending: set[int] = set()               # exited, not yet reconciled
         self.active: dict[int, PersonRecord] = {}    # people who can still matter for a decision
         self.decisions: list[dict] = []              # every reconciliation, clean ones included
+        self.archived: list[PersonRecord] = []       # earlier visits of re-used track ids
         self._last_prune = 0.0
         self._alert_ids = itertools.count(1)
 
@@ -134,6 +142,13 @@ class Ledger:
     def on_event(self, ev: Event) -> list[Alert]:
         """Feed one event. Returns any alerts that became final at this time."""
         emitted = self.tick(ev.t)
+        old = self.people.get(ev.person_id)
+        if ev.type == EventType.ENTER and old is not None and old.t_exit is not None:
+            # Track id reused for a new visit: archive the old record, start a fresh one.
+            self.archived.append(old)
+            del self.people[ev.person_id]
+            self.active.pop(ev.person_id, None)
+            self.pending.discard(ev.person_id)
         p = self._person(ev.person_id, ev.t)
         p.t_last = max(p.t_last, ev.t)
 
@@ -239,24 +254,33 @@ class Ledger:
 
     def _on_put_back(self, p: PersonRecord, ev: Event) -> None:
         cat = self._category(ev)
-        # Remove the most recent matching item. Unknown category -> most recent item.
-        for i in range(len(p.basket) - 1, -1, -1):
-            if cat == "unknown" or p.basket[i].category == cat:
-                removed = p.basket.pop(i)
-                p.log.append(f"{ev.t:7.1f}s put_back {removed.category} to {ev.zone}")
-                return
-        p.log.append(f"{ev.t:7.1f}s put_back {cat} ignored (not in basket)")
+        # Remove the most recent matching item that is NOT concealed (someone who pockets one
+        # candy bar and puts a second one back still has the pocketed one). Unknown category ->
+        # any item. A concealed item is only removed if nothing else matches (logged).
+        matches = [i for i in range(len(p.basket)) if cat == "unknown" or p.basket[i].category == cat]
+        if not matches:
+            p.log.append(f"{ev.t:7.1f}s put_back {cat} ignored (not in basket)")
+            return
+        open_ = [i for i in matches if not p.basket[i].concealed]
+        removed = p.basket.pop((open_ or matches)[-1])
+        note = "" if open_ else " (was marked concealed: suspicious)"
+        p.log.append(f"{ev.t:7.1f}s put_back {removed.category} to {ev.zone}{note}")
 
     def _on_conceal(self, p: PersonRecord, ev: Event) -> None:
         cat = self._category(ev)
+        if ev.confidence < self.cfg.min_conceal_conf:
+            p.log.append(f"{ev.t:7.1f}s conceal {cat} ignored (conf {ev.confidence:.2f} too low)")
+            return
         for item in reversed(p.basket):
             if not item.concealed and (cat == "unknown" or item.category == cat):
-                item.concealed = True
+                item.concealed, item.conceal_conf = True, ev.confidence
+                # This person hid it: a crowded pick is no longer ambiguous.
+                item.ambiguous_with = []
                 p.log.append(f"{ev.t:7.1f}s conceal {item.category} conf={ev.confidence:.2f}")
                 return
         # We saw it go into a pocket but never saw the pick: add it, at the conceal confidence.
         p.basket.append(BasketItem(cat, ev.sku, ev.t, ev.zone, ev.confidence,
-                                   concealed=True, source="conceal"))
+                                   concealed=True, conceal_conf=ev.confidence, source="conceal"))
         p.log.append(f"{ev.t:7.1f}s conceal {cat} (pick not seen; added to basket)")
 
     def _on_register_visit(self, p: PersonRecord, ev: Event) -> None:
@@ -269,20 +293,20 @@ class Ledger:
                            if v.zone == zone and v.t_end is None), None)
         if phase == "start":
             if open_visit is None:
-                p.register_visits.append(RegisterVisit(ev.meta.get("t_start", ev.t), None, zone))
+                p.register_visits.append(RegisterVisit(ev.meta.get("t_start") or ev.t, None, zone))
             p.log.append(f"{ev.t:7.1f}s at register")
             return
         if phase == "end" and open_visit is not None:
             open_visit.t_end = ev.t
         else:
-            p.register_visits.append(RegisterVisit(ev.meta.get("t_start", ev.t),
-                                                   ev.meta.get("t_end", ev.t), zone))
+            p.register_visits.append(RegisterVisit(ev.meta.get("t_start") or ev.t,
+                                                   ev.meta.get("t_end") or ev.t, zone))
         v = p.register_visits[-1] if open_visit is None else open_visit
         p.log.append(f"{ev.t:7.1f}s register visit {v.t_start:.1f}-{v.t_end:.1f}s")
         if self.cfg.payment_mode == "dwell":
             # No POS feed: assume they paid for everything they had picked by then.
             for item in p.basket:
-                if item.t_pick <= v.t_end and not item.dwell_paid:
+                if item.t_pick <= v.t_end and not item.dwell_paid and not item.concealed:
                     p.paid.append(LineItem(sku=item.sku, category=item.category))
                     item.dwell_paid = True
 
@@ -443,7 +467,7 @@ class Ledger:
                                    "confidence": 0.0, "tier": None, "t": self.now,
                                    "t_exit": max(q.t_exit for q in party), "unpaid": []})
             return []
-        return self._score_and_emit(p, party, still_unpaid, paid)
+        return self._score_and_emit(p, party, still_unpaid, paid, surplus)
 
     def _claim_unassigned_receipts(self, p: PersonRecord, party: list[PersonRecord]) -> None:
         """Fallback when time/place attribution failed (register visit not seen, POS clock
@@ -452,7 +476,8 @@ class Ledger:
         t0 = min(q.t_enter for q in party)
         t1 = max(q.t_exit for q in party) + self.cfg.exit_grace_s
         while True:
-            unpaid = Counter(it.category for q in party for it in q.basket) - \
+            # Only open (non-concealed) items count: a claimed receipt can't clear a concealed item.
+            unpaid = Counter(it.category for q in party for it in q.basket if not it.concealed) - \
                 Counter(li.category for q in party for li in q.paid)
             best, best_overlap = None, 0
             for pay in self.unassigned_payments:
@@ -469,7 +494,8 @@ class Ledger:
             self.unassigned_payments.remove(best)
             for li in best.items:
                 for _ in range(li.qty):
-                    p.paid.append(LineItem(sku=li.sku, category=self.catalog.category_of(li.sku, li.category)))
+                    p.paid.append(LineItem(sku=li.sku, category=self.catalog.category_of(li.sku, li.category),
+                                           via="basket_match"))
             p.log.append(f"{best.t:7.1f}s receipt {best.txn_id} claimed by basket match "
                          f"(register visit not seen / POS clock off)")
 
@@ -504,7 +530,14 @@ class Ledger:
         # pocketed one soda and paid for the one in their hand, the pocketed one is unpaid.
         leftovers.sort(key=lambda qi: (qi[1].concealed, not qi[1].held_at_exit))
         for q, item in leftovers:
-            idx = next((i for i, li in enumerate(remaining) if li.category == item.category), None)
+            # A receipt we only claimed by basket match (not seen at the register) can't clear a
+            # concealed item: otherwise a walkout thief could "claim" a stranger's receipt.
+            idx = next((i for i, li in enumerate(remaining) if li.category == item.category
+                        and not (item.concealed and li.via == "basket_match")), None)
+            if idx is None and not item.concealed:
+                # Receipt line whose SKU isn't in the catalog: could be anything, let it cover
+                # an open (non-concealed) item.
+                idx = next((i for i, li in enumerate(remaining) if li.category is None), None)
             if idx is None:
                 unpaid.append((q, item))
             else:
@@ -518,7 +551,7 @@ class Ledger:
                f"(pick conf {item.confidence:.2f}) and not paid for"]
         score = c.w_pick * item.confidence
         if item.concealed:
-            score += c.w_conceal
+            score += c.w_conceal * min(1.0, item.conceal_conf / c.conceal_conf_ref)
             why.append(f"{item.category}: concealed" + (" (pick itself not seen)" if item.source == "conceal" else ""))
         if item.held_at_exit:
             score += c.w_held_at_exit
@@ -533,7 +566,9 @@ class Ledger:
         return min(score, 1.0), why
 
     def _score_and_emit(self, p: PersonRecord, party: list[PersonRecord],
-                        unpaid_owned: list[tuple[PersonRecord, BasketItem]], paid: list[LineItem]) -> list[Alert]:
+                        unpaid_owned: list[tuple[PersonRecord, BasketItem]], paid: list[LineItem],
+                        surplus: Counter | None = None) -> list[Alert]:
+        surplus = surplus or Counter()
         visited = any(q.register_visits for q in party) or bool(paid)
         items, reasons = [], []
         miss, scores = 1.0, []
@@ -561,6 +596,12 @@ class Ledger:
 
         tier = ("alert" if conf >= self.cfg.alert_threshold
                 else "review" if conf >= self.cfg.review_threshold else None)
+        corroborated = sum(1 for _, it in unpaid_owned if it.concealed or it.held_at_exit)
+        unmatched_paid = sum(surplus.values())
+        if tier == "alert" and self.cfg.require_corroboration and corroborated <= unmatched_paid:
+            tier = "review"
+            reasons.append("capped at review: " + ("no concealment or item-in-hand at exit" if not corroborated
+                           else f"{unmatched_paid} paid item(s) didn't match the basket (possible misrecognition)"))
         who = best_owner   # in a group: the person holding the strongest unpaid item
         for q in party:
             q.log.append(f"{self.now:7.1f}s reconciled: {len(unpaid_owned)} unpaid, confidence {conf:.2f} -> {tier}")

@@ -280,9 +280,9 @@ def test_mutual_ambiguity_does_not_deadlock():
     L = ledger()
     ev = [enter(0, 1), enter(30, 2),
           pick(40, 1, "soda", "cooler", candidates=[1, 2]), pick(40.2, 2, "soda", "cooler", candidates=[2, 1]),
-          conceal(41, 1, "soda"), conceal(41, 2, "soda"), leave(60, 1), leave(61, 2)]
+          leave(60, 1, ["soda"]), leave(61, 2, ["soda"])]
     alerts = L.replay(ev)
-    # each: (0.45 + 0.35 + 0.15) * 0.5 = 0.475 -> review; and nobody waits for max_hold
+    # each: (0.45 + 0.2 + 0.15) * 0.5 = 0.40 -> review; and nobody waits for max_hold
     assert {a.person_id for a in alerts} == {1, 2}
     assert all(a.tier == "review" and a.latency_s < 30 for a in alerts)
 
@@ -336,3 +336,82 @@ def test_second_exit_after_reconciliation_is_ignored_and_replay_terminates():
     alerts = L.replay(ev)
     assert len(alerts) == 1 and not L.pending
     assert "second exit" in " ".join(L.people[1].log)
+
+
+# ------------------------------------------ regressions from the adversarial review
+
+def test_several_uncorroborated_picks_stay_review():
+    """Missed put-backs on 2-3 items must not add up to an alert."""
+    L = ledger()
+    alerts = L.replay([enter(0, 1), pick(5, 1, "candy", conf=1.0), pick(10, 1, "chips", conf=1.0),
+                       pick(15, 1, "soda", conf=1.0), leave(60, 1)])
+    assert len(alerts) == 1 and alerts[0].tier == "review"
+
+
+def test_category_mismatch_with_receipt_is_review_not_alert():
+    """Vision says soda, POS says Red Bull: most likely misrecognition."""
+    L = ledger()
+    alerts = L.replay([enter(0, 1), pick(5, 1, "soda", "cooler", conf=1.0), *visit(20, 30, 1),
+                       leave(35, 1, ["soda"])], [pos(25, "REDBULL")])
+    assert len(alerts) == 1 and alerts[0].tier == "review"
+
+
+def test_unknown_sku_covers_an_open_item():
+    L = ledger()
+    ev = [enter(0, 1), pick(5, 1, "candy", conf=1.0), *visit(20, 30, 1), leave(35, 1, ["candy"])]
+    assert L.replay(ev, [pos(25, "TWIX")]) == []
+
+
+def test_low_confidence_conceal_is_ignored_and_conceal_weight_scales():
+    L = ledger()
+    alerts = L.replay([enter(0, 1), pick(5, 1, "soda"), conceal(9, 1, "soda", conf=0.05), leave(30, 1)])
+    assert alerts[0].tier == "review" and not alerts[0].unpaid_items[0].concealed
+    L = ledger()
+    weak = L.replay([enter(0, 1), pick(5, 1, "soda"), conceal(9, 1, "soda", conf=0.35), leave(30, 1)])
+    L = ledger()
+    strong = L.replay([enter(0, 1), pick(5, 1, "soda"), conceal(9, 1, "soda", conf=0.8), leave(30, 1)])
+    assert weak[0].confidence < strong[0].confidence
+
+
+def test_put_back_keeps_the_concealed_item():
+    """Pick two, pocket one, put one back: the pocketed one is still theirs."""
+    L = ledger()
+    alerts = L.replay([enter(0, 1), pick(5, 1, "candy"), pick(6, 1, "candy"), conceal(7, 1, "candy"),
+                       put_back(8, 1, "candy"), leave(30, 1)])
+    assert len(alerts) == 1 and alerts[0].tier == "alert" and alerts[0].unpaid_items[0].concealed
+
+
+def test_walkout_thief_cannot_claim_strangers_receipt_to_clear_concealed_item():
+    L = ledger()
+    ev = [enter(0, 1), pick(5, 1, "soda"), conceal(6, 1, "soda"), leave(40, 1),
+          enter(10, 2), pick(12, 2, "energy", "cooler"), *visit(20, 30, 2),
+          enter(11, 3), pick(13, 3, "chips"), *visit(22, 32, 3), leave(60, 2), leave(61, 3)]
+    alerts = L.replay(ev, [pos(26, "COKE"), pos(31, "CHIPS")])
+    assert any(a.person_id == 1 and a.tier == "alert" for a in alerts)
+
+
+def test_dwell_mode_does_not_clear_concealed_items():
+    L = ledger(payment_mode="dwell")
+    alerts = L.replay([enter(0, 1), pick(5, 1, "candy"), conceal(6, 1, "candy"), *visit(20, 23, 1), leave(25, 1)])
+    assert len(alerts) == 1
+
+
+def test_own_conceal_resolves_crowded_pick():
+    L = ledger()
+    alerts = L.replay([enter(0, 1), enter(30, 2), pick(40, 1, "candy", candidates=[1, 2]),
+                       conceal(41, 1, "candy"), leave(60, 1), leave(62, 2)])
+    assert len(alerts) == 1 and alerts[0].tier == "alert" and alerts[0].person_id == 1
+
+
+def test_reused_track_id_starts_a_new_visit():
+    L = ledger()
+    alerts = L.replay([enter(0, 1), leave(10, 1), enter(100, 1), pick(105, 1, "candy"),
+                       conceal(106, 1, "candy"), leave(120, 1)])
+    assert len(alerts) == 1 and alerts[0].t_exit == 120 and len(L.archived) == 1
+
+
+def test_malformed_pay_meta_does_not_crash():
+    L = ledger()
+    L.on_event(Event(E.PAY, 20, 1, zone="register", meta={"t_start": 20, "t_end": None}))
+    L.on_event(Event(E.PAY, 21, 2, zone="register", meta={"phase": "start", "t_start": None}))
+    L.on_payment(pos(22, "COKE"))

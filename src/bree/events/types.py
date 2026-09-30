@@ -56,6 +56,9 @@ class LineItem:
     sku: str | None = None
     category: str | None = None
     qty: int = 1
+    # How the ledger attributed this paid item: "place" (at the register / cooler at that
+    # time), or "basket_match" (claimed later because the receipt matched the basket).
+    via: str = "place"
 
 
 @dataclass

@@ -10,7 +10,7 @@ Read this first after a context reset. Then BUILD_SPEC.md. Phase 2 instructions:
    - `StandardNCADSA100v4Family` -> 24 vCPUs (1x A100 80GB) — status: InProgress
    If they get rejected or sit in review: portal -> Quotas -> Compute -> East US -> request the same two (fallback `StandardNCadsH100v5Family` -> 40). Check: `az vm list-usage --location eastus -o table | grep -iE "NVADSA10|NCADSA100|NCADSH100"`.
 2. ~~No Kaggle token~~ DONE 2026-09-30: token at ~/.kaggle/access_token; Simuletic + DCSASS downloading (data/logs/simuletic.log, dcsass.log). Next: add both to data/README.md; Simuletic turned out to be an 8-clip sample (not useful for training); DCSASS eval only.
-3. **No `$NGC_API_KEY`** -> Isaac Sim container can't be pulled even once quota exists.
+3. ~~No NGC key~~ DONE 2026-09-30: `NGC_API_KEY` in ~/.zshrc, verified (NGC API 200, nvcr.io isaac-sim pull auth 200).
 4. No `data/staged/`, `data/cloudstation/`, `data/operator/` footage yet.
 
 ## Phase 2 run log

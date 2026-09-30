@@ -62,7 +62,7 @@ def _obs_to_json(obs: FrameObs, events: list[Event]) -> dict:
 def run_pipeline(source: str, store: StoreConfig, backend: PerceptionBackend, out_dir: str | Path,
                  payments: PaymentSource | None = None, save_video: bool = True,
                  max_frames: int | None = None, ledger_overrides: dict | None = None,
-                 on_alert=None, on_frame=None, verbose: bool = True) -> RunSummary:
+                 on_alert=None, on_frame=None, verbose: bool = True, realtime: bool = False) -> RunSummary:
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     src = VideoSource(source, max_frames=max_frames)
@@ -142,7 +142,11 @@ def run_pipeline(source: str, store: StoreConfig, backend: PerceptionBackend, ou
         summary.frames += 1
         last_frame_wall = fr.wall
         if on_frame:
-            on_frame(fr, obs, events, ledger)
+            on_frame(fr, obs, events, ledger, vis)
+        if realtime and not src.live:   # replay a file at camera speed (dashboard demos)
+            lag = (fr.t - (time.perf_counter() - t_start))
+            if lag > 0:
+                time.sleep(lag)
         if verbose and summary.frames % 100 == 0:
             el = time.perf_counter() - t_start
             print(f"  frame {summary.frames}: {summary.frames / el:.1f} FPS, {len(persons_seen)} people, events {ev_counts}")

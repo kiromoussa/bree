@@ -64,7 +64,58 @@ def cmd_sim(args) -> None:
               f"{r['false_alerts_per_hour']:8.2f} {r['basket_exact_match']:9.3f}")
 
 
+def cmd_dashboard(args) -> None:
+    import threading
+    import time
+    from bree.cli import make_backend
+    from bree.dashboard.server import DashboardState, serve
+    from bree.events.zones import load_store_config
+    from bree.ledger.payments import open_payments
+    from bree.pipeline import run_pipeline
+    store = load_store_config(args.store)
+    source, payments, backend = args.source, args.payments, args.backend
+    if source is None:   # default: a toy clip with its POS feed, replayed at camera speed
+        ensure_toy()
+        source = str(TOY_DIR / "toy_conceal_partial_pay.mp4")
+        payments = payments or str(TOY_DIR / "toy_conceal_partial_pay.payments.jsonl")
+        backend = "toy"
+    state = DashboardState(source)
+    httpd = serve(state, args.host, args.port)
+    print(f"dashboard: http://{args.host}:{httpd.server_address[1]}  (source: {source})")
+
+    def work():
+        run_pipeline(source, store, make_backend(backend, store), args.out,
+                     payments=open_payments(payments, stream_start_wall=time.time()),
+                     on_alert=state.on_alert, on_frame=state.on_frame, verbose=False, realtime=True)
+        state.done = True
+    threading.Thread(target=work, daemon=True).start()
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        httpd.shutdown()
+
+
+def cmd_export(args) -> None:
+    from bree.edge.export import export_and_benchmark
+    print(json.dumps(export_and_benchmark(ROOT, args.imgsz), indent=2))
+
+
 def register(sub) -> None:
+    db = sub.add_parser("dashboard", help="local web dashboard: live alerts + baskets")
+    db.add_argument("--source", default=None, help="video/webcam/rtsp; default: a toy clip")
+    db.add_argument("--backend", choices=["yolo", "toy"], default="yolo")
+    db.add_argument("--payments", default=None)
+    db.add_argument("--store", default=str(STORE))
+    db.add_argument("--out", default=str(ROOT / "out" / "dashboard"))
+    db.add_argument("--host", default="127.0.0.1")
+    db.add_argument("--port", type=int, default=8080)
+    db.set_defaults(func=cmd_dashboard)
+
+    ex = sub.add_parser("export", help="export YOLO models to ONNX and compare CPU latency")
+    ex.add_argument("--imgsz", type=int, default=640)
+    ex.set_defaults(func=cmd_export)
+
     b = sub.add_parser("bench", help="benchmark -> results/bench.json + results/bench.md")
     b.add_argument("--quick", action="store_true", help="50 sim hours, 200 real frames")
     b.add_argument("--only", default=None, help="comma list of: event,toy,real")

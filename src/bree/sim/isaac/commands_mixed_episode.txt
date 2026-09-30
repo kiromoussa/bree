@@ -1,0 +1,63 @@
+# DRAFT IRA character command script: one mixed episode (store coords in metres,
+# origin at store centre, x toward the counter, y toward the cooler wall).
+# Built-in IRA commands: GoTo x y z rot|_ , Idle seconds, LookAround seconds, Queue...
+# Custom commands (need custom animation + product attach/detach, see README.md):
+#   Reach <zone> <item_prim>          reach into shelf/cooler, attach item to right hand
+#   PutBack <zone> <item_prim>        reach back, detach item onto the shelf
+#   Conceal <item_prim> pocket|waist|bag   move hand to torso, hide item prim
+#   Pay <terminal>                    stand at counter; emits POS txn in ground-truth JSON
+#   Touch <zone>                      reach into a shelf and come back empty (browsing)
+# Ground truth: every custom command is also logged to episode_truth.json.
+
+# --- Character_01: normal buyer (soda), pays, leaves with it in hand
+Character_01 GoTo -4.8 -3.8 0 _
+Character_01 GoTo -1.2 2.9 0 90
+Character_01 Reach cooler_bank /World/Products/cooler/COKE_20OZ_03
+Character_01 GoTo 3.9 -2.6 0 0
+Character_01 Pay pos_1
+Character_01 Idle 4
+Character_01 GoTo -5.6 -4.3 0 _
+
+# --- Character_02: walkout (energy drink), never visits the register
+Character_02 Idle 20
+Character_02 GoTo -4.8 -3.8 0 _
+Character_02 GoTo -3.6 2.9 0 90
+Character_02 Reach cooler_bank /World/Products/cooler/REDBULL_12OZ_01
+Character_02 LookAround 2
+Character_02 GoTo -5.6 -4.3 0 _
+
+# --- Character_03: conceal + partial pay (pays soda, pockets candy)
+Character_03 Idle 35
+Character_03 GoTo -4.8 -3.8 0 _
+Character_03 GoTo 0.8 2.9 0 90
+Character_03 Reach cooler_bank /World/Products/cooler/PEPSI_20OZ_05
+Character_03 GoTo -2.3 0.4 0 180
+Character_03 Reach shelf_A /World/Products/shelf_A/SNICKERS_07
+Character_03 LookAround 2
+Character_03 Conceal /World/Products/shelf_A/SNICKERS_07 pocket
+Character_03 GoTo 3.9 -2.6 0 0
+Character_03 Pay pos_1
+Character_03 GoTo -5.6 -4.3 0 _
+
+# --- Character_04 + Character_05: two strangers reach into the cooler at the same moment
+Character_04 Idle 50
+Character_04 GoTo 1.9 2.9 0 90
+Character_05 Idle 52
+Character_05 GoTo 2.5 2.9 0 90
+Character_04 Reach cooler_bank /World/Products/cooler/WATER_1L_02
+Character_05 Reach cooler_bank /World/Products/cooler/WATER_1L_03
+Character_04 GoTo 3.9 -2.6 0 0
+Character_04 Pay pos_1
+Character_04 GoTo -5.6 -4.3 0 _
+Character_05 Queue register_queue
+Character_05 Pay pos_1
+Character_05 GoTo -5.6 -4.3 0 _
+
+# --- Character_06: lingerer, touches a shelf, buys nothing
+Character_06 Idle 10
+Character_06 GoTo -4.8 -3.8 0 _
+Character_06 GoTo 2.2 0.4 0 180
+Character_06 LookAround 6
+Character_06 Touch shelf_C
+Character_06 Idle 25
+Character_06 GoTo -5.6 -4.3 0 _

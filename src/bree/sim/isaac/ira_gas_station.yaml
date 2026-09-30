@@ -1,0 +1,55 @@
+# DRAFT Isaac Sim Replicator Agent (IRA) config for a gas-station c-store.
+# NOT VALIDATED against a live IRA build (no GPU on the build machine). Check key names
+# against the IRA version you install (isaacsim.replicator.agent); the schema changes
+# between releases.
+isaacsim.replicator.agent:
+  version: 0.2.0
+
+  global:
+    seed: 1234
+    simulation_length: 2700          # frames; 3 min @ 15 fps per episode
+
+  scene:
+    # Build this USD from the layout in README.md (cooler wall, 3 gondolas, counter, door).
+    asset_path: omniverse://localhost/Projects/bree/gas_station_cstore_v1.usd
+
+  character:
+    # Randomised stock characters (no real people -> no face privacy concerns).
+    asset_path: http://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/People/Characters/
+    num: 6
+    # One command script per episode (behaviour mix in README.md).
+    command_file: commands_mixed_episode.txt
+    filters: []
+
+  robot:
+    num: 0
+
+  sensor:
+    camera_list:
+      - name: cam_main               # ceiling corner above the register, looking at the cooler wall
+        translate: [5.6, -4.2, 3.0]
+        rotate: [0.0, -32.0, 143.0]
+        focal_length: 12.0
+        resolution: [1920, 1080]
+      - name: cam_cooler             # in front of the cooler bank, looking down at the doors
+        translate: [0.0, 1.6, 2.6]
+        rotate: [0.0, -58.0, 90.0]
+        focal_length: 10.0
+        resolution: [1920, 1080]
+      - name: cam_door               # above the door, inside, looking in
+        translate: [-5.8, -4.0, 2.8]
+        rotate: [0.0, -40.0, 35.0]
+        focal_length: 10.0
+        resolution: [1920, 1080]
+
+  replicator:
+    writer: IRABasicWriter
+    parameters:
+      output_dir: /data/bree_synth/episode_{seed}
+      rgb: true
+      bbox_2d_tight: true             # persons + products (semantic label = item category)
+      semantic_segmentation: true
+      instance_id_segmentation: true  # tracking ground truth
+      skeleton_data: true             # COCO-style keypoints for the pose model / conceal classifier
+      camera_params: true
+      frame_rate: 15

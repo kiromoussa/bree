@@ -15,7 +15,7 @@ from pathlib import Path
 
 import numpy as np
 
-from bree.conceal import MERGE_S, MIN_RUN, THRESH, trigger_frames, video_triggers, frame_scores, load_bundle, load_retails, metrics, model_track_scorer, rule_scores
+from bree.conceal import MERGE_S, MIN_RUN, THRESH, trigger_frames, video_triggers, frame_scores, load_bundle, load_poselift, load_retails, metrics, model_track_scorer, rule_scores
 
 R = Path("data/retails/RetailS")
 FPS = 15.0
@@ -51,6 +51,18 @@ for f in tmp.glob("*.json"):
 for i in pick:
     (tmp / files[i].name).symlink_to(files[i].resolve())
 normal = load_retails(tmp, split="normal")
+
+# Leak guard: the model saw every PoseLift pose. Drop sampled RetailS files that share any pose frame with it.
+def fingerprints(videos):
+    return {np.round(k[:, :2], 0).astype(np.int32).tobytes() for v in videos for t in v.tracks.values() for k in t.kps
+            if (k[:, 2] > 0).sum() >= 10}
+pl_fp = fingerprints(load_poselift(Path("data/poselift/PoseLift/Pickle_files")))
+shared = {v.name: len(fingerprints([v]) & pl_fp) for v in normal}
+res["leak_check"] = {"poselift_pose_frames": len(pl_fp), "sampled_files_sharing_frames": {k: n for k, n in shared.items() if n}}
+normal = [v for v in normal if not shared[v.name]]
+staged_shared = {v.name: len(fingerprints([v]) & pl_fp) for v in staged}
+res["leak_check"]["staged_files_sharing_frames"] = {k: n for k, n in staged_shared.items() if n}
+print("leak check", res["leak_check"], flush=True)
 hours = sum(v.n_frames for v in normal) / FPS / 3600
 res["normal"] = {"n_videos": len(normal), "hours": hours, "files": [v.name for v in normal],
                  "cameras": sorted({v.cam for v in normal})}

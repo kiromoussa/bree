@@ -16,3 +16,10 @@ results/*
 *.mp4
 *.avi
 !docs/**/*.gif
+
+# secrets
+.env
+*.pem
+*.key
+kaggle.json
+**/credentials*

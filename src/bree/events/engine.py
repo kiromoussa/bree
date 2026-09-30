@@ -46,7 +46,12 @@ class EngineRules:
     torso_margin: float = 0.25
     register_dwell_s: float = 2.5
     register_leave_s: float = 0.7   # brief steps out of the register zone don't end the visit
-    person_lost_s: float = 1.5      # person unseen this long = gone (exit if at the door, else lost)
+    person_lost_s: float = 1.5      # person unseen this long inside the store = lost (revived if seen again)
+    exit_confirm_s: float = 3.0     # person unseen this long after being at the door = EXIT (brief door occlusions aren't exits)
+    conceal_confirm_s: float = 1.5  # in-hand item must stay unseen this long before CONCEAL (cancelled if it reappears)
+    zone_pad_px: float = 25.0       # a picked product must have been seen within this of the zone polygon
+    min_pick_move_px: float = 15.0  # ...and must have moved at least this far (a hand brushing past isn't a pick)
+    handoff_frames: int = 5         # frames near someone else's hand (owner's hand visibly away) to transfer an item
     min_store_time_s: float = 2.0   # shorter tracks never count as a store visit
 
     @staticmethod
@@ -77,6 +82,8 @@ class HeldItem:
     near_torso: bool = False                      # item inside holder's torso box at t_near
     at_register: bool = False                     # holder at register at t_near
     released: bool = False
+    picked: bool = False                          # a PICK was emitted for it (vs. brought in / re-acquired)
+    handoff: dict[int, int] = field(default_factory=dict)   # other person -> consecutive frames near them
 
 
 @dataclass
@@ -93,7 +100,10 @@ class PersonState:
     register_last_in: float | None = None
     register_open: bool = False
     held: dict[int, HeldItem] = field(default_factory=dict)
+    picked_tracks: set[int] = field(default_factory=set)      # product tracks this person already picked
+    conceal_pending: list[HeldItem] = field(default_factory=list)
     done: bool = False
+    exited: bool = False
 
 
 class EventEngine:
@@ -103,6 +113,12 @@ class EventEngine:
         self.people: dict[int, PersonState] = {}
         self.owner: dict[int, int] = {}          # product track id -> person id holding it
         self.log: list[str] = []                 # non-event observations (occlusion losses etc.)
+        # Product track history (for pick/conceal evidence): last seen time, first seen centre,
+        # and the last time it was seen in (or right next to) each shelf/cooler zone.
+        self.prod_seen: dict[int, float] = {}
+        self.prod_first: dict[int, tuple[float, float]] = {}
+        self.prod_center: dict[int, tuple[float, float]] = {}
+        self.prod_in_zone: dict[int, dict[str, float]] = {}
         self.t = 0.0
         self.frame = 0
 
@@ -117,13 +133,14 @@ class EventEngine:
             events += self._update_person(po)
         events += self._update_products(obs.products)
         events += self._check_releases()
+        events += self._check_conceals()
         events += self._check_gone(seen)
         return events
 
     def flush(self) -> list[Event]:
         """End of stream: everyone still visible is treated as gone now."""
-        self.t += self.r.person_lost_s + 1e-3
-        return self._check_releases() + self._check_gone(set())
+        self.t += max(self.r.person_lost_s, self.r.exit_confirm_s, self.r.conceal_confirm_s) + 1e-3
+        return self._check_releases() + self._check_conceals() + self._check_gone(set())
 
     # --------------------------------------------------------------- persons
 
@@ -137,6 +154,10 @@ class EventEngine:
             ps = PersonState(po.track_id, self.t, self.t, po)
             self.people[po.track_id] = ps
             events.append(self._ev(EventType.ENTER, po.track_id))
+        if ps.done and not ps.exited:
+            # Lost inside the store (occlusion) and now back: resume the same visit.
+            ps.done = False
+            self.log.append(f"{self.t:.1f}s person {ps.pid} seen again after being lost: resumed")
         if ps.done:
             return events
         ps.t_last, ps.last = self.t, po
@@ -198,12 +219,21 @@ class EventEngine:
     def _check_gone(self, seen: set[int]) -> list[Event]:
         events = []
         for ps in self.people.values():
-            if ps.done or ps.pid in seen or self.t - ps.t_last < self.r.person_lost_s:
+            if ps.done or ps.pid in seen:
+                continue
+            long_enough = ps.t_last - ps.t_first >= self.r.min_store_time_s
+            at_door = ps.in_exit_zone and ps.been_inside and long_enough
+            if self.t - ps.t_last < (self.r.exit_confirm_s if at_door else self.r.person_lost_s):
                 continue
             ps.done = True
             events += self._close_register(ps)
-            long_enough = ps.t_last - ps.t_first >= self.r.min_store_time_s
-            if ps.in_exit_zone and ps.been_inside and long_enough:
+            # Concealments that were still being confirmed when they walked out: the item never
+            # reappeared, so they stand.
+            for h in ps.conceal_pending:
+                events.append(self._conceal_event(ps, h))
+            ps.conceal_pending = []
+            if at_door:
+                ps.exited = True
                 held = [h.category for h in ps.held.values() if h.confirmed and not h.released]
                 events.append(self._ev(EventType.EXIT, ps.pid, t=ps.t_last,
                                        zone=self._exit_zone_name(),
@@ -231,10 +261,27 @@ class EventEngine:
                     best, best_w, best_d = ps, name, d
         return best, best_w, best_d
 
+    def _owner_near(self, owner: PersonState, c: tuple[float, float]) -> bool | None:
+        """Is the product at c in the owner's hand? None = can't tell (no wrist visible)."""
+        if owner.t_last != self.t:
+            return None
+        wrists = owner.last.wrists(self.r.kpt_conf)
+        if not wrists:
+            x1, y1, x2, y2 = owner.last.bbox
+            pad = self.r.hold_radius_px
+            return True if (x1 - pad <= c[0] <= x2 + pad and y1 - pad <= c[1] <= y2 + pad) else None
+        return any(math.hypot(c[0] - wx, c[1] - wy) <= self.r.hold_radius_px for _, (wx, wy) in wrists)
+
     def _update_products(self, products: list[ProductObs]) -> list[Event]:
         events = []
         for pr in products:
             c = pr.center
+            self.prod_seen[pr.track_id] = self.t
+            self.prod_first.setdefault(pr.track_id, c)
+            self.prod_center[pr.track_id] = c
+            for z in self.store.zones_of("shelf", "cooler"):
+                if z.distance(*c) <= self.r.zone_pad_px:
+                    self.prod_in_zone.setdefault(pr.track_id, {})[z.name] = self.t
             ps, wrist, d = self._nearest_wrist(c)
             near = ps is not None and d <= self.r.hold_radius_px
             owner_id = self.owner.get(pr.track_id)
@@ -242,21 +289,25 @@ class EventEngine:
             if owner_id is not None:
                 owner = self.people[owner_id]
                 h = owner.held[pr.track_id]
-                owner_near = near and ps.pid == owner_id
-                if not owner_near:
-                    # maybe the owner's other hand / slightly further: check owner's wrists directly
-                    owner_near = any(math.hypot(c[0] - wx, c[1] - wy) <= self.r.hold_radius_px
-                                     for _, (wx, wy) in owner.last.wrists(self.r.kpt_conf)) \
-                        if owner.t_last == self.t else False
+                owner_near = self._owner_near(owner, c)
+                if owner_near is None:
+                    # Owner's hands not visible (occluded): keep it theirs, don't start a release.
+                    h.t_near = self.t
+                    continue
                 if owner_near:
+                    h.handoff.clear()
                     self._touch(owner, h, pr)
                 elif near and ps.pid != owner_id and h.confirmed:
-                    # Handed to someone else. Move it without events (v1).
-                    self.log.append(f"{self.t:.1f}s item {pr.track_id} handed {owner_id}->{ps.pid}")
-                    del owner.held[pr.track_id]
-                    self.owner[pr.track_id] = ps.pid
-                    ps.held[pr.track_id] = h
-                    self._touch(ps, h, pr)
+                    # Possibly handed to someone else: only after several frames near their hand
+                    # with the owner's hands visibly elsewhere.
+                    h.handoff[ps.pid] = h.handoff.get(ps.pid, 0) + 1
+                    if h.handoff[ps.pid] >= self.r.handoff_frames:
+                        self.log.append(f"{self.t:.1f}s item {pr.track_id} handed {owner_id}->{ps.pid}")
+                        del owner.held[pr.track_id]
+                        self.owner[pr.track_id] = ps.pid
+                        ps.held[pr.track_id] = h
+                        h.handoff.clear()
+                        self._touch(ps, h, pr)
                 continue
 
             # Not held yet. Stock sitting on a shelf is ignored until it leaves the zone in a hand.
@@ -293,20 +344,44 @@ class EventEngine:
 
     def _confirm(self, ps: PersonState, h: HeldItem) -> list[Event]:
         h.confirmed = True
-        # Same-category item that we recently lost from this hand? Then it's the same item
-        # coming back from an occlusion, not a new pick.
+        # Coming back from an occlusion? (a) a track this person already picked, or (b) a
+        # same-category item whose concealment we were still confirming, or (c) a same-category
+        # item recently lost from their hand. Then it's the same item, not a new pick.
+        if h.product_id in ps.picked_tracks:
+            h.picked = True
+            self.log.append(f"{self.t:.1f}s person {ps.pid} {h.category} (track {h.product_id}) re-acquired")
+            return []
+        for other in ps.conceal_pending:
+            if other.category == h.category:
+                ps.conceal_pending.remove(other)
+                h.picked = other.picked
+                self.log.append(f"{self.t:.1f}s person {ps.pid} {h.category} reappeared: concealment cancelled")
+                return []
         for other in list(ps.held.values()):
             if (other is not h and other.confirmed and not other.released
                     and other.category == h.category and self.t - other.t_near <= self.r.relink_s
-                    and other.t_near < h.t_first):
+                    and other.t_near <= h.t_first):
                 del ps.held[other.product_id]
                 self.owner.pop(other.product_id, None)
+                h.picked = other.picked
                 self.log.append(f"{self.t:.1f}s person {ps.pid} {h.category} re-linked after occlusion")
                 return []
         reach = self._recent_reach(ps, h.t_first, h.wrist)
         if reach is None:
             self.log.append(f"{self.t:.1f}s person {ps.pid} holding {h.category} with no reach (brought in / re-acquired)")
             return []
+        # The product itself must have come from that shelf: seen in (or right at) the zone
+        # shortly before, and actually moved (a hand brushing past a still item isn't a pick).
+        seen_in_zone = self.prod_in_zone.get(h.product_id, {}).get(reach.zone)
+        first = self.prod_first.get(h.product_id)
+        cur = self.prod_center.get(h.product_id, first)
+        moved = first is not None and math.dist(first, cur) >= self.r.min_pick_move_px
+        if seen_in_zone is None or h.t_first - seen_in_zone > self.r.reach_window_s + 1.0 or not moved:
+            self.log.append(f"{self.t:.1f}s person {ps.pid} holding {h.category}: not seen leaving {reach.zone} "
+                            f"(in zone: {seen_in_zone is not None}, moved: {moved}) -> no pick")
+            return []
+        h.picked = True
+        ps.picked_tracks.add(h.product_id)
         others = self._crowd(ps, reach)
         conf = sum(h.confs) / len(h.confs)
         return [self._ev(EventType.PICK, ps.pid, t=h.t_first, item=h.category, zone=reach.zone,
@@ -356,16 +431,36 @@ class EventEngine:
                 h.released = True
                 del ps.held[h.product_id]
                 self.owner.pop(h.product_id, None)
+                still_visible = self.prod_seen.get(h.product_id, -1) > h.t_near
                 if h.near_zone is not None:
                     events.append(self._ev(EventType.PUT_BACK, ps.pid, t=h.t_near, item=h.category,
                                            zone=h.near_zone, meta={"product_track": h.product_id}))
-                elif h.near_torso and not h.at_register:
-                    conf = sum(h.confs) / len(h.confs)
-                    events.append(self._ev(EventType.CONCEAL, ps.pid, t=h.t_near, item=h.category,
-                                           confidence=round(0.8 * conf, 3),
-                                           meta={"product_track": h.product_id}))
+                elif still_visible:
+                    self.log.append(f"{h.t_near:.1f}s person {ps.pid} set down {h.category} (still visible)")
+                elif h.near_torso and not h.at_register and h.picked:
+                    # Vanished at the torso: CONCEAL once it has stayed gone for conceal_confirm_s.
+                    ps.conceal_pending.append(h)
                 elif h.at_register:
                     self.log.append(f"{h.t_near:.1f}s person {ps.pid} set down {h.category} at register")
                 else:
                     self.log.append(f"{h.t_near:.1f}s person {ps.pid} lost sight of {h.category} (no event)")
+        return events
+
+    def _conceal_event(self, ps: PersonState, h: HeldItem) -> Event:
+        conf = sum(h.confs) / len(h.confs)
+        return self._ev(EventType.CONCEAL, ps.pid, t=h.t_near, item=h.category, confidence=round(0.8 * conf, 3),
+                        meta={"product_track": h.product_id})
+
+    def _check_conceals(self) -> list[Event]:
+        events = []
+        for ps in self.people.values():
+            keep = []
+            for h in ps.conceal_pending:
+                if self.prod_seen.get(h.product_id, -1) > h.t_near:
+                    self.log.append(f"{self.t:.1f}s person {ps.pid} {h.category} visible again: not concealed")
+                elif self.t - h.t_near >= self.r.conceal_confirm_s:
+                    events.append(self._conceal_event(ps, h))
+                else:
+                    keep.append(h)
+            ps.conceal_pending = keep
         return events

@@ -57,7 +57,7 @@ def test_enter_and_exit(store):
     s.step({1: (600, 575, rest(600, 575))}, n=30)
     for x in range(600, 60, -20):                           # walks back out
         s.step({1: (x, 640, rest(x, 640))})
-    s.step({}, n=30)                                        # gone
+    s.step({}, n=60)                                        # gone (exit confirmed after 3 s)
     assert len(s.of(E.ENTER)) == 1 and len(s.of(E.EXIT)) == 1
     assert s.of(E.EXIT)[0].zone == "door"
 
@@ -120,6 +120,8 @@ def test_conceal_near_torso(store):
     fx, fy = 420, 300
     s.step({1: (fx, fy, [(fx - 30, fy - 62), (fx + 6, fy - 65)])}, [(7, fx + 6, fy - 53, "soda_bottle")], n=5)
     s.step({1: (fx, fy, [(fx - 30, fy - 62), (fx + 6, fy - 65)])}, [], n=15)   # vanished at the waistband
+    assert s.of(E.CONCEAL) == []                             # not yet: confirming it stays gone
+    s.step({1: (fx, fy, [(fx - 30, fy - 62), (fx + 6, fy - 65)])}, [], n=15)
     assert len(s.of(E.CONCEAL)) == 1
     assert s.of(E.CONCEAL)[0].item == "soda_bottle"
 
@@ -187,6 +189,73 @@ def test_exit_reports_items_in_hand(store):
     hand_rest = _pick_sequence(s)
     for x in range(420, 60, -25):
         s.step({1: (x, 640, rest(x, 640))}, [(7, x + 30, 640 - 50, "soda_bottle")])
-    s.step({}, n=30)
+    s.step({}, n=60)
     ex = s.of(E.EXIT)
     assert len(ex) == 1 and ex[0].meta["held_items"] == ["soda_bottle"]
+
+
+# ------------------------------------------ regressions from the adversarial review
+
+def _walk_in_holding_own_drink(s, n=20):
+    """Customer comes in with their own drink at chest height (never picked here)."""
+    fx, fy = 600, 575
+    hand = (fx + 6, fy - 100)
+    s.step({1: (fx, fy, [(fx - 30, fy - 62), hand])}, [(9, hand[0], hand[1] + 12, "soda_bottle")], n=n)
+    return fx, fy, hand
+
+
+def test_own_drink_detection_dropout_is_not_conceal(store):
+    s = Sim(store)
+    fx, fy, hand = _walk_in_holding_own_drink(s)
+    s.step({1: (fx, fy, [(fx - 30, fy - 62), hand])}, [], n=10)                          # 0.67 s dropout
+    s.step({1: (fx, fy, [(fx - 30, fy - 62), hand])}, [(9, hand[0], hand[1] + 12, "soda_bottle")], n=20)
+    assert s.of(E.CONCEAL) == [] and s.of(E.PICK) == []
+
+
+def test_picked_item_dropout_then_reappears_is_not_conceal_or_second_pick(store):
+    s = Sim(store)
+    _pick_sequence(s)
+    fx, fy = 420, 300
+    at_chest = (fx + 6, fy - 100)
+    s.step({1: (fx, fy, [(fx - 30, fy - 62), at_chest])}, [(7, at_chest[0], at_chest[1] + 12, "soda_bottle")], n=5)
+    s.step({1: (fx, fy, [(fx - 30, fy - 62), at_chest])}, [], n=12)                       # 0.8 s unseen
+    s.step({1: (fx, fy, [(fx - 30, fy - 62), at_chest])}, [(7, at_chest[0], at_chest[1] + 12, "soda_bottle")], n=30)
+    assert s.of(E.CONCEAL) == [] and len(s.of(E.PICK)) == 1
+
+
+def test_set_down_but_still_visible_is_not_conceal(store):
+    s = Sim(store)
+    _pick_sequence(s)
+    fx, fy = 420, 300
+    ledge = (fx + 6, fy - 53)
+    s.step({1: (fx, fy, [(fx - 30, fy - 62), (fx + 6, fy - 65)])}, [(7, *ledge, "soda_bottle")], n=5)
+    s.step({1: (fx, fy, [(fx - 30, fy - 140), (fx + 30, fy - 140)])}, [(7, *ledge, "soda_bottle")], n=40)
+    assert s.of(E.CONCEAL) == []
+
+
+def test_own_phone_after_touching_shelf_is_not_a_pick(store):
+    s = Sim(store)
+    fx, fy = 725, 330
+    s.step({1: (fx, fy, [(fx - 30, fy - 62), (812, 300)])}, n=10)                         # hand on shelf_C edge
+    for k in range(10):                                                                     # phone out of pocket
+        s.step({1: (fx, fy, [(fx - 30, fy - 62), (fx + 30, fy - 62)])}, [(5, fx + 30, fy - 50, "phone_accessory")])
+    assert s.of(E.PICK) == []
+
+
+def test_brief_occlusion_at_door_is_not_an_exit(store):
+    s = Sim(store)
+    s.step({1: (600, 575, rest(600, 575))}, n=45)          # 3 s in the store
+    s.step({1: (100, 600, rest(100, 600))}, n=5)          # standing in the door zone
+    s.step({}, n=24)                                       # fully occluded 1.6 s
+    s.step({1: (300, 575, rest(300, 575))}, n=20)          # back in the store
+    assert s.of(E.EXIT) == []
+
+
+def test_passer_by_does_not_inherit_item(store):
+    s = Sim(store)
+    fx, fy, hand = _walk_in_holding_own_drink(s)
+    item = (9, hand[0], hand[1] + 12, "soda_bottle")
+    # B stands right in front for 2 frames; A's wrists are momentarily not detected
+    for _ in range(2):
+        s.step({1: (fx, fy, []), 2: (fx + 20, fy + 5, [(hand[0] + 5, hand[1] + 5), (fx + 50, fy - 57)])}, [item])
+    assert s.engine.owner[9] == 1

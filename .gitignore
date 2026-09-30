@@ -5,6 +5,7 @@ __pycache__/
 .pytest_cache/
 data/*
 !data/README.md
+!data/LICENSES.md
 models/*.pt
 models/*.onnx
 runs/

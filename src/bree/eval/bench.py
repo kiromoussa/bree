@@ -93,6 +93,10 @@ def print_tables(res: dict) -> str:
         lines.append("|---|---|---|---|")
         for d in base["threshold_sweep"]:
             lines.append(f"| {d['threshold']} | {_fmt(d['precision'], True)} | {_fmt(d['recall'], True)} | {d['false_alerts_per_hour']:.2f} |")
+        pe = base["alert_precision_by_evidence"]
+        lines.append(f"\nAlert precision by evidence (POS feed, baseline noise): concealment seen "
+                     f"{pe['conceal_seen']['correct']}/{pe['conceal_seen']['alerts']} = {_fmt(pe['conceal_seen']['precision'], True)}; "
+                     f"no concealment {pe['no_conceal']['correct']}/{pe['no_conceal']['alerts']} = {_fmt(pe['no_conceal']['precision'], True)}.")
         lines.append("\nRecall by theft type (POS feed, baseline noise):")
         lines.append("| theft type | thieves | alerted | alert or review |")
         lines.append("|---|---|---|---|")

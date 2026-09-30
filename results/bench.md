@@ -25,6 +25,8 @@ Alert-threshold sweep (POS feed, baseline noise):
 | 0.85 | 72.0% | 21.8% | 0.21 |
 | 0.9 | 79.2% | 15.4% | 0.10 |
 
+Alert precision by evidence (POS feed, baseline noise): concealment seen 175/192 = 91.1%; no concealment 74/159 = 46.5%.
+
 Recall by theft type (POS feed, baseline noise):
 | theft type | thieves | alerted | alert or review |
 |---|---|---|---|

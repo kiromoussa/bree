@@ -39,6 +39,7 @@ def evaluate(world: World, obs, ledger, alerts, hours: float) -> dict:
         return next(iter(t)) if t else None
 
     flagged = {"alert": set(), "review": set()}
+    by_evidence = {"conceal_seen": [0, 0], "no_conceal": [0, 0]}   # [correct, total] alert-tier
     fa_alert, fa_review, alert_tp_items, alert_items = 0, 0, 0, 0
     latencies = []
     for a in alerts:
@@ -50,6 +51,10 @@ def evaluate(world: World, obs, ledger, alerts, hours: float) -> dict:
             continue
         flagged[a.tier].add(pid)
         true_p = people[pid]
+        if a.tier == "alert":
+            ev = by_evidence["conceal_seen" if any(i.concealed for i in a.unpaid_items) else "no_conceal"]
+            ev[0] += bool(true_p.stolen)
+            ev[1] += 1
         if pid in thieves:
             latencies.append(a.t_emitted - true_p.t_exit)
             stolen = Counter(i.category for i in true_p.stolen)
@@ -112,6 +117,9 @@ def evaluate(world: World, obs, ledger, alerts, hours: float) -> dict:
         "decision_latency_s_p50": _pct(latencies, 50),
         "decision_latency_s_p95": _pct(latencies, 95),
         "recall_by_theft_type": by_kind,
+        "alert_precision_by_evidence": {k: {"correct": v[0], "alerts": v[1],
+                                            "precision": round(v[0] / v[1], 3) if v[1] else None}
+                                        for k, v in by_evidence.items()},
         "false_alerts_by_shopper_type": dict(fa_by_kind),
     }
 

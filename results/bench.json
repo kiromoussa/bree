@@ -1,5 +1,5 @@
 {
-  "generated_unix": 1790738707.5197985,
+  "generated_unix": 1790738986.0569284,
   "machine": "Linux-6.18.44-fc-v50-x86_64-with-glibc2.39",
   "quick": false,
   "event_level": {
@@ -42,6 +42,18 @@
             "alert_or_review": 208
           }
         },
+        "alert_precision_by_evidence": {
+          "conceal_seen": {
+            "correct": 266,
+            "alerts": 266,
+            "precision": 1.0
+          },
+          "no_conceal": {
+            "correct": 107,
+            "alerts": 115,
+            "precision": 0.93
+          }
+        },
         "false_alerts_by_shopper_type": {
           "cooler_tap": 5,
           "group": 2,
@@ -52,10 +64,10 @@
         },
         "crowd_pairs": 21,
         "events": 58568,
-        "ledger_events_per_s": 42740,
+        "ledger_events_per_s": 41843,
         "wall_s": {
-          "simulate": 2.6,
-          "ledger": 1.37
+          "simulate": 2.67,
+          "ledger": 1.4
         },
         "payment_mode": "pos",
         "noise": "perfect"
@@ -96,6 +108,18 @@
             "alert_or_review": 191
           }
         },
+        "alert_precision_by_evidence": {
+          "conceal_seen": {
+            "correct": 175,
+            "alerts": 192,
+            "precision": 0.911
+          },
+          "no_conceal": {
+            "correct": 74,
+            "alerts": 159,
+            "precision": 0.465
+          }
+        },
         "false_alerts_by_shopper_type": {
           "normal": 52,
           "browse_putback": 17,
@@ -120,10 +144,10 @@
         },
         "crowd_pairs": 21,
         "events": 57160,
-        "ledger_events_per_s": 39031,
+        "ledger_events_per_s": 42995,
         "wall_s": {
-          "simulate": 2.47,
-          "ledger": 1.46
+          "simulate": 2.44,
+          "ledger": 1.33
         },
         "threshold_sweep": [
           {
@@ -220,6 +244,18 @@
             "alert_or_review": 172
           }
         },
+        "alert_precision_by_evidence": {
+          "conceal_seen": {
+            "correct": 83,
+            "alerts": 136,
+            "precision": 0.61
+          },
+          "no_conceal": {
+            "correct": 29,
+            "alerts": 109,
+            "precision": 0.266
+          }
+        },
         "false_alerts_by_shopper_type": {
           "normal": 74,
           "pocket_then_pay": 4,
@@ -244,10 +280,10 @@
         },
         "crowd_pairs": 21,
         "events": 55869,
-        "ledger_events_per_s": 31557,
+        "ledger_events_per_s": 33042,
         "wall_s": {
-          "simulate": 2.42,
-          "ledger": 1.77
+          "simulate": 2.17,
+          "ledger": 1.69
         },
         "payment_mode": "pos",
         "noise": "pessimistic_2x"
@@ -288,6 +324,18 @@
             "alert_or_review": 209
           }
         },
+        "alert_precision_by_evidence": {
+          "conceal_seen": {
+            "correct": 95,
+            "alerts": 95,
+            "precision": 1.0
+          },
+          "no_conceal": {
+            "correct": 106,
+            "alerts": 114,
+            "precision": 0.93
+          }
+        },
         "false_alerts_by_shopper_type": {
           "cooler_tap": 5,
           "group": 3
@@ -297,10 +345,10 @@
         },
         "crowd_pairs": 21,
         "events": 58568,
-        "ledger_events_per_s": 39926,
+        "ledger_events_per_s": 43273,
         "wall_s": {
-          "simulate": 2.66,
-          "ledger": 1.47
+          "simulate": 2.57,
+          "ledger": 1.35
         },
         "payment_mode": "dwell",
         "noise": "perfect"
@@ -341,6 +389,18 @@
             "alert_or_review": 190
           }
         },
+        "alert_precision_by_evidence": {
+          "conceal_seen": {
+            "correct": 72,
+            "alerts": 79,
+            "precision": 0.911
+          },
+          "no_conceal": {
+            "correct": 73,
+            "alerts": 152,
+            "precision": 0.48
+          }
+        },
         "false_alerts_by_shopper_type": {
           "normal": 44,
           "browse_putback": 15,
@@ -365,10 +425,10 @@
         },
         "crowd_pairs": 21,
         "events": 57160,
-        "ledger_events_per_s": 37076,
+        "ledger_events_per_s": 39861,
         "wall_s": {
-          "simulate": 2.36,
-          "ledger": 1.54
+          "simulate": 2.29,
+          "ledger": 1.43
         },
         "payment_mode": "dwell",
         "noise": "baseline"
@@ -409,6 +469,18 @@
             "alert_or_review": 172
           }
         },
+        "alert_precision_by_evidence": {
+          "conceal_seen": {
+            "correct": 47,
+            "alerts": 78,
+            "precision": 0.603
+          },
+          "no_conceal": {
+            "correct": 29,
+            "alerts": 107,
+            "precision": 0.271
+          }
+        },
         "false_alerts_by_shopper_type": {
           "group": 21,
           "normal": 62,
@@ -432,10 +504,10 @@
         },
         "crowd_pairs": 21,
         "events": 55869,
-        "ledger_events_per_s": 30191,
+        "ledger_events_per_s": 29203,
         "wall_s": {
-          "simulate": 2.19,
-          "ledger": 1.85
+          "simulate": 2.23,
+          "ledger": 1.91
         },
         "payment_mode": "dwell",
         "noise": "pessimistic_2x"
@@ -721,5 +793,5 @@
     "persons_tracked": 45,
     "note": "zones are the example store's, so events on this street scene are meaningless; FPS only"
   },
-  "bench_wall_s": 48.0
+  "bench_wall_s": 47.8
 }

@@ -17,11 +17,14 @@ import time
 from dataclasses import asdict
 from pathlib import Path
 
+import numpy as np
+
 from bree.eval.metrics import noise_ablation, run_event_bench
 from bree.events.zones import load_store_config
 from bree.sim.events_sim import SimConfig, VisionNoise
 
 TEST_SEED = 2
+SPREAD_SEEDS = [2, 3, 4, 5, 6]
 NOISE_LEVELS = {"perfect": 0.0, "baseline": 1.0, "pessimistic_2x": 2.0}
 
 
@@ -39,7 +42,17 @@ def event_level(store, hours: float, seed: int = TEST_SEED) -> dict:
                                 sweep=(mode == "pos" and name == "baseline"))
             r.update({"payment_mode": mode, "noise": name})
             out["runs"].append(r)
-    out["ablation_baseline_pos"] = noise_ablation(store, SimConfig(hours=hours / 2), seed)
+    out["ablation_baseline_pos"] = noise_ablation(store, SimConfig(hours=hours), seed)
+    # Seed-to-seed spread of the headline rows (seeds 2..6; seed 1 was the dev seed).
+    spread = {}
+    for name in ("perfect", "baseline", "pessimistic_2x"):
+        rs = [run_event_bench(store, SimConfig(hours=hours), VisionNoise().scaled(NOISE_LEVELS[name]), sd)
+              for sd in SPREAD_SEEDS]
+        spread[name] = {k: {"mean": round(float(np.mean([r[k] for r in rs])), 3),
+                            "min": round(float(np.min([r[k] for r in rs])), 3),
+                            "max": round(float(np.max([r[k] for r in rs])), 3)}
+                        for k in ("precision", "recall", "recall_alert_or_review", "false_alerts_per_hour")}
+    out["seed_spread_pos"] = {"seeds": SPREAD_SEEDS, "by_noise": spread}
     out["noise_model_baseline"] = asdict(VisionNoise())
     out["sim_config"] = asdict(SimConfig(hours=hours))
     return out
@@ -102,7 +115,16 @@ def print_tables(res: dict) -> str:
         lines.append("|---|---|---|---|")
         for k, v in base["recall_by_theft_type"].items():
             lines.append(f"| {k} | {v['thieves']} | {v['alerted']} | {v['alert_or_review']} |")
-        lines.append("\nWhich vision errors cause false alerts? (perfect vision + one error source at its baseline rate):")
+        sp = ev.get("seed_spread_pos")
+        if sp:
+            lines.append(f"\nSeed-to-seed spread (POS feed, seeds {sp['seeds']}, mean [min-max]):")
+            lines.append("| vision noise | precision | recall (alert) | recall (alert+review) | false alerts / hour |")
+            lines.append("|---|---|---|---|---|")
+            for name, m in sp["by_noise"].items():
+                cell = lambda k, pct=True: (f"{100*m[k]['mean']:.1f}% [{100*m[k]['min']:.1f}-{100*m[k]['max']:.1f}]" if pct
+                                            else f"{m[k]['mean']:.2f} [{m[k]['min']:.2f}-{m[k]['max']:.2f}]")
+                lines.append(f"| {name} | {cell('precision')} | {cell('recall')} | {cell('recall_alert_or_review')} | {cell('false_alerts_per_hour', False)} |")
+        lines.append(f"\nWhich vision errors cause false alerts? (perfect vision + one error source at its baseline rate; same seed and {ev['hours_per_run']:.0f} hours):")
         lines.append("| error source | precision | recall | false alerts / hour |")
         lines.append("|---|---|---|---|")
         for a in ev["ablation_baseline_pos"]:

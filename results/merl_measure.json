@@ -10,15 +10,15 @@
   "imgsz": 640
  },
  "stride": 2,
- "n_videos": 1,
- "minutes": 2.3,
- "reach_recall": 0.7333333333333333,
- "missed_reach_rate": 0.2666666666666667,
- "reach_instances": 15,
- "false_reach_runs_per_min": 12.389380530973453,
- "extra_person_tracks_per_video": 14.0,
- "extra_person_tracks_per_min": 6.194690265486726,
- "detect_pose_track_ms_per_frame": 33.63307721786362,
+ "n_videos": 28,
+ "minutes": 64.3,
+ "reach_recall": 0.6417657045840407,
+ "missed_reach_rate": 0.3582342954159593,
+ "reach_instances": 589,
+ "false_reach_runs_per_min": 0.7780890133831312,
+ "extra_person_tracks_per_video": 10.964285714285714,
+ "extra_person_tracks_per_min": 4.777466542172426,
+ "detect_pose_track_ms_per_frame": 30.44604713735927,
  "per_video": [
   {
    "video": "27_1",
@@ -28,6 +28,249 @@
    "detected_reach_runs": 61,
    "false_reach_runs": 28,
    "person_track_ids": 15
+  },
+  {
+   "video": "27_2",
+   "minutes": 2.27,
+   "reach_instances": 21,
+   "reach_found": 10,
+   "detected_reach_runs": 12,
+   "false_reach_runs": 0,
+   "person_track_ids": 11
+  },
+  {
+   "video": "27_3",
+   "minutes": 2.26,
+   "reach_instances": 24,
+   "reach_found": 16,
+   "detected_reach_runs": 10,
+   "false_reach_runs": 0,
+   "person_track_ids": 11
+  },
+  {
+   "video": "28_1",
+   "minutes": 2.24,
+   "reach_instances": 20,
+   "reach_found": 18,
+   "detected_reach_runs": 22,
+   "false_reach_runs": 1,
+   "person_track_ids": 15
+  },
+  {
+   "video": "28_2",
+   "minutes": 2.43,
+   "reach_instances": 13,
+   "reach_found": 8,
+   "detected_reach_runs": 8,
+   "false_reach_runs": 0,
+   "person_track_ids": 14
+  },
+  {
+   "video": "28_3",
+   "minutes": 2.2,
+   "reach_instances": 18,
+   "reach_found": 11,
+   "detected_reach_runs": 19,
+   "false_reach_runs": 0,
+   "person_track_ids": 14
+  },
+  {
+   "video": "29_1",
+   "minutes": 2.48,
+   "reach_instances": 16,
+   "reach_found": 16,
+   "detected_reach_runs": 14,
+   "false_reach_runs": 0,
+   "person_track_ids": 11
+  },
+  {
+   "video": "29_2",
+   "minutes": 2.54,
+   "reach_instances": 25,
+   "reach_found": 16,
+   "detected_reach_runs": 13,
+   "false_reach_runs": 1,
+   "person_track_ids": 13
+  },
+  {
+   "video": "29_3",
+   "minutes": 3.2,
+   "reach_instances": 18,
+   "reach_found": 6,
+   "detected_reach_runs": 9,
+   "false_reach_runs": 0,
+   "person_track_ids": 15
+  },
+  {
+   "video": "30_1",
+   "minutes": 2.43,
+   "reach_instances": 27,
+   "reach_found": 25,
+   "detected_reach_runs": 40,
+   "false_reach_runs": 7,
+   "person_track_ids": 6
+  },
+  {
+   "video": "30_2",
+   "minutes": 2.3,
+   "reach_instances": 16,
+   "reach_found": 11,
+   "detected_reach_runs": 10,
+   "false_reach_runs": 0,
+   "person_track_ids": 8
+  },
+  {
+   "video": "30_3",
+   "minutes": 2.47,
+   "reach_instances": 21,
+   "reach_found": 18,
+   "detected_reach_runs": 18,
+   "false_reach_runs": 0,
+   "person_track_ids": 9
+  },
+  {
+   "video": "31_1",
+   "minutes": 2.27,
+   "reach_instances": 22,
+   "reach_found": 15,
+   "detected_reach_runs": 10,
+   "false_reach_runs": 0,
+   "person_track_ids": 22
+  },
+  {
+   "video": "31_2",
+   "minutes": 2.26,
+   "reach_instances": 41,
+   "reach_found": 27,
+   "detected_reach_runs": 20,
+   "false_reach_runs": 0,
+   "person_track_ids": 18
+  },
+  {
+   "video": "31_3",
+   "minutes": 2.1,
+   "reach_instances": 15,
+   "reach_found": 11,
+   "detected_reach_runs": 8,
+   "false_reach_runs": 1,
+   "person_track_ids": 12
+  },
+  {
+   "video": "32_1",
+   "minutes": 2.33,
+   "reach_instances": 29,
+   "reach_found": 11,
+   "detected_reach_runs": 11,
+   "false_reach_runs": 0,
+   "person_track_ids": 16
+  },
+  {
+   "video": "32_2",
+   "minutes": 2.15,
+   "reach_instances": 33,
+   "reach_found": 14,
+   "detected_reach_runs": 10,
+   "false_reach_runs": 1,
+   "person_track_ids": 13
+  },
+  {
+   "video": "32_3",
+   "minutes": 2.11,
+   "reach_instances": 27,
+   "reach_found": 16,
+   "detected_reach_runs": 16,
+   "false_reach_runs": 0,
+   "person_track_ids": 12
+  },
+  {
+   "video": "33_1",
+   "minutes": 2.15,
+   "reach_instances": 26,
+   "reach_found": 24,
+   "detected_reach_runs": 35,
+   "false_reach_runs": 10,
+   "person_track_ids": 18
+  },
+  {
+   "video": "34_1",
+   "minutes": 2.21,
+   "reach_instances": 18,
+   "reach_found": 11,
+   "detected_reach_runs": 13,
+   "false_reach_runs": 0,
+   "person_track_ids": 12
+  },
+  {
+   "video": "35_1",
+   "minutes": 2.16,
+   "reach_instances": 13,
+   "reach_found": 7,
+   "detected_reach_runs": 10,
+   "false_reach_runs": 1,
+   "person_track_ids": 9
+  },
+  {
+   "video": "36_1",
+   "minutes": 2.1,
+   "reach_instances": 20,
+   "reach_found": 11,
+   "detected_reach_runs": 9,
+   "false_reach_runs": 0,
+   "person_track_ids": 8
+  },
+  {
+   "video": "37_1",
+   "minutes": 2.23,
+   "reach_instances": 18,
+   "reach_found": 10,
+   "detected_reach_runs": 9,
+   "false_reach_runs": 0,
+   "person_track_ids": 6
+  },
+  {
+   "video": "38_1",
+   "minutes": 2.18,
+   "reach_instances": 25,
+   "reach_found": 15,
+   "detected_reach_runs": 12,
+   "false_reach_runs": 0,
+   "person_track_ids": 7
+  },
+  {
+   "video": "39_1",
+   "minutes": 2.21,
+   "reach_instances": 19,
+   "reach_found": 11,
+   "detected_reach_runs": 10,
+   "false_reach_runs": 0,
+   "person_track_ids": 13
+  },
+  {
+   "video": "40_1",
+   "minutes": 2.23,
+   "reach_instances": 16,
+   "reach_found": 14,
+   "detected_reach_runs": 11,
+   "false_reach_runs": 0,
+   "person_track_ids": 5
+  },
+  {
+   "video": "41_1",
+   "minutes": 2.43,
+   "reach_instances": 22,
+   "reach_found": 10,
+   "detected_reach_runs": 17,
+   "false_reach_runs": 0,
+   "person_track_ids": 3
+  },
+  {
+   "video": "41_2",
+   "minutes": 2.06,
+   "reach_instances": 11,
+   "reach_found": 5,
+   "detected_reach_runs": 13,
+   "false_reach_runs": 0,
+   "person_track_ids": 19
   }
  ]
 }

@@ -39,6 +39,17 @@ Outputs in `--out`: `annotated.mp4` (zones, boxes, IDs, skeletons, heads pixelat
 Store layout: `--store configs/your_store.yaml` (zones are polygons in camera pixels; copy
 `configs/store_gas_station_small.yaml`). Draw them on a still frame from the real camera.
 
+Several cameras of one store: repeat `--source` and `--store` (one YAML per camera, zones in that
+camera's pixels, plus `camera.floor_points`: 4+ marks mapping its pixels to a shared floor plan in
+metres). People keep one id across cameras by floor position and time only (no appearance
+features), and one ledger reconciles the store, so a pick on the cooler camera, payment at the
+register camera and the exit at the door camera are one visit. Only door cameras need an `exit` zone.
+
+```bash
+.venv/bin/python -m bree.cli run --source rtsp://.../door --store configs/door_cam.yaml \
+  --source rtsp://.../cooler --store configs/cooler_cam.yaml --source rtsp://.../register --store configs/register_cam.yaml
+```
+
 ### Payments (POS / cooler taps)
 One JSON object per payment, e.g.
 `{"terminal": "pos_1", "ts": 1767000000.2, "txn_id": "T1042", "items": [{"sku": "COKE-20OZ", "qty": 1}]}`
@@ -63,6 +74,12 @@ cp configs/shadow_example.yaml configs/shadow_store1.yaml   # camera RTSP URLs, 
 
 - **POS**: the POS drops export files (`*.jsonl` / `*.json`, the payment format above, with `ts`)
   into `pos_export_dir`; shadow mode polls it every 2 s. Files already there at start are skipped.
+  A receipt that arrives after the decision (batched exports) still counts for `late_receipt_window_s`
+  (default 300 s) after the exit: it retracts or downgrades the would-be alert, never raises one. The
+  retraction is a second record in `would_be_alerts.jsonl` (`retracts` = the earlier id) and the
+  review page marks the card RETRACTED. For batched exports also raise `exit_grace_s` to the batch delay.
+- **Multi-camera store**: `multicam: true` in the shadow YAML runs every camera into one ledger
+  (see the single-camera notes above; each camera's store YAML needs `camera.floor_points`).
 - **Review**: on `/review`, Kiro and the operator mark each would-be alert *Real theft*, *False alert*
   or *Unsure*, with an optional note. Labels are appended to `labels.jsonl` with reviewer name and
   time; the latest label per alert counts. Precision = real / (real + false).

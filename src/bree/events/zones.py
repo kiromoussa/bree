@@ -64,6 +64,16 @@ class StoreConfig:
     rules: dict = field(default_factory=dict)       # event-engine thresholds
     ledger: dict = field(default_factory=dict)      # LedgerConfig overrides
     product_classes: dict[str, str] = field(default_factory=dict)  # detector class -> category
+    # Multi-camera stores only: 4+ [x_px, y_px, x_m, y_m] marks (a pixel in this camera and the
+    # same spot on the shared store floor plan, metres). None = single camera.
+    floor_points: list | None = None
+
+    def floor_homography(self) -> np.ndarray:
+        from bree.track.multicam import homography
+        pts = np.asarray(self.floor_points, dtype=float)
+        if pts.ndim != 2 or pts.shape[1] != 4 or len(pts) < 4:
+            raise ValueError(f"camera {self.camera_id}: floor_points needs 4+ [x_px, y_px, x_m, y_m] rows")
+        return homography(pts[:, :2], pts[:, 2:])
 
     def zone(self, name: str) -> Zone:
         return next(z for z in self.zones if z.name == name)
@@ -102,4 +112,26 @@ def load_store_config(path: str | Path) -> StoreConfig:
         rules=raw.get("rules", {}),
         ledger=raw.get("ledger", {}),
         product_classes=raw.get("product_classes", {}),
+        floor_points=cam.get("floor_points"),
     )
+
+
+def merge_stores(stores: list[StoreConfig]) -> StoreConfig:
+    """The store as the ledger sees it when several cameras feed one ledger: every camera's zones
+    (by name; the polygons stay per camera), terminals, catalog and product classes. Ledger
+    settings come from the first camera's file. A zone name must mean the same kind everywhere."""
+    if len(stores) == 1:
+        return stores[0]
+    kinds: dict[str, str] = {}
+    for s in stores:
+        for z in s.zones:
+            if kinds.setdefault(z.name, z.kind) != z.kind:
+                raise ValueError(f"zone {z.name!r} is {kinds[z.name]} in one camera and {z.kind} in another")
+    first = stores[0]
+    return StoreConfig(
+        name=first.name, camera_id="+".join(s.camera_id for s in stores), resolution=first.resolution,
+        fps=first.fps, zones=[z for s in stores for z in s.zones],
+        terminals={k: v for s in stores for k, v in s.terminals.items()},
+        catalog=Catalog({k: v for s in stores for k, v in s.catalog.sku_to_category.items()}),
+        rules=first.rules, ledger=first.ledger,
+        product_classes={k: v for s in stores for k, v in s.product_classes.items()})

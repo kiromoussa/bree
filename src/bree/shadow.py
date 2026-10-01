@@ -8,9 +8,11 @@ Kiro and the operator label each record on the dashboard's /review page; labels 
 data from the pilot.
 
 Layout of `output_dir`:
-  would_be_alerts.jsonl      one record per would-be alert
+  would_be_alerts.jsonl      one record per would-be alert, plus a retraction record (`retracts` =
+                             the earlier id) when a late POS receipt lowers one
   labels.jsonl               one line per label click: id, label, reviewer, note, ts
-  <camera>/<session>/        pipeline outputs per camera run (alerts/<id>.json + .mp4 clip, events.jsonl)
+  <camera>/<session>/        pipeline outputs per camera run (alerts/<id>.json + .mp4 clip, events.jsonl);
+                             with `multicam:` one store/<session>/ for all cameras (one ledger)
   raw/<camera>/*.mp4         ONLY if record_raw.enabled: rolling UNBLURRED segments (contain faces)
 """
 from __future__ import annotations
@@ -42,6 +44,9 @@ class ShadowConfig:
     review_port: int = 8080                                  # 0 = don't serve the review page
     ledger: dict = field(default_factory=dict)               # LedgerConfig overrides, e.g. exit_grace_s
     record_raw: dict = field(default_factory=dict)           # enabled / segment_minutes / retention_hours
+    # None: each camera has its own ledger. A dict (YAML `multicam: true` or handoff settings
+    # max_dist_m / max_gap_s): all cameras are one store, one person id across cameras, ONE ledger.
+    multicam: dict | None = None
 
 
 def load_shadow_config(path: str | Path) -> ShadowConfig:
@@ -49,10 +54,15 @@ def load_shadow_config(path: str | Path) -> ShadowConfig:
     cams = [Camera(c["name"], str(c["rtsp_url"]), c["store"]) for c in raw["cameras"]]
     if len({c.name for c in cams}) != len(cams):
         raise ValueError("camera names must be unique")
+    mc = raw.get("multicam")
     return ShadowConfig(cameras=cams, output_dir=raw.get("output_dir", "out/shadow"),
                         pos_export_dir=raw.get("pos_export_dir"), backend=raw.get("backend", "yolo"),
                         review_port=int(raw.get("review_port", 8080)), ledger=raw.get("ledger") or {},
-                        record_raw=raw.get("record_raw") or {})
+                        record_raw=raw.get("record_raw") or {},
+                        multicam=({} if mc is True else dict(mc)) if mc else None)
+
+
+MULTICAM_NAME = "store"   # "camera" name of the fused feed in record ids and folders
 
 
 def would_be_record(alert, camera: str, session: str, out_dir: str | Path) -> dict:
@@ -61,6 +71,8 @@ def would_be_record(alert, camera: str, session: str, out_dir: str | Path) -> di
         clip = str(Path(clip).resolve().relative_to(Path(out_dir).resolve()))
     return {
         "id": f"{camera}-{session}-{alert.alert_id}",
+        # A late receipt lowered an earlier would-be alert: this record points at it.
+        "retracts": f"{camera}-{session}-{alert.retracts}" if alert.retracts else None,
         "time": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
         "camera": camera, "person_id": alert.person_id, "group": alert.group,
         "tier": alert.tier, "confidence": alert.confidence,
@@ -115,9 +127,13 @@ class ShadowLog:
         return rec
 
     def labelled(self) -> list[dict]:
-        """Every would-be alert with its latest label (or None)."""
+        """Every would-be alert with its latest label (or None) and its latest retraction (or
+        None). Retraction records are folded into the alert they retract, not listed on their own."""
         labels = self.latest_labels()
-        return [{**a, "label": labels.get(a["id"])} for a in self.alerts()]
+        rows = self.alerts()
+        retracted = {a["retracts"]: a for a in rows if a.get("retracts")}
+        return [{**a, "label": labels.get(a["id"]), "retraction": retracted.get(a["id"])}
+                for a in rows if not a.get("retracts")]
 
     def clip_file(self, alert_id: str) -> Path | None:
         for a in self.alerts():
@@ -129,9 +145,12 @@ class ShadowLog:
         return None
 
     def summary(self) -> dict:
-        """Counts per tier and label. Precision = real / (real + false); "unsure" is left out."""
+        """Counts per tier and label. Precision = real / (real + false); "unsure" is left out.
+        Tiers are as first decided (what staff would have been told); `retracted` counts how many
+        a late receipt later lowered."""
         rows = self.labelled()
-        out = {"would_be_alerts": len(rows), "labelled": sum(1 for r in rows if r["label"])}
+        out = {"would_be_alerts": len(rows), "labelled": sum(1 for r in rows if r["label"]),
+               "retracted": sum(1 for r in rows if r["retraction"])}
         for tier in ("alert", "review", "all"):
             sel = [r for r in rows if tier == "all" or r["tier"] == tier]
             n = {lab: sum(1 for r in sel if r["label"] and r["label"]["label"] == lab) for lab in LABELS}
@@ -174,13 +193,17 @@ class RawRecorder:
             self.vw = None
 
 
-def _run_camera(cam: Camera, cfg: ShadowConfig, log: ShadowLog, once: bool, stop: threading.Event) -> None:
+def _run_cameras(name: str, cams: list[Camera], cfg: ShadowConfig, log: ShadowLog, once: bool,
+                 stop: threading.Event) -> None:
+    """One ledger for `cams`: a single camera, or (multicam) every camera of the store."""
     from bree.cli import make_backend
-    from bree.events.zones import load_store_config
+    from bree.events.zones import load_store_config, merge_stores
     from bree.ledger.payments import FolderPayments
-    from bree.pipeline import run_pipeline
-    store = load_store_config(cam.store)
+    from bree.pipeline import CameraInput, run_store
+    stores = [load_store_config(c.store) for c in cams]
+    store = merge_stores(stores)
     backend = make_backend(cfg.backend, store)
+    inputs = [CameraInput(c.name, c.rtsp_url, s) for c, s in zip(cams, stores)]
     raw_cfg = cfg.record_raw
     while not stop.is_set():
         session = time.strftime("%Y%m%dT%H%M%S")
@@ -189,21 +212,22 @@ def _run_camera(cam: Camera, cfg: ShadowConfig, log: ShadowLog, once: bool, stop
             # Live: receipts already in the folder predate this run. Replay (--once): read them all.
             payments = FolderPayments(cfg.pos_export_dir, stream_start_wall=time.time(),
                                       terminals=store.terminals, skip_existing=not once)
-        recorder = (RawRecorder(Path(cfg.output_dir) / "raw" / cam.name, store.fps,
-                                raw_cfg.get("segment_minutes", 5), raw_cfg.get("retention_hours", 24))
-                    if raw_cfg.get("enabled") else None)
+        recorders = ({c.name: RawRecorder(Path(cfg.output_dir) / "raw" / c.name, s.fps,
+                                          raw_cfg.get("segment_minutes", 5), raw_cfg.get("retention_hours", 24))
+                      for c, s in zip(cams, stores)} if raw_cfg.get("enabled") else {})
         try:
-            s = run_pipeline(cam.rtsp_url, store, backend, Path(cfg.output_dir) / cam.name / session,
-                             payments=payments, save_video=False, log_frames=False, verbose=False,
-                             ledger_overrides=cfg.ledger,
-                             on_alert=lambda a: log.add_alert(would_be_record(a, cam.name, session, cfg.output_dir)),
-                             on_frame=(lambda fr, *_: recorder.write(fr.image)) if recorder else None)
-            print(f"[{cam.name}] stream ended after {s.frames} frames, {len(s.alerts)} would-be alert(s)")
+            s = run_store(inputs, backend, Path(cfg.output_dir) / name / session,
+                          payments=payments, save_video=False, log_frames=False, verbose=False,
+                          ledger_overrides=cfg.ledger, handoff=cfg.multicam,
+                          on_alert=lambda a: log.add_alert(would_be_record(a, name, session, cfg.output_dir)),
+                          on_frame=(lambda fr, *_: recorders[fr.camera or cams[0].name].write(fr.image))
+                          if recorders else None)
+            print(f"[{name}] stream ended after {s.frames} frames, {len(s.alerts)} would-be alert(s)")
         except IOError:
-            print(f"[{cam.name}] cannot open the stream")   # not the URL: it may hold credentials
+            print(f"[{name}] cannot open the stream")   # not the URL: it may hold credentials
         finally:
-            if recorder:
-                recorder.close()
+            for r in recorders.values():
+                r.close()
         if once:
             break
         stop.wait(10)   # camera dropped: reconnect with a new session
@@ -220,8 +244,10 @@ def run_shadow(cfg: ShadowConfig, once: bool = False) -> ShadowLog:
         print("WARNING: record_raw is on. Raw segments are NOT head-pixelated and contain faces: "
               f"{Path(cfg.output_dir) / 'raw'} (kept {cfg.record_raw.get('retention_hours', 24)} h)")
     stop = threading.Event()
-    threads = [threading.Thread(target=_run_camera, args=(c, cfg, log, once, stop), daemon=True)
-               for c in cfg.cameras]
+    groups = ([(MULTICAM_NAME, cfg.cameras)] if cfg.multicam is not None
+              else [(c.name, [c]) for c in cfg.cameras])
+    threads = [threading.Thread(target=_run_cameras, args=(name, cams, cfg, log, once, stop), daemon=True)
+               for name, cams in groups]
     for t in threads:
         t.start()
     try:

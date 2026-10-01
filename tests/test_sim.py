@@ -60,6 +60,21 @@ def test_ledger_nearly_perfect_with_perfect_vision():
     assert r["recall_alert_or_review"] >= 0.9
 
 
+def test_batched_pos_receipts_arrive_late_and_retraction_recovers():
+    w = world(hours=10)
+    obs = observe(w, VisionNoise(pos_batch_s=60), seed=1)
+    # next batch boundary; never before the (jittered) receipt timestamp
+    assert obs.payments and all(p.t_received >= p.t and (p.t_received % 60 == 0 or p.t_received == p.t)
+                                for p in obs.payments)
+    assert all(p.t_received is None for p in observe(w, VisionNoise(), seed=1).payments)   # default: live feed
+    noise = VisionNoise(pos_batch_s=60)
+    off = run_event_bench(STORE, SimConfig(hours=30), noise, seed=3, ledger_overrides={"late_receipt_window_s": 0})
+    on = run_event_bench(STORE, SimConfig(hours=30), noise, seed=3)
+    assert on["retractions"] > 0 and off["retractions"] == 0
+    assert on["false_alerts_per_hour"] < off["false_alerts_per_hour"]
+    assert on["reviews_on_honest_per_hour"] < off["reviews_on_honest_per_hour"]
+
+
 def test_noise_makes_things_worse_not_better():
     clean = run_event_bench(STORE, SimConfig(hours=40), VisionNoise().scaled(0), seed=3)
     noisy = run_event_bench(STORE, SimConfig(hours=40), VisionNoise().scaled(2), seed=3)

@@ -22,7 +22,8 @@ class UnpaidItem:
 class Alert:
     alert_id: str
     person_id: int
-    tier: str                      # "alert" (notify staff now) or "review" (manager reviews later)
+    tier: str                      # "alert" (notify staff now) or "review" (manager reviews later);
+                                   # on a retraction: the new tier, "review" or "retracted"
     confidence: float
     t_exit: float                  # camera time the person left
     t_emitted: float               # camera time the ledger emitted this alert
@@ -34,6 +35,7 @@ class Alert:
     clip_path: str | None = None
     basket: list[str] = field(default_factory=list)       # everything the party picked (categories)
     audit_log: list[str] = field(default_factory=list)    # the ledger's reasoning, line by line
+    retracts: str | None = None    # set on a retraction: id of the earlier alert a late receipt lowered
 
     @property
     def latency_s(self) -> float:

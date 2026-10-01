@@ -15,6 +15,7 @@ class Frame:
     t: float              # seconds since stream start (file: frame index / fps; live: wall clock)
     image: np.ndarray     # BGR
     wall: float           # time.time() when the frame was read (latency measurement)
+    camera: str | None = None   # set by the pipeline when several cameras feed one store
 
 
 class VideoSource:

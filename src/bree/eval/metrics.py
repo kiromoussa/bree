@@ -27,7 +27,16 @@ def _pct(xs, q):
     return round(float(np.percentile(xs, q)), 2) if len(xs) else None
 
 
+def apply_retractions(alerts) -> list:
+    """Final state of each alert: a later retraction (late receipt) replaces its tier."""
+    final = {a.retracts: a.tier for a in alerts if a.retracts}
+    out = [replace(a, tier=final.get(a.alert_id, a.tier)) for a in alerts if not a.retracts]
+    return [a for a in out if a.tier in ("alert", "review")]
+
+
 def evaluate(world: World, obs, ledger, alerts, hours: float) -> dict:
+    n_retractions = sum(1 for a in alerts if a.retracts)
+    alerts = apply_retractions(alerts)
     people = {p.pid: p for p in world.people}
     thieves = {pid for pid, p in people.items() if p.stolen}
     # Map each ledger decision (keyed by an observed id that exited) to true people.
@@ -121,6 +130,7 @@ def evaluate(world: World, obs, ledger, alerts, hours: float) -> dict:
                                             "precision": round(v[0] / v[1], 3) if v[1] else None}
                                         for k, v in by_evidence.items()},
         "false_alerts_by_shopper_type": dict(fa_by_kind),
+        "retractions": n_retractions,
     }
 
 

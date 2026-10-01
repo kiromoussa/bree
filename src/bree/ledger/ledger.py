@@ -15,6 +15,8 @@ How it works, in one screen:
 3. After a person exits we wait a short grace period (late POS messages), and
    longer if their decision depends on someone still in the store (a group
    that came in together, or a crowded pick that might have been someone else's).
+   A receipt that arrives even later (batched POS export) can still retract or
+   downgrade the decision, never raise it (`_late_receipts`).
 
 4. Reconciliation = basket minus paid items, matched by SKU when we have it and
    by category otherwise. Every unpaid item gets an evidence score from the
@@ -71,6 +73,9 @@ class LedgerConfig:
     cooler_tap_window_s: float = 20.0  # a tap is matched to a pick at that cooler within this window
     register_slack_s: float = 3.0    # POS timestamp may fall just outside the dwell interval
     payment_expiry_s: float = 300.0  # unmatched payments are dropped (and logged) after this
+    # A receipt that reaches us after the decision (batched POS export, network lag) can still
+    # lower it if it arrives within this long after the exit. 0 = never retract.
+    late_receipt_window_s: float = 300.0
 
 
 @dataclass
@@ -116,6 +121,21 @@ class PersonRecord:
     log: list[str] = field(default_factory=list)              # human-readable audit trail
 
 
+@dataclass
+class _Flagged:
+    """An alert/review decision that a late receipt can still retract (see `_late_receipts`)."""
+    alert: Alert
+    decision: dict
+    payer: PersonRecord
+    party: list[PersonRecord]
+    surplus: Counter
+    n_paid: dict[int, int]           # person -> paid lines already counted in the decision
+    tier: str | None
+
+
+TIER_RANK = {None: 0, "review": 1, "alert": 2}
+
+
 class Ledger:
     def __init__(self, catalog: Catalog, config: LedgerConfig | None = None,
                  terminal_zones: dict[str, str] | None = None,
@@ -134,6 +154,7 @@ class Ledger:
         self.active: dict[int, PersonRecord] = {}    # people who can still matter for a decision
         self.decisions: list[dict] = []              # every reconciliation, clean ones included
         self.archived: list[PersonRecord] = []       # earlier visits of re-used track ids
+        self.flagged: list[_Flagged] = []            # flagged decisions still open to a late receipt
         self._last_prune = 0.0
         self._alert_ids = itertools.count(1)
 
@@ -179,10 +200,10 @@ class Ledger:
         return emitted + self.tick(ev.t)
 
     def on_payment(self, pay: Payment) -> list[Alert]:
-        emitted = self.tick(pay.t)
+        emitted = self.tick(pay.t if pay.t_received is None else pay.t_received)
         self.unassigned_payments.append(pay)
         self._match_payments()
-        return emitted
+        return emitted + self._late_receipts()
 
     def tick(self, t: float) -> list[Alert]:
         """Advance the clock; finalize any exits whose waiting period is over."""
@@ -238,7 +259,8 @@ class Ledger:
         """Drop people from the working set once they can no longer affect anyone's decision:
         reconciled long enough ago, or a track that went silent inside the store (lost)."""
         self._last_prune = self.now
-        keep_after_exit = self.cfg.max_hold_s + self.cfg.cooler_tap_window_s + self.cfg.group_window_s + 60
+        keep_after_exit = max(self.cfg.max_hold_s + self.cfg.cooler_tap_window_s + self.cfg.group_window_s,
+                              self.cfg.late_receipt_window_s) + 60
         for pid, p in list(self.active.items()):
             if p.reconciled and p.t_exit is not None and self.now - p.t_exit > keep_after_exit:
                 del self.active[pid]
@@ -569,14 +591,13 @@ class Ledger:
             why.append(f"{item.category}: crowded pick, may belong to person(s) {item.ambiguous_with}")
         return min(score, 1.0), why
 
-    def _score_and_emit(self, p: PersonRecord, party: list[PersonRecord],
-                        unpaid_owned: list[tuple[PersonRecord, BasketItem]], paid: list[LineItem],
-                        surplus: Counter | None = None) -> list[Alert]:
-        surplus = surplus or Counter()
+    def _assess(self, party: list[PersonRecord], unpaid_owned: list[tuple[PersonRecord, BasketItem]],
+                paid: list[LineItem], surplus: Counter):
+        """Score a party's unpaid items -> (confidence, tier, alert_eligible, items, reasons, who)."""
         visited = any(q.register_visits for q in party) or bool(paid)
         items, reasons = [], []
         miss, scores = 1.0, []
-        best_owner, best_score = p, -1.0
+        best_owner, best_score = party[0], -1.0
         for owner, item in unpaid_owned:
             s, why = self._score_item(item, visited, bool(paid))
             if s > best_score:
@@ -602,15 +623,24 @@ class Ledger:
                 else "review" if conf >= self.cfg.review_threshold else None)
         corroborated = sum(1 for _, it in unpaid_owned if it.concealed or it.held_at_exit)
         unmatched_paid = sum(surplus.values())
-        if tier == "alert" and self.cfg.require_corroboration and corroborated <= unmatched_paid:
+        eligible = not (self.cfg.require_corroboration and corroborated <= unmatched_paid)
+        if tier == "alert" and not eligible:
             tier = "review"
             reasons.append("capped at review: " + ("no concealment or item-in-hand at exit" if not corroborated
                            else f"{unmatched_paid} paid item(s) didn't match the basket (possible misrecognition)"))
-        who = best_owner   # in a group: the person holding the strongest unpaid item
+        # in a group: the person holding the strongest unpaid item
+        return conf, tier, eligible, items, reasons, best_owner
+
+    def _score_and_emit(self, p: PersonRecord, party: list[PersonRecord],
+                        unpaid_owned: list[tuple[PersonRecord, BasketItem]], paid: list[LineItem],
+                        surplus: Counter | None = None) -> list[Alert]:
+        surplus = surplus or Counter()
+        conf, tier, eligible, items, reasons, who = self._assess(party, unpaid_owned, paid, surplus)
+        visited = any(q.register_visits for q in party) or bool(paid)
         for q in party:
             q.log.append(f"{self.now:7.1f}s reconciled: {len(unpaid_owned)} unpaid, confidence {conf:.2f} -> {tier}")
         decision = {"person_id": who.person_id, "group": [q.person_id for q in party], "confidence": conf,
-                    "alert_eligible": not (self.cfg.require_corroboration and corroborated <= unmatched_paid),
+                    "alert_eligible": eligible,
                     "tier": tier, "t": self.now, "t_exit": max(q.t_exit for q in party),
                     "unpaid": [i.category for i in items]}
         self.decisions.append(decision)
@@ -626,10 +656,64 @@ class Ledger:
             paid_items=[{"sku": li.sku, "category": li.category} for li in paid],
             visited_register=visited, group=[q.person_id for q in party] if len(party) > 1 else [],
             basket=[it.category for q in party for it in q.basket],
-            audit_log=[(f"P{q.person_id} " if len(party) > 1 else "") + line for q in party for line in q.log],
+            audit_log=self._audit(party),
         )
         self.alerts.append(alert)
+        if self.cfg.late_receipt_window_s > 0:
+            self.flagged.append(_Flagged(alert, decision, p, party, Counter(surplus),
+                                         {q.person_id: len(q.paid) for q in party}, tier))
         return [alert]
+
+    @staticmethod
+    def _audit(party: list[PersonRecord]) -> list[str]:
+        return [(f"P{q.person_id} " if len(party) > 1 else "") + line for q in party for line in q.log]
+
+    def _late_receipts(self) -> list[Alert]:
+        """Receipts that reached us after an alert/review decision. Same attribution rules as on
+        time: place/time + content in `_match_payments` first, then the basket-match claim (which
+        can't clear a concealed item). If the re-scored tier is lower, emit a retraction: an Alert
+        with `retracts` = the original id and tier "review" (downgrade) or "retracted". A late
+        receipt never raises a tier. Open for `late_receipt_window_s` after the exit."""
+        out = []
+        for f in self.flagged:
+            if self.now - f.alert.t_exit > self.cfg.late_receipt_window_s:
+                continue
+            self._claim_unassigned_receipts(f.payer, f.party)
+            new = [li for q in f.party for li in q.paid[f.n_paid[q.person_id]:]]
+            if not new:
+                continue
+            f.n_paid = {q.person_id: len(q.paid) for q in f.party}
+            before = [(q, it) for q in f.party for it in q.unpaid]
+            unpaid, extra = self._subtract(before, new)
+            for q in f.party:
+                q.unpaid = [it for owner, it in unpaid if owner is q]
+            f.surplus += extra
+            paid = [li for q in f.party for li in q.paid]
+            if unpaid:
+                conf, tier, eligible, items, reasons, _ = self._assess(f.party, unpaid, paid, f.surplus)
+            else:
+                conf, tier, eligible, items, reasons = 0.0, None, False, [], []
+            what = (f"late receipt ({len(new)} paid item(s) arrived after the decision) covered "
+                    f"{len(before) - len(unpaid)} of {len(before)} unpaid item(s)")
+            if TIER_RANK[tier] >= TIER_RANK[f.tier]:
+                f.payer.log.append(f"{self.now:7.1f}s {what}; decision stays {f.tier}")
+                continue
+            for q in f.party:
+                q.log.append(f"{self.now:7.1f}s {what}: {f.tier} {f.alert.alert_id} -> {tier or 'retracted'}")
+            f.tier = tier
+            f.decision.update(confidence=conf, tier=tier, alert_eligible=eligible, retracted_t=self.now)
+            r = Alert(
+                alert_id=f"A{next(self._alert_ids):05d}", person_id=f.alert.person_id,
+                tier=tier or "retracted", confidence=conf, t_exit=f.alert.t_exit, t_emitted=self.now,
+                unpaid_items=items, reasons=[what] + reasons,
+                paid_items=[{"sku": li.sku, "category": li.category} for li in paid],
+                visited_register=f.alert.visited_register, group=f.alert.group, basket=f.alert.basket,
+                audit_log=self._audit(f.party), retracts=f.alert.alert_id)
+            self.alerts.append(r)
+            out.append(r)
+        self.flagged = [f for f in self.flagged
+                        if f.tier is not None and self.now - f.alert.t_exit <= self.cfg.late_receipt_window_s]
+        return out
 
     # ---------------------------------------------------------------- queries
 
@@ -639,7 +723,8 @@ class Ledger:
 
     def replay(self, events: Iterable[Event], payments: Iterable[Payment] = ()) -> list[Alert]:
         """Run a full recorded stream (events + payments merged by time)."""
-        stream = [(e.t, 0, e) for e in events] + [(pay.t, 1, pay) for pay in payments]
+        stream = [(e.t, 0, e) for e in events] + \
+            [(pay.t if pay.t_received is None else pay.t_received, 1, pay) for pay in payments]
         stream.sort(key=lambda x: (x[0], x[1]))
         out = []
         for t, _, x in stream:

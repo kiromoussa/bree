@@ -30,7 +30,7 @@ Read this first after a context reset. Then BUILD_SPEC.md. Phase 2 instructions:
 ## Status (2026-10-01 ~01:30 UTC)
 Phases 0, 1, 4 (except GPU parts), 5, 6 done on the Mac. All real-data results re-run after the adversarial review (`scripts/phase2_rerun.sh`), REPORT.md Phase 2 section written from them, 98 tests pass. Phase 2 (Azure VMs) and Phase 3 (Isaac Sim) blocked on GPU quota (ticket above).
 
-## OVERNIGHT RUN (2026-10-01 ~01:10 UTC start, 6 h, Kiro asleep)
+## OVERNIGHT RUN (2026-10-01 ~00:20 UTC start, until ~06:20 UTC, Kiro asleep)
 Rules: one GPU job at a time; never use a waiter that greps its own command line (wait on PIDs); no YouTube or unlicensed footage for training.
 Queue:
 1. `scripts/tune_merl.sh` (MERL TRAIN split, 9 perception configs) -> results/tuning/. Then run the best config on the TEST split once -> results/merl_measure_tuned.json; if clearly better, make it the default and update measured_error_rates.

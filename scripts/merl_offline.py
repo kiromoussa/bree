@@ -64,11 +64,12 @@ def hand_points(k, kp):
     return out
 
 
-def evaluate(videos, hand_k, dd, stitch_s, stitch_dist):
+def evaluate(videos, hand_k, dd, stitch_s, stitch_dist, stitch_long_s=0.0, stitch_near=0.5):
     tot = dict(reach=0, found=0, false_runs=0, minutes=0.0, visits=[], split=0)
     for stem, (frames, sampled, fps), gt in videos:
         pad = 0.5 * fps
-        rules = EngineRules.from_dict({**STORE.rules, "stitch_s": stitch_s, "stitch_dist": stitch_dist})
+        rules = EngineRules.from_dict({**STORE.rules, "stitch_s": stitch_s, "stitch_dist": stitch_dist,
+                                       "stitch_long_s": stitch_long_s, "stitch_near": stitch_near, "hand_extend": hand_k})
         eng, enters, hits = EventEngine(STORE, rules), [], []
         for fi in sampled:
             ppl = frames.get(fi, [])

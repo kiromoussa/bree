@@ -55,6 +55,8 @@ class EngineRules:
     min_store_time_s: float = 2.0   # shorter tracks never count as a store visit
     stitch_s: float = 10.0          # a NEW track id appearing away from the door this soon after someone was lost
     stitch_dist: float = 1.0        # ...within this many of their body heights continues their visit (0 = off)
+    stitch_long_s: float = 0.0      # ...or this long (0 = off) when the new track is within stitch_near body heights
+    stitch_near: float = 0.5        #    of where they were lost (overhead detectors drop people standing still)
     hand_extend: float = 0.5        # reach point = wrist + this * (wrist - elbow): MERL test reach recall 64% -> 88% (DECISIONS)
 
     @staticmethod
@@ -223,13 +225,15 @@ class EventEngine:
             return None                                      # someone new walking in
         best, best_d = None, math.inf
         for ps in self.people.values():
-            if (ps.exited or ps.pid in self._present or ps.t_last >= self.t
-                    or self.t - ps.t_last > self.r.stitch_s):
+            gap = self.t - ps.t_last
+            if ps.exited or ps.pid in self._present or ps.t_last >= self.t or gap > max(self.r.stitch_s, self.r.stitch_long_s):
                 continue
             lx, ly = ps.last.foot_point(self.r.foot_point)
             h = max(ps.last.bbox[3] - ps.last.bbox[1], 1.0)
             d = math.hypot(fx - lx, fy - ly)
-            if d <= self.r.stitch_dist * h and d < best_d:
+            ok = (gap <= self.r.stitch_s and d <= self.r.stitch_dist * h) or \
+                 (gap <= self.r.stitch_long_s and d <= self.r.stitch_near * h)
+            if ok and d < best_d:
                 best, best_d = ps, d
         if best is not None:
             self.alias[po.track_id] = best.pid

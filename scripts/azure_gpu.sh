@@ -3,7 +3,7 @@
 # SSH only and only from this machine's current public IP.
 #   scripts/azure_gpu.sh quota  [region]   # GPU quota in a region
 #   scripts/azure_gpu.sh train  [region]   # bree-train: 1x A100 80GB (NC24ads_A100_v4), 1 TB disk, driver, repo, make test
-#   scripts/azure_gpu.sh sim    [region]   # bree-sim:   1x A10 24GB  (NV36ads_A10_v5) via NVIDIA Isaac Automator
+#   scripts/azure_gpu.sh sim    [region]   # bree-sim:   1x A10 24GB  (NV36ads_A10_v5), Isaac Sim 4.5.0 container via Isaac Automator v3.13.0
 #   scripts/azure_gpu.sh stop              # deallocate every VM in bree-rg (keeps disks, stops compute billing)
 #   scripts/azure_gpu.sh status
 set -euo pipefail
@@ -36,16 +36,31 @@ case "${1:-status}" in
        git checkout claude/new-session-v6zi52 && ./scripts/setup.sh && make test'
     echo "bree-train at $IP" ;;
   sim)
-    # NVIDIA Isaac Automator (https://github.com/isaac-sim/IsaacAutomator). Pin a stable Isaac Sim tag. It reads
-    # NGC_API_KEY from the environment and prompts for anything else (flags checked against its deploy-azure, 2026-09-30).
-    # Azure A10 VMs ship the GRID 570 driver: Isaac Sim 5.1 wants 580.65+, 4.5 wants 535.129+ -> default 4.5.0.
+    # NVIDIA Isaac Automator v3.13.0, the last release that deploys the Isaac Sim *container*
+    # (--isaac-image). v4.x builds Isaac Sim from github.com/isaac-sim/IsaacSim tags, which start at v5.0.0.
+    # v3.13.0 installs the Azure GRID driver 535.161.08 (Isaac Sim 4.5 needs >= 535.129.03) and runs the
+    # container with ~/results -> /results and ~/uploads -> /uploads (src/ansible/roles/isaac/templates/isaacsim.sh).
+    # Its terraform opens SSH/VNC/NoMachine to 0.0.0.0/0, so lock_ssh below replaces those rules.
+    # First run: `az login` inside the Automator container prints a device code; a human completes it once.
+    # Never `./destroy bree-sim`: the RG is imported into its terraform state (the azurerm provider refuses
+    # to delete a non-empty RG, but don't rely on that). Use `stop` below.
     : "${NGC_API_KEY:?export NGC_API_KEY first (ngc.nvidia.com -> Setup -> API key)}"
-    ISAAC_TAG="${ISAAC_TAG:-4.5.0}"
-    [ -d ../IsaacAutomator ] || git clone https://github.com/isaac-sim/IsaacAutomator ../IsaacAutomator
-    (cd ../IsaacAutomator && ./build && ./deploy-azure bree-sim --instance-type Standard_NV36ads_A10_v5 \
-      --region "$REGION" --isaacsim "$ISAAC_TAG" --resource-group $RG --tags project=bree \
-      --ingress-cidrs "$MYIP/32")
-    echo "Isaac Sim $ISAAC_TAG deployed; see ../IsaacAutomator/state/bree-sim. Log the tag in PROGRESS.md." ;;
+    ISAAC_IMAGE="${ISAAC_IMAGE:-nvcr.io/nvidia/isaac-sim:4.5.0}"
+    IA=../IsaacAutomator
+    [ -d $IA ] || git clone --depth 1 --branch v3.13.0 https://github.com/isaac-sim/IsaacAutomator $IA
+    printf '#!/bin/sh\n# bree: do not start the Isaac Sim GUI container on boot\n' > $IA/uploads/autorun.sh
+    az group create -n $RG -l "$REGION" --tags $TAGS -o none
+    RG_ID=$(az group show -n $RG --query id -o tsv)
+    (cd $IA && ./run ./deploy-azure --deployment-name bree-sim --region "$REGION" \
+      --isaac-instance-type Standard_NV36ads_A10_v5 --isaac --isaac-image "$ISAAC_IMAGE" --ngc-api-key "$NGC_API_KEY" \
+      --oige no --isaaclab no --in-china no --upload --resource-group "$RG_ID" --ingress-cidrs "$MYIP/32")
+    VM=$(az vm list -g $RG --query "[?contains(name,'bree-sim')].name | [0]" -o tsv)
+    lock_ssh bree-sim
+    az resource list -g $RG --query "[?contains(name,'bree-sim')].id" -o tsv | \
+      xargs -r -n1 az resource tag --is-incremental --tags $TAGS -o none --ids
+    az vm auto-shutdown -g $RG -n "$VM" --time "$SHUTDOWN_UTC" -o none
+    echo "Isaac Sim ($ISAAC_IMAGE) on $VM: ssh -i $IA/state/bree-sim/key.pem ubuntu@$(az vm show -d -g $RG -n "$VM" --query publicIps -o tsv)"
+    echo "Log the image tag in PROGRESS.md." ;;
   stop)
     az vm list -g $RG --query "[].name" -o tsv | xargs -r -n1 az vm deallocate -g $RG --no-wait -n
     az vm list -d -g $RG -o table ;;

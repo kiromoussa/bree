@@ -46,6 +46,25 @@ One JSON object per payment, e.g.
 - `--payments payments.jsonl` (file), `--payments stdin`, or `--payments http:8765` then
   `curl -X POST localhost:8765/payments -d '{...}'`.
 
+### ONNX Runtime (edge devices)
+`--runtime onnx` (on `run`, `dashboard`, `shadow`; or `runtime: onnx` in the shadow YAML) runs the detector
+and pose models from ONNX instead of PyTorch. Default stays `pytorch`.
+
+```bash
+.venv/bin/python -m bree.cli run --source clip.mp4 --runtime onnx
+```
+
+- Models: `models/<name>_<size>.onnx` at the sizes the pipeline uses (detector `--imgsz`, default 640; pose
+  crop 160), static shape, batch 1. Exported on first use if missing.
+- Execution provider: the best one ONNX Runtime has here, TensorRT > CUDA > CoreML (Apple silicon) > CPU,
+  with the rest as fallback (`bree.edge.ort.ort_providers`). The log line `bree: ... switched to [...]` says
+  which one loaded. TensorRT/CUDA need `onnxruntime-gpu` instead of `onnxruntime`; TensorRT engines are
+  cached in `models/ort_cache/` (delete it after changing weights).
+- Parity with PyTorch: `PYTHONPATH=src .venv/bin/python scripts/onnx_parity.py` -> `results/onnx_parity.json`.
+  It also exports the concealment classifier to `models/conceal_poselift.onnx` (dynamic batch, normalisation
+  and sigmoid inside the graph; `bree.conceal.onnx_track_scorer` runs it without torch).
+- Speed: `scripts/speed.py` has a row per ONNX Runtime provider present (CPU, CoreML, CUDA, TensorRT).
+
 ## Shadow mode (pilot)
 
 Runs the full pipeline on the store cameras and shows **nothing** to staff. Every would-be

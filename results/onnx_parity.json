@@ -1,0 +1,95 @@
+{
+ "models": "yolo26s",
+ "reference": "pytorch cpu",
+ "coreml_units": "CPUAndNeuralEngine",
+ "yolo": [
+  {
+   "runtime": "onnxruntime cpu",
+   "provider_active": "CPUExecutionProvider",
+   "video": "data/real/vtest.avi",
+   "frames": 4,
+   "people_pytorch": 25,
+   "unmatched_people": 1,
+   "box_max_px": 7.77,
+   "box_median_px": 0.225,
+   "keypoints_compared": 350,
+   "kpt_max_px": 8.22e-05,
+   "kpt_p99_px": 6.82e-05,
+   "kpt_median_px": 0.0,
+   "conf_max_abs": 0.0968,
+   "det_same_letterbox": {
+    "frames_with_different_detections": 0,
+    "box_max_px": 0.000122,
+    "conf_max_abs": 3.76e-06
+   }
+  },
+  {
+   "runtime": "onnxruntime cpu",
+   "provider_active": "CPUExecutionProvider",
+   "video": "data/merl/Videos_MERL_Shopping_Dataset/27_1_crop.mp4",
+   "frames": 4,
+   "people_pytorch": 3,
+   "unmatched_people": 1,
+   "box_max_px": 22.0,
+   "box_median_px": 11.2,
+   "keypoints_compared": 30,
+   "kpt_max_px": 8.05,
+   "kpt_p99_px": 7.8,
+   "kpt_median_px": 0.000229,
+   "conf_max_abs": 0.17,
+   "det_same_letterbox": {
+    "frames_with_different_detections": 0,
+    "box_max_px": 0.000214,
+    "conf_max_abs": 8.64e-07
+   }
+  },
+  {
+   "runtime": "onnxruntime coreml",
+   "provider_active": "CoreMLExecutionProvider",
+   "video": "data/real/vtest.avi",
+   "frames": 4,
+   "people_pytorch": 25,
+   "unmatched_people": 1,
+   "box_max_px": 7.77,
+   "box_median_px": 0.225,
+   "keypoints_compared": 350,
+   "kpt_max_px": 8.63e-05,
+   "kpt_p99_px": 6.82e-05,
+   "kpt_median_px": 1.53e-05,
+   "conf_max_abs": 0.0968,
+   "det_same_letterbox": {
+    "frames_with_different_detections": 0,
+    "box_max_px": 0.000122,
+    "conf_max_abs": 2.24e-06
+   }
+  },
+  {
+   "runtime": "onnxruntime coreml",
+   "provider_active": "CoreMLExecutionProvider",
+   "video": "data/merl/Videos_MERL_Shopping_Dataset/27_1_crop.mp4",
+   "frames": 4,
+   "people_pytorch": 3,
+   "unmatched_people": 1,
+   "box_max_px": 22.0,
+   "box_median_px": 11.2,
+   "keypoints_compared": 30,
+   "kpt_max_px": 8.05,
+   "kpt_p99_px": 7.8,
+   "kpt_median_px": 0.000208,
+   "conf_max_abs": 0.17,
+   "det_same_letterbox": {
+    "frames_with_different_detections": 0,
+    "box_max_px": 0.000275,
+    "conf_max_abs": 1.25e-06
+   }
+  }
+ ],
+ "conceal": {
+  "onnx": "models/conceal_poselift.onnx",
+  "poselift_test_clips": 6,
+  "tracks": 13,
+  "windows": 656,
+  "score_max_abs_diff": 1.7881393432617188e-07,
+  "note": "dynamic batch; mu/sd normalisation + sigmoid baked into the graph"
+ }
+}

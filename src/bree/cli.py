@@ -20,6 +20,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_STORE = ROOT / "configs" / "store_gas_station_small.yaml"
+RUNTIMES = ("pytorch", "onnx")
+RUNTIME_HELP = ("yolo backend: pytorch (default) or onnx = ONNX Runtime on TensorRT/CUDA/CoreML/CPU, "
+                "whichever is best here; exports models/<name>_<size>.onnx if missing")
 
 
 def _weights(name: str) -> str:
@@ -27,7 +30,7 @@ def _weights(name: str) -> str:
     return str(p) if p.exists() else name   # ultralytics downloads by name if missing
 
 
-def make_backend(kind: str, store, imgsz: int | None = None, products: bool = True):
+def make_backend(kind: str, store, imgsz: int | None = None, products: bool = True, runtime: str = "pytorch"):
     if kind == "toy":
         from bree.detect.toy import ToyBackend
         return ToyBackend()
@@ -35,7 +38,7 @@ def make_backend(kind: str, store, imgsz: int | None = None, products: bool = Tr
     from bree.hw import detect_hardware
     hw = detect_hardware()
     return YoloBackend(_weights(hw.pose_model), _weights(hw.detect_model), store.product_classes,
-                       device=hw.device, imgsz=imgsz or hw.imgsz, products=products)
+                       device=hw.device, imgsz=imgsz or hw.imgsz, products=products, runtime=runtime)
 
 
 def cmd_hw(args) -> None:
@@ -49,7 +52,7 @@ def cmd_run(args) -> None:
     from bree.ledger.payments import open_payments
     from bree.pipeline import run_pipeline
     store = load_store_config(args.store)
-    backend = make_backend(args.backend, store, args.imgsz, products=not args.no_products)
+    backend = make_backend(args.backend, store, args.imgsz, products=not args.no_products, runtime=args.runtime)
     payments = open_payments(args.payments, stream_start_wall=time.time())
     s = run_pipeline(args.source, store, backend, args.out, payments=payments,
                      save_video=not args.no_video, max_frames=args.max_frames)
@@ -70,6 +73,7 @@ def main(argv: list[str] | None = None) -> None:
     r.add_argument("--backend", choices=["yolo", "toy"], default="yolo")
     r.add_argument("--payments", default=None, help="payments.jsonl | stdin | http[:PORT]")
     r.add_argument("--imgsz", type=int, default=None)
+    r.add_argument("--runtime", choices=RUNTIMES, default="pytorch", help=RUNTIME_HELP)
     r.add_argument("--max-frames", type=int, default=None)
     r.add_argument("--no-video", action="store_true", help="skip writing annotated.mp4")
     r.add_argument("--no-products", action="store_true", help="people + pose only")

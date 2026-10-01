@@ -52,3 +52,26 @@ def export_and_benchmark(root: Path, imgsz: int = 640) -> dict:
     out["tensorrt_note"] = ("Build TensorRT engines on the target: `yolo export model=yolo26n.pt format=engine "
                             "half=True imgsz=640` on the Jetson itself.")
     return out
+
+
+def export_conceal(pt: Path, out: Path | None = None) -> Path:
+    """Concealment classifier -> ONNX with dynamic batch. Normalisation and sigmoid are baked in: the graph maps raw
+    windows (B, WINDOW, FEAT) from bree.conceal.windows(track_features(t)) to scores in [0, 1], no torch at runtime."""
+    import torch
+    from bree.conceal import FEAT, WINDOW, load_bundle
+    b = load_bundle(pt)
+    mu, sd = torch.tensor(b["mu"]), torch.tensor(b["sd"])
+
+    class Scorer(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.m = b["model"]
+
+        def forward(self, x):
+            return torch.sigmoid(self.m((x - mu) / sd))
+
+    out = Path(out or Path(pt).with_suffix(".onnx"))
+    torch.onnx.export(Scorer().eval(), torch.zeros(2, WINDOW, FEAT), str(out), input_names=["windows"],
+                      output_names=["scores"], dynamic_axes={"windows": {0: "batch"}, "scores": {0: "batch"}},
+                      opset_version=17, dynamo=False)   # legacy exporter: the dynamo one needs onnxscript
+    return out

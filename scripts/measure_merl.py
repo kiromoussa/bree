@@ -9,6 +9,7 @@ so this measures the half of a PICK that the pose model owns (the reach), not pr
 Uses MERL's test subjects (27-41) only. The shelf zone was drawn on a training-split frame (10_1).
 Runs at 15 fps (every 2nd frame) like the pipeline. Writes results/merl_measure.json.
 """
+import argparse
 import glob
 import json
 import re
@@ -29,14 +30,28 @@ from bree.track.bytetrack import Tracker
 ROOT = Path("data/merl")
 SHELF = Zone("shelf", "shelf", [(190, 30), (880, 30), (880, 300), (190, 300)])   # 920x680 frames
 STRIDE, PAD_S, KPT_CONF = 2, 0.5, 0.3
-limit = int(sys.argv[1]) if len(sys.argv) > 1 else None
+ap = argparse.ArgumentParser()
+ap.add_argument("limit", nargs="?", type=int, default=None)
+ap.add_argument("--split", choices=("train", "test"), default="test")   # tune on train (subjects 1-20), report test
+ap.add_argument("--det"), ap.add_argument("--pose")
+ap.add_argument("--imgsz", type=int), ap.add_argument("--crop", type=int, default=160)
+ap.add_argument("--person-conf", type=float, default=0.3)
+ap.add_argument("--buffer", type=float, default=2.0)
+ap.add_argument("--new-track-thresh", type=float)
+ap.add_argument("--every", type=int, default=1)   # take every k-th video (quick tuning subsets)
+ap.add_argument("--out", default="results/merl_measure.json")
+args = ap.parse_args()
+limit = args.limit
 
 hw = detect_hardware()
-backend = YoloBackend(f"models/{hw.pose_model}", f"models/{hw.detect_model}", {}, device=hw.device,
-                      imgsz=hw.imgsz, products=False)
+det_w, pose_w, imgsz = args.det or hw.detect_model, args.pose or hw.pose_model, args.imgsz or hw.imgsz
+backend = YoloBackend(f"models/{pose_w}", f"models/{det_w}", {}, device=hw.device, imgsz=imgsz,
+                      pose_crop=args.crop, person_conf=args.person_conf, products=False)
+bt = {"new_track_thresh": args.new_track_thresh} if args.new_track_thresh is not None else None
 vids = sorted(glob.glob(str(ROOT / "Videos_MERL_Shopping_Dataset/*_crop.mp4")),
               key=lambda f: tuple(map(int, re.findall(r"(\d+)_(\d+)_crop", f)[0])))
-vids = [v for v in vids if int(Path(v).name.split("_")[0]) >= 27][:limit]
+subj = lambda v: int(Path(v).name.split("_")[0])
+vids = [v for v in vids if (subj(v) >= 27 if args.split == "test" else subj(v) <= 20)][::args.every][:limit]
 
 per_video, t_det = [], []
 for vf in vids:
@@ -45,7 +60,7 @@ for vf in vids:
     gt = {k + 1: np.asarray(tl[k][0]).reshape(-1, 2) for k in range(5)}
     cap = cv2.VideoCapture(vf)
     fps = cap.get(cv2.CAP_PROP_FPS)
-    tracker = Tracker(fps / STRIDE)
+    tracker = Tracker(fps / STRIDE, person_buffer_s=args.buffer, bytetrack=bt)
     in_zone, ids, fi = [], set(), 0
     while True:
         ok, im = cap.read()
@@ -88,7 +103,9 @@ mins = tot("minutes")
 res = {
     "source": "MERL Shopping Dataset, test subjects 27-41 (real video, overhead lab store, 1 shopper/video)",
     "license": "MERL research dataset (see data/LICENSES.md): evaluation only",
-    "hardware": hw.to_dict(), "stride": STRIDE, "n_videos": len(per_video), "minutes": round(mins, 1),
+    "hardware": hw.to_dict(), "stride": STRIDE, "split": args.split,
+    "config": {"det": det_w, "pose": pose_w, "imgsz": imgsz, "crop": args.crop, "person_conf": args.person_conf,
+               "buffer_s": args.buffer, "new_track_thresh": args.new_track_thresh}, "n_videos": len(per_video), "minutes": round(mins, 1),
     "reach_recall": tot("reach_found") / max(tot("reach_instances"), 1),
     "missed_reach_rate": 1 - tot("reach_found") / max(tot("reach_instances"), 1),
     "reach_instances": tot("reach_instances"),
@@ -99,5 +116,6 @@ res = {
     "per_video": per_video,
 }
 Path("results").mkdir(exist_ok=True)
-Path("results/merl_measure.json").write_text(json.dumps(res, indent=1))
+Path(args.out).parent.mkdir(parents=True, exist_ok=True)
+Path(args.out).write_text(json.dumps(res, indent=1))
 print({k: v for k, v in res.items() if k != "per_video"})

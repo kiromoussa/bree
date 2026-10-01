@@ -81,3 +81,17 @@ def test_event_hit_is_monotone_in_threshold():
     lab = np.zeros(60, np.int8); lab[40:] = 1
     v = Video("1_1", "1", "test", 60, {1: t}, lab)
     assert event_hit(v, sc, 0.25) and event_hit(v, sc, 0.5) and not event_hit(v, sc, 0.7)
+
+
+def test_v2_features_and_augmentation_shapes():
+    from bree.conceal import FEAT_V2, augment_track, body_features, track_features
+    t = _track(30, True)
+    assert body_features(t.kps).shape == (30, 12)
+    assert track_features(t, 2).shape == (30, FEAT_V2)
+    a = augment_track(t, np.random.default_rng(0))
+    assert 20 <= len(a.frames) <= 40 and a.kps.shape[1:] == (17, 3) and not np.isnan(a.kps).any()
+
+
+def test_mirror_swaps_left_and_right_wrists():
+    from bree.conceal import FLIP
+    assert FLIP[9] == 10 and FLIP[10] == 9 and FLIP[0] == 0 and sorted(FLIP) == list(range(17))

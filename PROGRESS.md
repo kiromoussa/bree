@@ -30,6 +30,15 @@ Read this first after a context reset. Then BUILD_SPEC.md. Phase 2 instructions:
 ## Status (2026-10-01 ~01:30 UTC)
 Phases 0, 1, 4 (except GPU parts), 5, 6 done on the Mac. All real-data results re-run after the adversarial review (`scripts/phase2_rerun.sh`), REPORT.md Phase 2 section written from them, 98 tests pass. Phase 2 (Azure VMs) and Phase 3 (Isaac Sim) blocked on GPU quota (ticket above).
 
+## OVERNIGHT RUN (2026-10-01 ~01:10 UTC start, 6 h, Kiro asleep)
+Rules: one GPU job at a time; never use a waiter that greps its own command line (wait on PIDs); no YouTube or unlicensed footage for training.
+Queue:
+1. `scripts/tune_merl.sh` (MERL TRAIN split, 9 perception configs) -> results/tuning/. Then run the best config on the TEST split once -> results/merl_measure_tuned.json; if clearly better, make it the default and update measured_error_rates.
+2. `scripts/conceal_select.py` (PoseLift leave-one-camera-out only) -> results/conceal_select.json. If v2/aug wins clearly, make it the default in conceal_experiment.py and rerun `scripts/phase2_rerun.sh`.
+3. Merge the three agent worktrees as they finish (A: multicam + late-receipt retraction, B: ONNX/CoreML runtime, C: Isaac Sim 4.5 scene + runbook), run tests after each merge.
+4. Every wakeup: check quota ticket #2610010040000169; if limits > 0, launch per BREE_PHASE2.md cost rules.
+5. End: speed.py (machine idle), REPORT.md "Overnight" section, independent fact-check, push.
+
 ## Next steps (exact)
 1. Check the quota ticket. When limits > 0: `scripts/azure_gpu.sh train eastus` (A100 VM, runs make test), then `NGC_API_KEY=... scripts/azure_gpu.sh sim eastus` (Isaac Automator, Isaac Sim 4.5.0 because of the GRID 570 driver), start from `src/bree/sim/isaac/`, pilot 50 clips, check overlays, then 2,000+ split by scene seed. Deallocate with `scripts/azure_gpu.sh stop`.
 2. On the A100: train the concealment classifier on synthetic + PoseLift, rerun `scripts/phase2_rerun.sh`; `python scripts/speed.py` for PyTorch/ONNX/TensorRT FPS.

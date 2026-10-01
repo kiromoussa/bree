@@ -18,15 +18,17 @@ from bree.events.observations import PersonObs, ProductObs
 from bree.track.centroid import CentroidTracker
 
 
-def _bytetrack(fps: float, buffer_s: float) -> BYTETracker:
+def _bytetrack(fps: float, buffer_s: float, overrides: dict | None = None) -> BYTETracker:
     cfg = dict(YAML.load(check_yaml("bytetrack.yaml")))
     cfg["track_buffer"] = max(1, int(round(buffer_s * fps)))  # frames a lost track survives
+    cfg.update(overrides or {})                                 # e.g. new_track_thresh, match_thresh
     return BYTETracker(IterableSimpleNamespace(**cfg))
 
 
 class Tracker:
-    def __init__(self, fps: float, person_buffer_s: float = 2.0, product_buffer_s: float = 0.35):
-        self.persons = _bytetrack(fps, person_buffer_s)
+    def __init__(self, fps: float, person_buffer_s: float = 2.0, product_buffer_s: float = 0.35,
+                 bytetrack: dict | None = None):
+        self.persons = _bytetrack(fps, person_buffer_s, bytetrack)
         self.products = CentroidTracker(max_missed=max(1, int(round(product_buffer_s * fps))))
 
     def _run(self, tracker: BYTETracker, det: Detections, shape, cls_ids: np.ndarray) -> np.ndarray:

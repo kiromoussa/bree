@@ -12,6 +12,26 @@ Two parts: **Phase 2 (2026-09-30, real data)** first, then last night's **Phase 
 - **ONNX runtime** (`--runtime onnx`) with the best ONNX Runtime provider present (TensorRT > CUDA > CoreML > CPU). With the same letterboxed input it gives the same detections as PyTorch within 0.0003 px (`results/onnx_parity.json`); on the pipeline path, padding to 640x640 shifts boxes (median 11 px on MERL). CoreML parity holds on the default compute units used in the speed run too (`results/onnx_parity_coreml_all.json`: same-letterbox boxes within 0.0003 px). **On this Mac, CoreML runs the full pipeline at 77.0 FPS with the small models vs 45.9 FPS for PyTorch MPS** (`results/speed.json`), about 5 camera streams instead of 3.
 - **Isaac Sim 4.5 gas-station generator, ready to run** (`src/bree/sim/isaac/`, runbook in its README): store, cameras, behaviours, randomisation, truth files in our schema, converter, overlays, 8/1/1 split by scene seed (pilot 52 clips, full 2,080). Not executed (no GPU). It also fixed `scripts/azure_gpu.sh sim`, which could not have worked (current Isaac Automator only deploys Isaac Sim 5.x; now pinned to v3.13.0 for the 4.5.0 container) and closes the Automator's open VNC/NoMachine ports while restricting SSH to this IP. Isaac Sim 4.5 has no concealment animation, so these renders help detection, tracking and event timing, not concealment poses.
 
+**Biggest gain tonight: pick detection and visit continuity** (event engine; choices made on MERL train videos, measured once on the 28 test videos)
+| MERL test split | Phase 2 | + track stitching | + hand point + duplicate-box removal (new defaults) |
+|---|---|---|---|
+| reach recall (pick detection upper bound) | 64.2% | 64.2% | **87.6%** |
+| false reaches / min | 0.78 | 0.78 | 1.07 |
+| visits per single-shopper video | 5.8 | 3.0 | **2.4** |
+| shoppers split into more than one visit | 100% | 82% | **64%** |
+Sources: `results/merl_stitch.json` (stitching), `results/merl_offline_train.json` (selection), `results/merl_offline_test.json` (test). Stitching continues a visit when a new tracker id appears away from the door within 10 s and one body height of someone just lost (position and time only). The hand point is the wrist pushed half a forearm further (fingertips reach deeper than the wrist). Duplicate removal drops a person box lying 85% inside a larger one. One video got worse with stitching (4 to 7 visits), so it can mis-merge.
+
+**A missed-theft bug found on the way.** The put-back rule counted any hand in a shelf zone; a resting hand next to a gondola turned a concealment by the other hand into a put-back. Now only the holding hand counts (regression test fails on the old code).
+
+**Simulator with the new measured rates** (`results/bench.json`, POS feed, 200 h, seed 2; measured pick detection 87.6%, visit splits 64%):
+| vision noise | precision | recall (alert) | recall (alert + review) | false alerts / hour |
+|---|---|---|---|---|
+| assumed baseline | 72.5% | 47.9% | 83.4% | 0.45 |
+| measured, Phase 2 rates | 24.2% | 13.5% | 37.4% | 1.05 |
+| **measured, rates after tonight** | **30.2%** | **22.2%** | **56.8%** | 1.27 |
+| measured tonight, ID switch at the assumed 3% | 54.9% | 28.1% | 79.0% | 0.57 |
+More thieves are caught (alert + review recall 37% to 57%) at slightly more false alerts. Visit splitting is still the biggest drag: at the assumed split rate, false alerts would be 0.57 per hour. The toy clips are unchanged (2 of 2 thieves alerted, no flags on honest shoppers).
+
 **Perception tuning** (chosen on MERL's train split, measured once on the test split; `results/tuning/`, `results/merl_measure_tuned.json`)
 | MERL test split (28 videos, 64.3 min) | current default (YOLO26s, conf 0.3, 2 s buffer) | tuned (YOLO26n, conf 0.15, 5 s buffer, new-track 0.15) |
 |---|---|---|
@@ -34,6 +54,8 @@ Slightly better everywhere, still near chance on RetailS and DCSASS. v1 stays th
 ---
 
 # Phase 2 (2026-09-30): real data
+
+> **Superseded overnight:** the measured pick-detection and ID-switch rates and the simulator "measured" rows below are the 2026-09-30 values. `results/measured_error_rates.json` and `results/bench.json` now hold the overnight values; see the Overnight section above.
 
 **Bottom line.**
 - **No GPUs yet.** Azure GPU quota is 0; all 9 automatic quota requests were rejected (`ContactSupport`). Kiro opened support ticket **#2610010040000169** (East US: NC A100 v4 -> 24 vCPUs, NVads A10 v5 -> 72), status Open. So Isaac Sim, the A100 training and TensorRT speed did not run; everything else ran on the Mac (M1 Max).

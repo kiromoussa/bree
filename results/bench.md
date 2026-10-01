@@ -39,7 +39,7 @@ Test clips: 21; normal footage: 0.4 h.
 ## Measured vs assumed vision error rates (simulator parameters)
 | parameter | assumed | measured | source |
 |---|---|---|---|
-| p_pick_detected | 0.92 | 0.642 | UPPER BOUND. MERL Shopping test split (28 real videos, overhead camera): share of 589 labelled Reach To Shelf + Hand In Shelf instances where our pose model put a wrist in the shelf zone. A pick also needs the product detected, which MERL can't measure (its products aren't COCO classes). |
+| p_pick_detected | 0.92 | 0.876 | UPPER BOUND. MERL Shopping test split (28 real videos, overhead camera), current engine defaults (hand point k=0.5, duplicate-box removal, stitching): share of 589 labelled Reach To Shelf + Hand In Shelf instances with a hand point in the shelf zone (+-0.5 s). A pick also needs the product detected, which MERL can't measure. |
 | pick_conf_mean | 0.85 | not measured | not measured: no labelled real data for this yet |
 | p_false_pick_on_touch | 0.05 | not measured | not measured: no labelled real data for this yet |
 | p_putback_detected | 0.85 | not measured | not measured: needs store footage with these events labelled (pilot shadow mode or staged session) |
@@ -52,7 +52,7 @@ Test clips: 21; normal footage: 0.4 h.
 | p_false_held_at_exit | 0.03 | not measured | not measured: no labelled real data for this yet |
 | p_register_visit_detected | 0.97 | not measured | not measured: needs store footage with these events labelled (pilot shadow mode or staged session) |
 | p_exit_detected | 0.98 | not measured | not measured: needs store footage with these events labelled (pilot shadow mode or staged session) |
-| p_id_switch | 0.03 | 0.821 | MERL test split (28 single-shopper videos, ~2 min each) through the event engine WITH track stitching: share of videos where the shopper still became more than one visit (>= 2 s each). Without stitching: 100%. Overhead view, likely pessimistic for a real store. |
+| p_id_switch | 0.03 | 0.643 | MERL test split, current engine defaults: share of single-shopper videos (~2 min) that still became more than one visit (>= 2 s each). Overhead view, likely pessimistic for a real store. |
 | p_id_swap | 0.01 | not measured | not measured: no labelled real data for this yet |
 | p_pos_dropped | 0.01 | not measured | not measured: needs the operator's POS export |
 | pos_jitter_s | 2.0 | not measured | not measured: needs the operator's POS export |
@@ -78,13 +78,13 @@ Test clips: 21; normal footage: 0.4 h.
 | pos | perfect | 495 | 97.9% | 76.4% | 96.8% | 0.04 | 0.03 | 100.0% | 5.0 / 35.15 |
 | pos | baseline | 495 | 72.5% | 47.9% | 83.4% | 0.45 | 4.08 | 75.5% | 5.0 / 34.47 |
 | pos | pessimistic_2x | 495 | 45.4% | 20.0% | 65.1% | 0.59 | 5.43 | 58.0% | 5.0 / 62.75 |
-| pos | measured | 495 | 24.0% | 13.9% | 39.4% | 1.09 | 2.52 | 50.0% | 5.0 / 120.0 |
-| pos | measured, id switch assumed | 495 | 42.9% | 19.6% | 64.6% | 0.65 | 3.11 | 51.4% | 5.0 / 25.54 |
+| pos | measured | 495 | 30.2% | 22.2% | 56.8% | 1.27 | 3.34 | 69.0% | 5.0 / 120.0 |
+| pos | measured, id switch assumed | 495 | 54.9% | 28.1% | 79.0% | 0.57 | 3.85 | 72.1% | 5.0 / 37.15 |
 | dwell | perfect | 495 | 96.5% | 44.8% | 74.5% | 0.04 | 0.01 | 100.0% | 5.0 / 40.53 |
 | dwell | baseline | 495 | 65.1% | 33.1% | 59.6% | 0.44 | 1.61 | 75.5% | 5.0 / 35.07 |
 | dwell | pessimistic_2x | 495 | 38.1% | 15.6% | 46.5% | 0.62 | 2.91 | 58.0% | 5.0 / 95.84 |
-| dwell | measured | 495 | 22.5% | 12.9% | 26.9% | 1.10 | 1.77 | 50.0% | 5.0 / 120.0 |
-| dwell | measured, id switch assumed | 495 | 41.6% | 18.4% | 37.4% | 0.64 | 1.37 | 51.4% | 5.0 / 27.34 |
+| dwell | measured | 495 | 27.0% | 20.0% | 38.4% | 1.33 | 1.87 | 69.0% | 5.0 / 120.0 |
+| dwell | measured, id switch assumed | 495 | 49.1% | 22.6% | 46.3% | 0.58 | 1.71 | 72.1% | 5.0 / 66.28 |
 
 Alert-threshold sweep (POS feed, baseline noise; uncorroborated decisions stay capped at review):
 | threshold | precision | recall | false alerts / hour |
@@ -134,7 +134,7 @@ Which vision errors cause false alerts? (perfect vision + one error source at it
 | pos_drops_and_jitter | 95.2% | 76.2% | 0.10 |
 
 ## Toy video clips (TOY DATA, full pipeline)
-10 people in 8 clips: 2/2 thieves alerted, 0 alerts and 0 reviews on honest people. Pipeline 15.9 FPS (toy colour detector). Alert processing latency (frame read -> alert written): [274.31, 175.78] ms.
+10 people in 8 clips: 2/2 thieves alerted, 0 alerts and 0 reviews on honest people. Pipeline 16.91 FPS (toy colour detector). Alert processing latency (frame read -> alert written): [296.72, 221.82] ms.
 
 ## Real footage throughput (vtest.avi, 795 frames, mps: Apple Silicon (MPS), 10 cores)
-Pipeline 19.5 FPS end to end; mean ms/frame by stage: {'detect': 46.14, 'track': 0.52, 'events': 0.31, 'ledger': 0.01, 'render': 3.55}; 36 person tracks.
+Pipeline 21.5 FPS end to end; mean ms/frame by stage: {'detect': 41.59, 'track': 0.46, 'events': 0.29, 'ledger': 0.01, 'render': 3.42}; 37 person tracks.

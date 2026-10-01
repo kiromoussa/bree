@@ -32,6 +32,14 @@ Sources: `results/merl_stitch.json` (stitching), `results/merl_offline_train.jso
 | measured tonight, ID switch at the assumed 3% | 54.9% | 28.1% | 79.0% | 0.57 |
 More thieves are caught (alert + review recall 37% to 57%) at more false alerts (1.05 to 1.27 per hour). Visit splitting is still the biggest drag: at the assumed split rate, false alerts would be 0.57 per hour. The toy clips are unchanged (2 of 2 thieves alerted, no flags on honest shoppers).
 
+**Tracking on real angled footage with ground truth (MOT16 train, 7 sequences, 517 people; evaluation only; `results/mot16.json`).** Settings fixed before running:
+| setting | MOTA | IDF1 | ID switches | fragmentations | recall | precision |
+|---|---|---|---|---|---|---|
+| old default (YOLO26s, conf 0.3, 2 s buffer) | 0.325 | 0.435 | 487 | 1,369 | 38.5% | 87.4% |
+| **current default** (+ duplicate-box removal) | **0.327** | **0.438** | 454 | 1,357 | 37.9% | 88.6% |
+| MERL-tuned (YOLO26n, conf 0.15, 5 s buffer) | 0.300 | 0.395 | 430 | 978 | 34.3% | 89.8% |
+Duplicate removal helps slightly on real angled footage; the MERL-tuned detector loses too much recall, which confirms not making it the default. MOT16 is street scenes with many small pedestrians (hence the low recall); engine-level stitching needs store zones and is not measured here.
+
 **Pilot day-one tools** (merged): `scripts/draw_zones.py` (click zone polygons and multi-camera floor points on a camera still, video or RTSP frame; writes the store YAML, validated by loading it back) and **POS CSV import** through a declarative column mapping (`configs/pos_mapping_example.yaml`: columns, time format and timezone, terminal names, POS item names to our SKUs or categories, clock offset). `bree pos-convert` turns an export into our receipt format; with `--video-start` it adds stream time so recorded footage can be replayed with its POS export (`bree run --payments`). Shadow mode reads CSV exports straight from the POS folder. Rehearsed end to end on a toy clip with the sample CSV.
 
 **Tried and dropped (negative results, recorded in DECISIONS.md):**

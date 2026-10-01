@@ -41,7 +41,7 @@ Next (Kiro): operator footage + POS CSV export + camera stills (the tools for th
 ## OVERNIGHT RUN (2026-10-01 ~00:20 EDT start = 04:20 UTC, until ~06:20 EDT = 10:20 UTC, Kiro asleep)
 Rules: one GPU job at a time; never use a waiter that greps its own command line (wait on PIDs); no YouTube or unlicensed footage for training.
 Queue:
-1. `scripts/tune_merl.sh` (MERL TRAIN split, 9 perception configs) -> results/tuning/. Then run the best config on the TEST split once -> results/merl_measure_tuned.json; if clearly better, make it the default and update measured_error_rates.
+1. `scripts/tune_merl.sh` (MERL TRAIN split; grid trimmed to 7 configs for time) -> results/tuning/. Then run the best config on the TEST split once -> results/merl_measure_tuned.json; if clearly better, make it the default and update measured_error_rates.
 2. `scripts/conceal_select.py` (PoseLift leave-one-camera-out only) -> results/conceal_select.json. If v2/aug wins clearly, make it the default in conceal_experiment.py and rerun `scripts/phase2_rerun.sh`.
 3. Merge the three agent worktrees as they finish (A: multicam + late-receipt retraction, B: ONNX/CoreML runtime, C: Isaac Sim 4.5 scene + runbook), run tests after each merge.
 4. Every wakeup: check quota ticket #2610010040000169; if limits > 0, launch per BREE_PHASE2.md cost rules.
@@ -49,7 +49,7 @@ Queue:
 
 ## Next steps (exact)
 0. Isaac Sim: follow `src/bree/sim/isaac/README.md` (runbook, merged overnight). `scripts/azure_gpu.sh sim` pins Isaac Automator v3.13.0 (last one that deploys the isaac-sim:4.5.0 container) and closes its VNC/NoMachine rules and restricts SSH to this IP. First deploy needs Kiro once for an Azure device-code login inside the Automator container. NEVER run the Automator's `./destroy` (it imports bree-rg); use `scripts/azure_gpu.sh stop`. 4.5 has no concealment animation: renders are for boxes, tracking, product state and event timing, not concealment poses.
-1. Check the quota ticket. When limits > 0: `scripts/azure_gpu.sh train eastus` (A100 VM, runs make test), then `NGC_API_KEY=... scripts/azure_gpu.sh sim eastus` (Isaac Automator, Isaac Sim 4.5.0 because of the GRID 570 driver), start from `src/bree/sim/isaac/`, pilot 50 clips, check overlays, then 2,000+ split by scene seed. Deallocate with `scripts/azure_gpu.sh stop`.
+1. Check the quota ticket. When limits > 0: `scripts/azure_gpu.sh train eastus` (A100 VM, runs make test), then `NGC_API_KEY=... scripts/azure_gpu.sh sim eastus` (Isaac Automator, Isaac Sim 4.5.0: Automator v3.13.0 installs driver 535.161.08, 4.5 needs >= 535.129.03), start from `src/bree/sim/isaac/`, pilot 50 clips, check overlays, then 2,000+ split by scene seed. Deallocate with `scripts/azure_gpu.sh stop`.
 2. On the A100: train the concealment classifier on synthetic + PoseLift, rerun `scripts/phase2_rerun.sh`; `python scripts/speed.py` for PyTorch/ONNX/TensorRT FPS.
 3. When operator/staged footage lands in data/operator, data/staged: draw zones, run `bree shadow` / `bree run`, hand-label, measure pick/put-back/register/exit rates, update measured_error_rates.py.
 

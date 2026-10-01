@@ -3,11 +3,7 @@
  "license": "MERL research dataset (see data/LICENSES.md): evaluation only",
  "hardware": {
   "device": "mps",
-  "device_name": "Apple Silicon (MPS)",
-  "cpu_count": 10,
-  "detect_model": "yolo26s.pt",
-  "pose_model": "yolo26s-pose.pt",
-  "imgsz": 640
+  "device_name": "Apple Silicon (MPS)"
  },
  "stride": 2,
  "split": "test",

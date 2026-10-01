@@ -4,7 +4,7 @@ Two parts: **Phase 2 (2026-09-30, real data)** first, then last night's **Phase 
 
 # Overnight (2026-10-01, ~00:20 to ~06:20 EDT)
 
-**Bottom line.** No GPU quota yet (ticket #2610010040000169 still open, limits 0), so everything ran on the Mac. Four new capabilities are in and tested (131 tests pass, including vision smoke tests), two tuning experiments gave mixed results, and **concealment from pose is still not solved**.
+**Bottom line.** No GPU quota yet (ticket #2610010040000169 still open, limits 0), so everything ran on the Mac. New capabilities are in and tested (146 tests pass, including vision smoke tests), two tuning experiments gave mixed results, and **concealment from pose is still not solved**.
 
 **New capabilities (merged)**
 - **Late POS receipts can retract an alert** (`late_receipt_window_s`, default 300 s). Simulator, seed 2, baseline noise, 200 h, with the POS exporting in 60 s batches (new `VisionNoise.pos_batch_s` option; default 0 keeps the headline bench unchanged): without retraction **2.54 false alerts/h at 28.1% precision**; with retraction **0.435/h at 69.0%**; with `exit_grace_s: 65` plus retraction 0.455/h at 72.1% and 47.5% recall, about the live-POS baseline (0.45/h, 72.5%, 47.9%). Source: `results/late_receipts.json` (`scripts/late_receipts.py`). If the operator's POS exports in batches, this matters a lot.

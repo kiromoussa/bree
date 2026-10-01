@@ -30,6 +30,14 @@ Read this first after a context reset. Then BUILD_SPEC.md. Phase 2 instructions:
 ## Status (2026-10-01 ~01:30 UTC)
 Phases 0, 1, 4 (except GPU parts), 5, 6 done on the Mac. All real-data results re-run after the adversarial review (`scripts/phase2_rerun.sh`), REPORT.md Phase 2 section written from them, 98 tests pass. Phase 2 (Azure VMs) and Phase 3 (Isaac Sim) blocked on GPU quota (ticket above).
 
+## MORNING SUMMARY (2026-10-01, overnight run ~00:20 to ~06:20 EDT)
+Read REPORT.md "Overnight" first. All pushed to claude/new-session-v6zi52; 146 tests pass.
+- Merged: late-receipt alert retraction, multi-camera ledger, ONNX/CoreML runtime (77 FPS small models on this Mac), Isaac Sim 4.5 generator + runbook (not run: no quota), draw_zones.py, POS CSV import (+ pos-convert --video-start).
+- New engine defaults: track stitching, hand point (wrist + 0.5 forearm), contained duplicate-box removal; put-back now uses only the holding hand (missed-theft bug). MERL test: reach recall 64% -> 88%, visits per shopper 5.8 -> 2.4.
+- Negative results recorded: perception size/threshold tuning (mixed), classifier v2 (marginal), open-vocabulary product-in-hand (no signal), kNN concealment (near chance), long-gap stitching (mixed).
+- Quota ticket #2610010040000169 still open, limits 0.
+Next (Kiro): operator footage + POS CSV export + camera stills (the tools for them now exist), staged session, quota. Next (Claude, when footage lands): draw_zones on stills, pos-convert with --video-start, `bree run` / `bree shadow`, label, measure rates on our own camera.
+
 ## OVERNIGHT RUN (2026-10-01 ~00:20 EDT start = 04:20 UTC, until ~06:20 EDT = 10:20 UTC, Kiro asleep)
 Rules: one GPU job at a time; never use a waiter that greps its own command line (wait on PIDs); no YouTube or unlicensed footage for training.
 Queue:

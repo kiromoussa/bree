@@ -36,7 +36,7 @@ Details and counts: `data/README.md`, `data/LICENSES.md`.
 **Pose/track layer, MERL Shopping test split** (`results/merl_measure.json`; overhead lab camera; YOLO26s + crop pose + ByteTrack on MPS at 15 fps):
 - Reach recall **64.2%**: 378 of 589 labelled "Reach To Shelf" + "Hand In Shelf" instances had a wrist in the shelf zone within +-0.5 s. An **upper bound** on pick detection: a pick also needs the product detected, and MERL's products aren't COCO classes.
 - False reaches: **0.78 per minute**.
-- Tracking: all 28 single-shopper videos got more than one track id (3 to 22, mean 12.0). Straight-overhead views are hard for a COCO person detector.
+- Tracking: all 28 single-shopper videos got more than one track id (3 to 22 ids, mean 12.0, i.e. 11.0 extra ids per shopper). Straight-overhead views are hard for a COCO person detector.
 
 **Concealment, PoseLift** (`results/conceal_poselift.json`). Folds hold out whole incident chains (5 folds x 3 seeds); frame metrics on the 3,721 frames with a pose (1,489 shoplifting):
 | scorer | AUC-ROC | AUC-PR | EER | per-fold AUC-ROC mean [min-max] | AUC-ROC incl. empty frames |
@@ -44,7 +44,7 @@ Details and counts: `data/README.md`, `data/LICENSES.md`.
 | pose-only rule | 0.550 | 0.435 | 0.475 | 0.560 [0.37-0.74] | 0.673 |
 | classifier | **0.649 +- 0.010** | **0.602** | 0.390 | 0.651 [0.49-0.81] | 0.746 |
 - Per unique clip, mean over seeds, at threshold 0.5: classifier caught 10.3 of 41 shoplifting clips and triggered on 1 of 6 clean clips; the rule caught 31 of 41 and triggered on all 6 clean clips.
-- Leave one camera out, AUC-ROC rule / classifier: cam 1 0.46 / 0.61, cam 2 0.69 / 0.68, cam 3 0.47 / 0.74, cam 4 0.64 / 0.72, cam 5 0.46 / 0.57, cam 6 0.69 / 0.24 (2 clips); mean 0.567 / 0.592.
+- Leave one camera out, AUC-ROC rule / classifier: cam 1 0.46 / 0.61, cam 2 0.69 / 0.68, cam 3 0.47 / 0.74, cam 4 0.64 / 0.71, cam 5 0.45 / 0.57, cam 6 0.69 / 0.24 (2 clips); mean 0.567 / 0.592.
 
 **Concealment, RetailS** (`results/conceal_retails.json`; evaluation only; model trained on all of PoseLift; leak checks in DECISIONS.md found no shared or near-identical poses):
 | scorer | staged AUC-ROC | AUC-PR | EER | staged clips caught (th 0.5) | triggers / hour, 36.4 h normal footage | person tracks (>= 2 s) triggered |
@@ -67,7 +67,7 @@ The staged set has only 2 clean clips, so staged "caught" counts say nothing abo
 UCF's labels mark the whole incident window, not the concealment itself, and only 0.38 h of normal video was scored, so this is weak evidence; DCSASS, cut from the same source videos with clip labels, shows no signal.
 
 ## P2.4 Measured vs assumed vision error rates
-From `results/measured_error_rates.json`. Only four have a real measurement; the other 13 stay assumed and say why.
+From `results/measured_error_rates.json`. Only four have a real measurement; the other 13 simulator parameters stay assumed and say why.
 | parameter | assumed | measured | source |
 |---|---|---|---|
 | pick detected | 92% | <= 64.2% | MERL reach recall (upper bound) |

@@ -90,6 +90,10 @@ class VisionNoise:
     p_id_swap: float = 0.01              # two overlapping shoppers' IDs get exchanged
     p_pos_dropped: float = 0.01          # POS message never arrives
     pos_jitter_s: float = 2.0            # POS clock vs camera clock
+    # POS exports in batches every N s: a receipt reaches the ledger at the next batch boundary
+    # (its timestamp is unchanged). 0 = live feed (the default; the headline bench uses it).
+    # Not scaled by `scaled()`: it's a store integration setting, not a vision error.
+    pos_batch_s: float = 0.0
 
     def scaled(self, k: float) -> "VisionNoise":
         """k=0: perfect vision. k=1: baseline. k=2: every error rate doubled."""
@@ -531,8 +535,9 @@ def observe(world: World, noise: VisionNoise, seed: int, sku_level: bool = False
         if rng.random() < noise.p_pos_dropped:
             notes["pos_dropped"] += 1
             continue
-        pays.append(Payment(pay.t + float(rng.normal(0, noise.pos_jitter_s / 2)) if noise.pos_jitter_s else pay.t,
-                            pay.terminal, pay.items, pay.txn_id, pay.method))
+        t = pay.t + float(rng.normal(0, noise.pos_jitter_s / 2)) if noise.pos_jitter_s else pay.t
+        t_rx = max(t, math.ceil(pay.t / noise.pos_batch_s) * noise.pos_batch_s) if noise.pos_batch_s else None
+        pays.append(Payment(t, pay.terminal, pay.items, pay.txn_id, pay.method, t_received=t_rx))
     events.sort(key=lambda e: e.t)
     return Observed(events, pays, id_map, exit_owner, notes)
 

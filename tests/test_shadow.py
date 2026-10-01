@@ -98,6 +98,38 @@ def test_would_be_record_has_everything_a_reviewer_needs(tmp_path):
     assert log.clip_file("nope") is None
 
 
+def test_late_receipt_retraction_is_folded_into_the_would_be_alert(tmp_path):
+    """Pocket-then-pay; the POS export with their receipt lands a minute after the decision."""
+    from bree.events.types import LineItem, Payment
+    led = Ledger(Catalog({"COKE": "soda"}), terminal_zones={"pos_1": "register"},
+                 zone_kinds={"shelf_A": "shelf", "register": "register", "door": "exit"})
+    alerts = led.replay([Event(E.ENTER, 0, 1), Event(E.PICK, 2, 1, item="soda", zone="shelf_A", confidence=0.9),
+                         Event(E.CONCEAL, 4, 1, item="soda", confidence=0.8),
+                         Event(E.PAY, 12.5, 1, zone="register", meta={"phase": "start", "t_start": 10}),
+                         Event(E.PAY, 20, 1, zone="register", meta={"phase": "end", "t_start": 10, "t_end": 20}),
+                         Event(E.EXIT, 25, 1, zone="door")],
+                        [Payment(15, "pos_1", [LineItem(sku="COKE")], txn_id="T1", t_received=80)])
+    assert [a.tier for a in alerts] == ["review", "retracted"]
+    log = ShadowLog(tmp_path)
+    for a in alerts:
+        log.add_alert(would_be_record(a, "cam1", "S1", tmp_path))
+    assert len(log.alerts()) == 2                                        # both records kept in the jsonl
+    [row] = log.labelled()
+    assert row["id"] == "cam1-S1-A00001" and row["tier"] == "review"
+    assert row["retraction"]["retracts"] == row["id"] and row["retraction"]["tier"] == "retracted"
+    assert "late receipt" in row["retraction"]["reasons"][0]
+    s = log.summary()
+    assert s["would_be_alerts"] == 1 and s["retracted"] == 1 and s["review"]["total"] == 1
+    httpd = serve(None, "127.0.0.1", 0, review=log)
+    base = f"http://127.0.0.1:{httpd.server_address[1]}"
+    try:
+        assert b"RETRACTED" in _req(base + "/review").read()
+        d = json.loads(_req(base + "/api/review").read())
+        assert [a["retraction"]["tier"] for a in d["alerts"]] == ["retracted"] and d["summary"]["retracted"] == 1
+    finally:
+        httpd.shutdown()
+
+
 # ------------------------------------------------------------------ labels
 
 def test_labels_append_only_latest_wins_and_summary(tmp_path):

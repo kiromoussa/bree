@@ -76,6 +76,9 @@ class Payment:
     txn_id: str = ""
     method: str = "card"
     person_id: int | None = None
+    # When the ledger received it, if later than `t` (batched POS export). Live sources leave it
+    # None: the pipeline hands a receipt over when it arrives. The simulator sets it.
+    t_received: float | None = None
 
     def to_dict(self) -> dict:
         return asdict(self)

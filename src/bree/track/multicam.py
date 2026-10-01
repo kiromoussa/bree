@@ -13,6 +13,9 @@ keeps one GLOBAL id across cameras by position and timing only:
 Events from every camera's EventEngine go through `remap()` before the ledger:
 local ids become global ids, and duplicate ENTERs of an already known person are
 dropped. Only cameras that can see the door should have an `exit` zone.
+`StoreEvents` bundles the per-camera engines + this handoff; the pipeline
+(`bree run` with several --source/--store pairs, `bree shadow` with `multicam:`)
+feeds its events to ONE ledger per store.
 Privacy: no appearance features are computed or stored.
 """
 from __future__ import annotations
@@ -60,11 +63,20 @@ class MultiCamIdentity:
         self.people: dict[int, _Global] = {}
         self._next = 1
         self.handoffs: list[tuple[float, str, int, int]] = []   # (t, camera, local id, global id)
+        self.local_seen: dict[tuple[str, int], float] = {}      # live local tracks: last seen time
+        self.handed: set[tuple[str, int]] = set()                # local tracks linked to an earlier person
+        # ponytail: local_to_global / people / handoffs grow for the process lifetime (like
+        # Ledger.people); prune by t_last if a store runs for weeks without a restart.
 
     def update(self, cam: str, obs: FrameObs) -> None:
         """Assign/refresh global ids for this camera's tracks at this frame."""
-        claimed_now = {g for (c, _), g in self.local_to_global.items() if c == cam}
+        # A global id is taken in this camera only while one of its local tracks is still live
+        # here. (Excluding every id the camera ever held meant a shopper who left the door
+        # camera's view and came back to leave got a new id, and the visit never reconciled.)
+        self.local_seen = {k: t for k, t in self.local_seen.items() if obs.t - t <= self.max_gap_s}
+        claimed_now = {self.local_to_global[k] for k in self.local_seen if k[0] == cam}
         for p in obs.persons:
+            self.local_seen[(cam, p.track_id)] = obs.t
             fx, fy = to_floor(self.H[cam], *p.foot_point(self.foot_point))
             key = (cam, p.track_id)
             gid = self.local_to_global.get(key)
@@ -76,6 +88,7 @@ class MultiCamIdentity:
                     self.people[gid] = _Global(gid, (fx, fy), obs.t)
                 else:
                     self.handoffs.append((obs.t, cam, p.track_id, gid))
+                    self.handed.add(key)
                 self.local_to_global[key] = gid
                 claimed_now.add(gid)
             g = self.people[gid]
@@ -98,11 +111,47 @@ class MultiCamIdentity:
             gid = self.local_to_global.get((cam, ev.person_id))
             if gid is None:
                 continue
-            is_handoff = any(h[1] == cam and h[2] == ev.person_id for h in self.handoffs)
-            if ev.type == EventType.ENTER and is_handoff:
+            if ev.type == EventType.ENTER and (cam, ev.person_id) in self.handed:
                 continue          # same person walking into another camera's view
             ev.person_id = gid
             ev.candidates = [self.local_to_global.get((cam, c), c) for c in ev.candidates]
             ev.meta = {**ev.meta, "camera": cam}
             out.append(ev)
         return out
+
+
+class StoreEvents:
+    """One event stream per store: an EventEngine per camera (its own zones, in its own pixels)
+    and, with several cameras, floor-plane handoff so every event carries a global person id.
+    One camera: the engine's events pass through unchanged (local id = person id)."""
+
+    def __init__(self, stores: dict, handoff: dict | None = None):
+        from bree.events.engine import EventEngine
+        self.engines = {name: EventEngine(s) for name, s in stores.items()}
+        self.identity: MultiCamIdentity | None = None
+        if len(stores) > 1:
+            missing = [n for n, s in stores.items() if s.floor_points is None]
+            if missing:
+                raise ValueError(f"multi-camera store: camera(s) {missing} need camera.floor_points "
+                                 "(4+ [x_px, y_px, x_m, y_m] marks) in their store YAML")
+            foot = next(iter(stores.values())).rules.get("foot_point", "bottom")
+            self.identity = MultiCamIdentity({n: s.floor_homography() for n, s in stores.items()},
+                                             foot_point=foot, **(handoff or {}))
+
+    def update(self, cam: str, obs: FrameObs) -> list[Event]:
+        if self.identity is None:
+            return self.engines[cam].update(obs)
+        self.identity.update(cam, obs)
+        return self.identity.remap(cam, self.engines[cam].update(obs))
+
+    def flush(self) -> list[Event]:
+        """End of stream on every camera."""
+        if self.identity is None:
+            return next(iter(self.engines.values())).flush()
+        out = []
+        for cam, eng in self.engines.items():
+            out += self.identity.remap(cam, eng.flush())
+        return sorted(out, key=lambda e: e.t)
+
+    def person_id(self, cam: str, local_id: int) -> int | None:
+        return self.identity.local_to_global.get((cam, local_id)) if self.identity else local_id

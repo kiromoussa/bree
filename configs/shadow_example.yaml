@@ -13,6 +13,12 @@ cameras:
   #   rtsp_url: rtsp://user:pass@192.168.1.21:554/stream1
   #   store: configs/store_cooler_cam.yaml
 
+# Several cameras of ONE store (pick at the cooler camera, pay at the register camera, exit at
+# the door camera = one visit): uncomment. Every camera's store YAML then needs
+# `camera.floor_points` (see store_gas_station_small.yaml). One person id across cameras by floor
+# position and time only (no appearance features), and one ledger for the store.
+# multicam: {max_dist_m: 1.2, max_gap_s: 3.0}      # or just `multicam: true` for these defaults
+
 # Folder the POS drops its export files into. Polled every 2 s for new *.jsonl / *.json files
 # (and lines appended to them); same format as `--payments`, one receipt per line, with `ts`
 # in unix seconds. Each camera only gets receipts for terminals in its store config.
@@ -24,10 +30,12 @@ runtime: pytorch                         # pytorch | onnx (ONNX Runtime: TensorR
 review_port: 8080                        # always bound to 127.0.0.1; 0 = no review page
 
 # LedgerConfig overrides. If the POS exports in batches, raise exit_grace_s to the batch
-# delay (and payment_expiry_s past 300 s) so receipts arrive before the decision; otherwise
-# paying customers become would-be alerts.
+# delay (and payment_expiry_s past 300 s) so receipts arrive before the decision. A receipt
+# that still arrives later retracts or downgrades the would-be alert (within
+# late_receipt_window_s of the exit); the review page marks it as retracted.
 ledger:
   exit_grace_s: 5.0
+  late_receipt_window_s: 300
 
 # Raw recording of the camera feed, for re-running improved models on the same footage.
 # OFF by default. Raw segments are NOT pixelated: they contain faces. Only turn this on with

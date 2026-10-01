@@ -20,6 +20,10 @@ camera:
   id: cam_main
   resolution: [1280, 720]
   fps: 15
+  # Multi-camera stores only (one YAML per camera, zones in that camera's pixels): 4+ floor marks
+  # seen by this camera, [x_px, y_px, x_m, y_m] = pixel -> the same spot on the store floor plan
+  # (metres, one plan shared by all cameras). Tape corners at install time work well.
+  # floor_points: [[212, 690, 0.0, 0.0], [1068, 690, 6.0, 0.0], [930, 300, 6.0, 5.0], [350, 300, 0.0, 5.0]]
 
 zones:
   - name: cooler_bank          # reach-in coolers along the back wall

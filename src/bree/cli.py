@@ -50,12 +50,17 @@ def cmd_run(args) -> None:
     import time
     from bree.events.zones import load_store_config
     from bree.ledger.payments import open_payments
-    from bree.pipeline import run_pipeline
-    store = load_store_config(args.store)
-    backend = make_backend(args.backend, store, args.imgsz, products=not args.no_products, runtime=args.runtime)
+    from bree.events.zones import merge_stores
+    from bree.pipeline import CameraInput, run_store
+    store_paths = args.store or [str(DEFAULT_STORE)]
+    if len(store_paths) != len(args.source):
+        raise SystemExit("give one --store per --source (several cameras of one store)")
+    stores = [load_store_config(p) for p in store_paths]
+    cams = [CameraInput(s.camera_id, src, s) for src, s in zip(args.source, stores)]
+    backend = make_backend(args.backend, merge_stores(stores), args.imgsz, products=not args.no_products, runtime=args.runtime)
     payments = open_payments(args.payments, stream_start_wall=time.time())
-    s = run_pipeline(args.source, store, backend, args.out, payments=payments,
-                     save_video=not args.no_video, max_frames=args.max_frames)
+    s = run_store(cams, backend, args.out, payments=payments,
+                  save_video=not args.no_video, max_frames=args.max_frames)
     print(json.dumps({k: v for k, v in s.__dict__.items() if k != "alerts"}, indent=2))
     print(f"{len(s.alerts)} alert(s); outputs in {args.out}")
 
@@ -67,8 +72,11 @@ def main(argv: list[str] | None = None) -> None:
     sub.add_parser("hw").set_defaults(func=cmd_hw)
 
     r = sub.add_parser("run", help="run the full pipeline on a video file / webcam / RTSP stream")
-    r.add_argument("--source", required=True, help="video path, webcam index (0), or rtsp:// URL")
-    r.add_argument("--store", default=str(DEFAULT_STORE))
+    r.add_argument("--source", required=True, action="append",
+                   help="video path, webcam index (0), or rtsp:// URL; repeat (with --store) for "
+                        "several cameras of one store: one person id across cameras, one ledger")
+    r.add_argument("--store", action="append", default=None,
+                   help=f"store layout YAML for the matching --source (default {DEFAULT_STORE.name})")
     r.add_argument("--out", default="out/run")
     r.add_argument("--backend", choices=["yolo", "toy"], default="yolo")
     r.add_argument("--payments", default=None, help="payments.jsonl | stdin | http[:PORT]")

@@ -62,6 +62,7 @@ h1{font-size:16px;margin:0} .muted{color:var(--muted)} main{padding:16px;display
 .card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px;display:grid;grid-template-columns:minmax(0,2fr) minmax(0,3fr);gap:12px}
 @media (max-width:760px){.card{grid-template-columns:1fr}}
 .card.alert{border-left:4px solid var(--alert)}.card.review{border-left:4px solid var(--review)}
+.card.retracted{border-left-style:dashed}
 video{width:100%;border-radius:6px;background:#000} a{color:inherit}
 input,button{font:inherit;padding:4px 8px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--fg)}
 button{cursor:pointer} button.on{background:var(--fg);color:var(--bg)} .tag{font-size:11px;padding:1px 6px;border-radius:10px;border:1px solid var(--line)}
@@ -79,12 +80,13 @@ $('who').onchange=()=>{try{localStorage.setItem('who',$('who').value)}catch(e){}
 const NAMES={real_theft:'Real theft',false_alert:'False alert',unsure:'Unsure'};
 function pct(p){return p==null?'n/a':(100*p).toFixed(0)+'%'}
 async function load(){const d=await (await fetch('/api/review')).json();const s=d.summary;
-$('sum').textContent=`${s.labelled}/${s.would_be_alerts} labelled · precision: alert tier ${pct(s.alert.precision)}, review tier ${pct(s.review.precision)}`;
+$('sum').textContent=`${s.labelled}/${s.would_be_alerts} labelled · ${s.retracted} retracted by a late receipt · precision: alert tier ${pct(s.alert.precision)}, review tier ${pct(s.review.precision)}`;
 const rows=d.alerts.slice().reverse().filter(a=>!$('todo').checked||!a.label);
-$('list').innerHTML=rows.map(a=>{const clip='/clips/'+encodeURIComponent(a.id);return `<div class="card ${a.tier}" data-id="${esc(a.id)}">
+$('list').innerHTML=rows.map(a=>{const clip='/clips/'+encodeURIComponent(a.id);const r=a.retraction;return `<div class="card ${a.tier}${r?' retracted':''}" data-id="${esc(a.id)}">
 <div>${a.clip?`<video src="${clip}" controls muted loop playsinline preload="metadata"></video><div class="muted"><a href="${clip}" download>download clip</a> (heads pixelated)</div>`:'<span class="muted">no clip</span>'}</div>
 <div><b>${a.tier.toUpperCase()}</b> · conf ${a.confidence.toFixed(2)} · ${esc(a.camera)} · person ${a.person_id} · ${esc(a.time)}
 ${a.concealment_seen?' <span class="tag">concealment seen</span>':''}
+${r?`<div><span class="tag">${r.tier==='retracted'?'RETRACTED':'DOWNGRADED TO '+esc(r.tier.toUpperCase())}</span> <span class="muted">${esc(r.time)}: ${esc(r.reasons[0])}</span></div>`:''}
 <div>Basket: ${esc(a.basket.join(', ')||'none')}</div><div>Unpaid: ${esc(a.unpaid.map(i=>i.category).join(', '))}</div>
 <div class="muted">${esc(a.reasons.join('; '))}</div>
 <details><summary class="muted">audit log</summary><pre>${esc(a.audit_log.join('\\n'))}</pre></details>

@@ -354,7 +354,7 @@ Three independent reviewers ran in parallel. One re-checked every number in this
 **Known and not fixed** (listed so nobody is surprised):
 - **Counter tie-break.** At the counter, a tie between a thief who arrived first and the honest payer goes to the thief.
 - **Strangers entering together.** A stranger who enters within 4 s of someone is treated as their group, and their extra payment can cover that person's concealed item.
-- **No retraction.** Once an alert is out, a receipt that arrives late, or a group mate who pays after 120 s, does not retract it.
+- **No retraction.** Once an alert is out, a receipt that arrives late, or a group mate who pays after 120 s, does not retract it. (Update: a late POS receipt now retracts or downgrades it within `late_receipt_window_s`; see DECISIONS.md, Phase 2. A group mate paying after 120 s still does not.)
 - **Unbounded history.** The ledger keeps every person record for the life of the process. Fine for a day; needs rotation for a months-long deployment.
 - **Handoffs.** An item handed to someone outside the group stays in the picker's basket.
 
@@ -368,7 +368,7 @@ Three independent reviewers ran in parallel. One re-checked every number in this
   - A helper agent found and cloned a third-party GitHub copy into `data/poselift/`. The automated safety check then blocked pulling data from that unofficial mirror.
   - So **no result uses it**, and `scripts/download_data.sh` doesn't reference it. You may want to delete `data/poselift*` and download the official copy instead.
 - **Concealment classifier over pose sequences (Stage 5): skipped.** Without PoseLift there was no labelled real pose data, and training on my own synthetic poses would only learn my renderer.
-- **Multi-camera:** hand-off between cameras by floor position is built and unit-tested (`track/multicam.py`). It uses homographies (a per-camera mapping from image pixels to floor coordinates) and no appearance features. It is **not wired into `bree run`**: I had no multi-camera footage to run it on.
+- **Multi-camera:** hand-off between cameras by floor position is built and unit-tested (`track/multicam.py`). It uses homographies (a per-camera mapping from image pixels to floor coordinates) and no appearance features. It is **not wired into `bree run`**: I had no multi-camera footage to run it on. (Update: now wired into `bree run` and `bree shadow`, tested on synthetic per-camera streams only, still no real multi-camera footage; see DECISIONS.md, Phase 2.)
 - **Isaac Sim:** prep only, as asked (`src/bree/sim/isaac/`).
   - The IRA config is a draft that has not been loaded by a real IRA build. Its keys must be checked against the installed version.
   - Hand-object behaviours (reach, conceal) need custom animations; the README explains how.

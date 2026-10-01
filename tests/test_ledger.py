@@ -425,3 +425,56 @@ def test_max_hold_deadline_float_rounding_does_not_hang():
           leave(t_exit, 1), enter(t_exit + 120.0, 3)]
     alerts = L.replay(ev)
     assert len(alerts) == 1 and not L.pending
+
+
+# ------------------------------------------ late receipts (retraction)
+
+def late(pay, t_received):
+    pay.t_received = t_received
+    return pay
+
+
+def test_late_receipt_retracts_review():
+    """Pocket-then-pay whose receipt reaches us a minute after the decision (batched POS export)."""
+    L = ledger()
+    ev = [enter(0, 1), pick(5, 1, "candy"), conceal(6, 1, "candy"), *visit(20, 30, 1), leave(35, 1)]
+    alerts = L.replay(ev, [late(pos(25, "SNICKERS"), 95)])
+    assert [a.tier for a in alerts] == ["review", "retracted"]
+    assert alerts[1].retracts == alerts[0].alert_id and alerts[1].t_emitted == 95
+    assert "late receipt" in alerts[1].reasons[0] and alerts[1].unpaid_items == []
+    assert L.decisions[-1]["tier"] is None and not L.flagged
+    assert any("-> retracted" in line for line in L.people[1].log)
+
+
+def test_late_receipt_downgrades_alert_to_review():
+    """Register visit not seen; the late receipt (claimed by basket match) covers one of two items."""
+    L = ledger()
+    ev = [enter(0, 1), pick(5, 1, "energy", "cooler"), pick(8, 1, "candy"), leave(40, 1, ["energy", "candy"])]
+    alerts = L.replay(ev, [late(pos(30, "REDBULL"), 120)])
+    assert [a.tier for a in alerts] == ["alert", "review"]
+    assert alerts[1].retracts == alerts[0].alert_id
+    assert [i.category for i in alerts[1].unpaid_items] == ["candy"]
+
+
+def test_late_basket_match_receipt_cannot_clear_concealed_item():
+    """Same safety rule as on time: a receipt claimed by basket match never clears a concealed item."""
+    L = ledger()
+    ev = [enter(0, 1), pick(5, 1, "candy"), conceal(6, 1, "candy"), leave(40, 1)]
+    alerts = L.replay(ev, [late(pos(30, "SNICKERS"), 100)])
+    assert [a.tier for a in alerts] == ["alert"]
+
+
+def test_late_receipt_never_raises_a_tier():
+    """Dropping the 'no receipt matched' discount would push the concealed item to alert: not after the fact."""
+    L = ledger()
+    ev = [enter(0, 1), pick(5, 1, "soda", "cooler"), pick(8, 1, "candy"), conceal(9, 1, "candy"),
+          *visit(20, 30, 1), leave(35, 1, ["soda"])]
+    alerts = L.replay(ev, [late(pos(25, "COKE"), 90)])
+    assert [a.tier for a in alerts] == ["review"]
+    assert any("decision stays review" in line for line in L.people[1].log)
+
+
+def test_late_receipt_after_window_is_ignored():
+    ev = [enter(0, 1), pick(5, 1, "candy"), conceal(6, 1, "candy"), *visit(20, 30, 1), leave(35, 1)]
+    assert [a.tier for a in ledger().replay(ev, [late(pos(25, "SNICKERS"), 35 + 301)])] == ["review"]
+    assert [a.tier for a in ledger(late_receipt_window_s=0).replay(ev, [late(pos(25, "SNICKERS"), 95)])] == ["review"]

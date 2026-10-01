@@ -68,7 +68,7 @@ class EvidenceBuffer:
     def discard(self, person_id: int) -> None:
         self.snippets.pop(person_id, None)
 
-    def write_clip(self, person_ids: list[int], path: Path) -> str | None:
+    def frames_for(self, person_ids: list[int]) -> list[tuple[float, bytes]]:
         frames = []
         for pid in person_ids:
             for s in self.snippets.get(pid, []):
@@ -77,22 +77,45 @@ class EvidenceBuffer:
         dedup, last_t = [], None
         for t, j in frames:
             if t != last_t:
-                dedup.append(j)
+                dedup.append((t, j))
                 last_t = t
-        if not dedup:
-            return None
-        imgs = [cv2.imdecode(np.frombuffer(j, np.uint8), cv2.IMREAD_COLOR) for j in dedup]
-        h, w = imgs[0].shape[:2]
-        path.parent.mkdir(parents=True, exist_ok=True)
-        # H.264 plays in browsers (review page); not every OpenCV build has it, so fall back to mp4v.
-        for fourcc in ("avc1", "mp4v"):
-            vw = cv2.VideoWriter(str(path), cv2.VideoWriter_fourcc(*fourcc), max(1.0, self.fps), (w, h))
-            if vw.isOpened():
-                break
-        for im in imgs:
-            vw.write(im)
-        vw.release()
-        return str(path)
+        return dedup
+
+    def write_clip(self, person_ids: list[int], path: Path) -> str | None:
+        return write_frames(self.frames_for(person_ids), path, self.fps)
+
+
+class MultiEvidence:
+    """Evidence from several cameras of one store: one clip per alert with every camera's
+    snippets in time order (the pick on the cooler camera, then the exit at the door)."""
+
+    def __init__(self, buffers: list[EvidenceBuffer]):
+        self.buffers = buffers
+
+    def write_clip(self, person_ids: list[int], path: Path) -> str | None:
+        frames = sorted((f for b in self.buffers for f in b.frames_for(person_ids)), key=lambda f: f[0])
+        return write_frames(frames, path, max(b.fps for b in self.buffers))
+
+    def discard(self, person_id: int) -> None:
+        for b in self.buffers:
+            b.discard(person_id)
+
+
+def write_frames(frames: list[tuple[float, bytes]], path: Path, fps: float) -> str | None:
+    if not frames:
+        return None
+    imgs = [cv2.imdecode(np.frombuffer(j, np.uint8), cv2.IMREAD_COLOR) for _, j in frames]
+    h, w = imgs[0].shape[:2]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    # H.264 plays in browsers (review page); not every OpenCV build has it, so fall back to mp4v.
+    for fourcc in ("avc1", "mp4v"):
+        vw = cv2.VideoWriter(str(path), cv2.VideoWriter_fourcc(*fourcc), max(1.0, fps), (w, h))
+        if vw.isOpened():
+            break
+    for im in imgs:
+        vw.write(im if im.shape[:2] == (h, w) else cv2.resize(im, (w, h)))   # cameras may differ in size
+    vw.release()
+    return str(path)
 
 
 class AlertSink:
@@ -106,7 +129,7 @@ class AlertSink:
         self.written: list[Alert] = []
 
     def emit(self, alert: Alert) -> None:
-        if self.evidence is not None:
+        if self.evidence is not None and not alert.retracts:   # a retraction points at the original's clip
             pids = alert.group or [alert.person_id]
             alert.clip_path = self.evidence.write_clip(pids, self.out / "alerts" / f"{alert.alert_id}.mp4")
             for pid in pids:

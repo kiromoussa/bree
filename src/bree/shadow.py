@@ -40,6 +40,7 @@ class ShadowConfig:
     cameras: list[Camera]
     output_dir: str
     pos_export_dir: str | None = None
+    pos_mapping: str | None = None                           # POS CSV column mapping YAML (bree.ledger.pos_csv)
     backend: str = "yolo"
     runtime: str = "pytorch"                                 # pytorch | onnx (see bree.edge.ort)
     review_port: int = 8080                                  # 0 = don't serve the review page
@@ -57,7 +58,8 @@ def load_shadow_config(path: str | Path) -> ShadowConfig:
         raise ValueError("camera names must be unique")
     mc = raw.get("multicam")
     return ShadowConfig(cameras=cams, output_dir=raw.get("output_dir", "out/shadow"),
-                        pos_export_dir=raw.get("pos_export_dir"), backend=raw.get("backend", "yolo"),
+                        pos_export_dir=raw.get("pos_export_dir"), pos_mapping=raw.get("pos_mapping"),
+                        backend=raw.get("backend", "yolo"),
                         runtime=raw.get("runtime", "pytorch"),
                         review_port=int(raw.get("review_port", 8080)), ledger=raw.get("ledger") or {},
                         record_raw=raw.get("record_raw") or {},
@@ -201,7 +203,9 @@ def _run_cameras(name: str, cams: list[Camera], cfg: ShadowConfig, log: ShadowLo
     from bree.cli import make_backend
     from bree.events.zones import load_store_config, merge_stores
     from bree.ledger.payments import FolderPayments
+    from bree.ledger.pos_csv import load_mapping
     from bree.pipeline import CameraInput, run_store
+    mapping = load_mapping(cfg.pos_mapping) if cfg.pos_mapping else None
     stores = [load_store_config(c.store) for c in cams]
     store = merge_stores(stores)
     backend = make_backend(cfg.backend, store, runtime=cfg.runtime)
@@ -213,7 +217,8 @@ def _run_cameras(name: str, cams: list[Camera], cfg: ShadowConfig, log: ShadowLo
         if cfg.pos_export_dir:
             # Live: receipts already in the folder predate this run. Replay (--once): read them all.
             payments = FolderPayments(cfg.pos_export_dir, stream_start_wall=time.time(),
-                                      terminals=store.terminals, skip_existing=not once)
+                                      terminals=store.terminals, skip_existing=not once,
+                                      csv_mapping=mapping)
         recorders = ({c.name: RawRecorder(Path(cfg.output_dir) / "raw" / c.name, s.fps,
                                           raw_cfg.get("segment_minutes", 5), raw_cfg.get("retention_hours", 24))
                       for c, s in zip(cams, stores)} if raw_cfg.get("enabled") else {})

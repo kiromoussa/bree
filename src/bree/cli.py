@@ -10,6 +10,7 @@
   bree dashboard                           local web dashboard
   bree shadow --config configs/shadow.yaml pilot shadow mode: silent, would-be alerts + review page
   bree shadow-labels --config ...          labelled shadow data: summary, export, review page
+  bree pos-convert --mapping m.yaml x.csv  POS CSV export -> payments JSONL on stdout
 """
 from __future__ import annotations
 

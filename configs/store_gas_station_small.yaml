@@ -11,8 +11,8 @@
 #   +-----------------------------------------------------------+
 #
 # Polygons are camera pixel coordinates (x, y) for a 1280x720 stream. These are
-# placeholders: for each real store, draw them on a still frame from that camera
-# (scripts/draw_zones.py prints clicked coordinates).
+# placeholders: for each real store, draw them on a frame from that camera with
+# scripts/draw_zones.py (writes a copy of this file with the new zones and floor points).
 store:
   name: "Example gas station c-store (single camera)"
 

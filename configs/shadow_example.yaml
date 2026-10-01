@@ -23,6 +23,9 @@ cameras:
 # (and lines appended to them); same format as `--payments`, one receipt per line, with `ts`
 # in unix seconds. Each camera only gets receipts for terminals in its store config.
 pos_export_dir: /srv/bree/pos_exports
+# POS that exports CSV (its own columns, local time): a column mapping, see
+# configs/pos_mapping_example.yaml. Then *.csv files in pos_export_dir are read too.
+# pos_mapping: configs/pos_mapping_example.yaml
 
 output_dir: out/shadow
 backend: yolo                            # yolo | toy

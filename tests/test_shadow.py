@@ -58,6 +58,32 @@ def test_pos_folder_replay_reads_existing(tmp_path):
     assert [p.t for p in FolderPayments(tmp_path, every_s=0, skip_existing=False).poll(5)] == [1]
 
 
+def test_pos_folder_reads_csv_through_mapping(tmp_path):
+    from bree.ledger.pos_csv import load_mapping
+    m = load_mapping(ROOT / "configs" / "pos_mapping_example.yaml")
+    rows = (ROOT / "tests" / "fixtures" / "pos_sample.csv").read_text().splitlines(keepends=True)
+    daily = tmp_path / "day.csv"
+    daily.write_text("".join(rows[:3]))                                  # header + 10421, before start
+    src = FolderPayments(tmp_path, stream_start_wall=1790878500.0, every_s=0, csv_mapping=m)
+    with daily.open("a") as fh:                                          # POS appends to its daily file
+        fh.writelines(rows[3:7])                                         # 10422 + first row of 10423
+    assert [p.txn_id for p in src.poll(1e9)] == ["10422"]                # 10423 held: file still growing
+    with daily.open("a") as fh:
+        fh.writelines(rows[7:])                                          # rest of 10423 + fuel-only 10424
+    got = src.poll(1e9)
+    assert [p.txn_id for p in got] == ["10423"] and [i.sku for i in got[0].items] == ["BIC-LIGHTER"]
+    assert got[0].t == 312.0
+    assert src.poll(1e9) == [] and src.poll(1e9) == [] and not src.errors   # 10421 never re-read, 10424 no items
+    assert FolderPayments(tmp_path, every_s=0, skip_existing=False).poll(1e9) == []   # no mapping: CSV ignored
+
+
+def test_shadow_config_takes_pos_mapping(tmp_path):
+    p = tmp_path / "s.yaml"
+    p.write_text(json.dumps({"cameras": [{"name": "c", "rtsp_url": "x.mp4", "store": "s.yaml"}],
+                             "pos_mapping": "configs/pos_mapping_example.yaml"}))
+    assert load_shadow_config(p).pos_mapping == "configs/pos_mapping_example.yaml"
+
+
 # ------------------------------------------------------------------ would-be alert log
 
 def _ledger_alert() -> Alert:

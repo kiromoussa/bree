@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -140,6 +141,19 @@ def cmd_shadow_labels(args) -> None:
         print("precision = real theft / (real theft + false alert); 'unsure' is left out")
 
 
+def cmd_pos_convert(args) -> None:
+    from bree.ledger.pos_csv import load_mapping, read_csv_payments
+    m, unmapped, n = load_mapping(args.mapping), set(), 0
+    for path in args.csv:
+        for d in read_csv_payments(path, m, unmapped):
+            print(json.dumps(d))
+            n += 1
+    print(f"{n} receipt(s)", file=sys.stderr)
+    if unmapped:
+        how = m.get("unmapped", "keep")
+        print(f"{len(unmapped)} POS item name(s) not in the mapping ({how}): {sorted(unmapped)}", file=sys.stderr)
+
+
 def cmd_export(args) -> None:
     from bree.edge.export import export_and_benchmark
     print(json.dumps(export_and_benchmark(ROOT, args.imgsz), indent=2))
@@ -176,6 +190,11 @@ def register(sub) -> None:
     sl.add_argument("--serve", action="store_true", help="serve only the review page")
     sl.add_argument("--port", type=int, default=8080)
     sl.set_defaults(func=cmd_shadow_labels)
+
+    pc = sub.add_parser("pos-convert", help="POS CSV export -> payments JSONL (stdout), via a column mapping")
+    pc.add_argument("--mapping", required=True, help="mapping YAML (see configs/pos_mapping_example.yaml)")
+    pc.add_argument("csv", nargs="+")
+    pc.set_defaults(func=cmd_pos_convert)
 
     ex = sub.add_parser("export",help="export YOLO models to ONNX and compare CPU latency")
     ex.add_argument("--imgsz", type=int, default=640)

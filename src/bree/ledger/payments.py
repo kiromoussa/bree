@@ -11,7 +11,8 @@ since the video started, for replaying recorded footage). The store config maps
 
 Sources:
   JsonlPayments  - a .jsonl file; replay by timestamp, or tail it live (POS export drop)
-  FolderPayments - a folder the POS drops export files into (shadow mode); polled for new files
+  FolderPayments - a folder the POS drops export files into (shadow mode); polled for new files;
+                   also *.csv through a column mapping (bree.ledger.pos_csv)
   StdinPayments  - JSON lines on stdin (`pos_bridge | bree run ... --payments stdin`)
   HttpPayments   - POST /payments on a local port (webhook from a POS / tap reader)
   MockPayments   - an in-memory list (tests, simulator)
@@ -120,23 +121,50 @@ class FolderPayments(_QueueSource):
     file stopped growing between two scans (last line written without one). Files already in the
     folder at start are skipped: they are receipts from before the camera was running.
     Only payments at `terminals` are returned (the ones this camera's store config knows).
+
+    With `csv_mapping` (a loaded bree.ledger.pos_csv mapping) *.csv files are read too: a CSV that
+    changed is re-read whole and receipts not seen before (per file) are taken. While the file is
+    still growing its last receipt is held back (its rows may not all be written yet). Receipts in
+    CSVs present at start are marked seen, so a daily file the POS appends to works.
     """
 
     def __init__(self, folder: str | Path, stream_start_wall: float | None = None, every_s: float = 2.0,
-                 terminals=None, skip_existing: bool = True):
+                 terminals=None, skip_existing: bool = True, csv_mapping: dict | None = None):
         super().__init__(stream_start_wall)
         self.folder = Path(folder)
         self.every_s = every_s
         self.terminals = set(terminals) if terminals else None
+        self.csv_mapping = csv_mapping
         self._read: dict[str, int] = {}     # file name -> bytes consumed
         self._size: dict[str, int] = {}     # file name -> size at the previous scan
+        self._seen: set[tuple] = set()      # (csv file name, terminal, receipt id) already taken
         self._next_scan = 0.0
         if skip_existing:
             for f in self._files():
                 self._read[f.name] = self._size[f.name] = f.stat().st_size
+                if f.suffix == ".csv":
+                    self._csv(f, stable=True, emit=False)
 
     def _files(self) -> list[Path]:
-        return sorted(f for f in self.folder.glob("*") if f.suffix in (".jsonl", ".json") and f.is_file())
+        kinds = (".jsonl", ".json", ".csv") if self.csv_mapping else (".jsonl", ".json")
+        return sorted(f for f in self.folder.glob("*") if f.suffix in kinds and f.is_file())
+
+    def _csv(self, f: Path, stable: bool, emit: bool = True) -> None:
+        # ponytail: re-reads the whole CSV on every change; fine for daily exports of a few MB.
+        from bree.ledger.pos_csv import csv_payments
+        enc = (self.csv_mapping.get("csv") or {}).get("encoding", "utf-8-sig")
+        text = f.read_bytes().decode(enc, "replace")
+        try:
+            rows = csv_payments(text if stable else text[:text.rfind("\n") + 1], self.csv_mapping,
+                                keep_empty=True)
+            for d in rows if stable else rows[:-1]:
+                key = (f.name, d["terminal"], d["txn_id"])
+                if key not in self._seen and d["items"]:
+                    if emit:
+                        self.q.put(parse_payment(d, self.stream_start_wall))
+                    self._seen.add(key)
+        except (ValueError, KeyError) as e:
+            self.errors.append(f"bad POS CSV {f.name}: {e}")
 
     def scan(self) -> None:
         for f in self._files():
@@ -146,6 +174,11 @@ class FolderPayments(_QueueSource):
             stable = self._size.get(f.name) == size
             self._size[f.name] = size
             if size == done:
+                continue
+            if f.suffix == ".csv":
+                self._csv(f, stable)
+                if stable:
+                    self._read[f.name] = size
                 continue
             with f.open("rb") as fh:
                 fh.seek(done)

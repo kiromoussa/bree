@@ -1,0 +1,53 @@
+# POS CSV export -> BREE payments. Matches tests/fixtures/pos_sample.csv; copy and edit per POS.
+#
+#   bree pos-convert --mapping configs/pos_mapping_example.yaml export.csv > payments.jsonl
+#   shadow mode: `pos_mapping: configs/pos_mapping_example.yaml` in the shadow YAML, and the POS
+#   drops *.csv into pos_export_dir.
+#
+# One CSV row = one line item. Rows are grouped into one payment per (terminal, receipt); the
+# payment's time is the receipt's latest row. Quantities of the same item add up, so a void line
+# (negative qty) cancels the sale; a receipt with nothing left is dropped.
+
+csv:
+  delimiter: ","
+  encoding: utf-8-sig        # utf-8-sig also strips the BOM Excel-style exports start with
+  skip_rows: 0               # lines before the header row (report titles some POS print)
+
+columns:                     # header names in the CSV
+  time: [Date, Time]         # one column, or several joined with a space
+  receipt: "Receipt #"
+  terminal: Register         # omit to use the constant `terminal:` below
+  sku: Item Description      # what the POS calls the item; mapped through `items:`
+  qty: Qty                   # omit = 1 per row
+  price: Unit Price          # optional, kept on the item for reference
+
+# Constant terminal when the export has no terminal column (single-register store).
+terminal: pos_1
+# Terminal column value -> terminal name in the store YAML (`terminals:`). Unlisted values pass through.
+terminals:
+  REG 1: pos_1
+
+time:
+  format: "%m/%d/%Y %I:%M:%S %p"   # strptime format, or "iso", or "epoch" (unix seconds)
+  timezone: America/New_York       # the POS clock's zone (IANA name); DST handled. Ignored if the time has an offset.
+  # Edge box clock minus POS clock, seconds, added to every receipt. Measure at install: ring up a
+  # test sale and note the edge box time (`date +%s`) when it prints; offset = noted - printed.
+  offset_s: 0
+
+# POS item value -> catalog SKU (string), {category: ...} when the POS name is coarser than our
+# SKUs, or `skip` for things that are not on a shelf/cooler (fuel, lottery, car wash). Exact
+# names first, then glob patterns (`*`) in file order.
+items:
+  COCA-COLA 20OZ: COKE-20OZ
+  PEPSI 20OZ: PEPSI-20OZ
+  SNICKERS 1.86OZ: SNICKERS
+  RED BULL 12OZ: REDBULL-12OZ
+  LAYS CLASSIC 2.6OZ: LAYS-CLASSIC
+  BIC LIGHTER: BIC-LIGHTER
+  FOUNTAIN DRINK*: {category: soda_bottle}
+  UNLEADED*: skip
+  LOTTO*: skip
+
+# POS item names with no entry: keep (as an unknown SKU; the ledger lets it cover an open item of
+# any category, so long lists of these hide theft), skip, or error. `bree pos-convert` lists them.
+unmapped: keep

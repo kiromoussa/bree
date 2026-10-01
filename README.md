@@ -39,6 +39,21 @@ Outputs in `--out`: `annotated.mp4` (zones, boxes, IDs, skeletons, heads pixelat
 Store layout: `--store configs/your_store.yaml` (zones are polygons in camera pixels; copy
 `configs/store_gas_station_small.yaml`). Draw them on a still frame from the real camera.
 
+### Drawing zones (install day)
+`scripts/draw_zones.py` grabs one frame (still image, video file or RTSP URL), opens it in an OpenCV
+window, and writes the store YAML: click a polygon, Enter, type its name and kind (shelf, cooler,
+register, exit); `f` toggles floor-point mode (click 4+ floor marks, type their x y in metres, for
+multi-camera stores); `q` saves. Catalog, terminals, product classes, rules and ledger settings are
+kept from the template (`--out` if it exists, else the example config). The result is loaded back
+with the pipeline's own loader before the script says it is done.
+
+```bash
+PYTHONPATH=src .venv/bin/python scripts/draw_zones.py --source rtsp://user:pass@cam/stream1 \
+  --out configs/store1_register_cam.yaml --camera-id register_cam --preview register_zones.png
+# headless: --from-json zones.json ({"zones": [{"name", "kind", "polygon"}], "floor_points": [...]})
+```
+Only `--preview` writes an image, and it is the raw frame (not pixelated): keep it out of shared folders.
+
 Several cameras of one store: repeat `--source` and `--store` (one YAML per camera, zones in that
 camera's pixels, plus `camera.floor_points`: 4+ marks mapping its pixels to a shared floor plan in
 metres). People keep one id across cameras by floor position and time only (no appearance
@@ -56,6 +71,24 @@ One JSON object per payment, e.g.
 (`ts` = unix time; or `t` = seconds since video start for recorded footage). Terminals map to zones in the store YAML.
 - `--payments payments.jsonl` (file), `--payments stdin`, or `--payments http:8765` then
   `curl -X POST localhost:8765/payments -d '{...}'`.
+
+### POS CSV exports
+Real POS exports are CSV with their own columns, one row per line item, in local time. A mapping YAML
+(`configs/pos_mapping_example.yaml`, matching `tests/fixtures/pos_sample.csv`) names the time column(s)
+and format, receipt id, terminal (or a constant), item, qty and price columns, and maps POS item names
+to catalog SKUs, to a category, or to `skip` (fuel, lottery). Rows become one payment per receipt.
+
+```bash
+.venv/bin/python -m bree.cli pos-convert --mapping configs/pos_mapping_example.yaml export.csv > payments.jsonl
+```
+In shadow mode set `pos_mapping:` and the POS can drop `*.csv` into `pos_export_dir` directly.
+
+**Clock alignment.** The ledger runs on the edge box's clock (live: stream time = receipt unix time
+minus the box's time at stream start). POS times are local wall time: `time.timezone` converts them
+(DST included), then `time.offset_s` (edge box clock minus POS clock) is added. Keep the edge box on
+NTP; at install ring up a test sale, note `date +%s` on the box when it prints, set
+`offset_s = noted - printed`. Many POS print whole seconds or minutes only; minute stamps are too
+coarse to place a receipt at the counter, so ask for seconds.
 
 ### ONNX Runtime (edge devices)
 `--runtime onnx` (on `run`, `dashboard`, `shadow`; or `runtime: onnx` in the shadow YAML) runs the detector
@@ -91,8 +124,8 @@ cp configs/shadow_example.yaml configs/shadow_store1.yaml   # camera RTSP URLs, 
 .venv/bin/python -m bree.cli shadow-labels --config configs/shadow_store1.yaml --serve    # review page only
 ```
 
-- **POS**: the POS drops export files (`*.jsonl` / `*.json`, the payment format above, with `ts`)
-  into `pos_export_dir`; shadow mode polls it every 2 s. Files already there at start are skipped.
+- **POS**: the POS drops export files (`*.jsonl` / `*.json`, the payment format above, with `ts`;
+  or `*.csv` with `pos_mapping:` set, see POS CSV exports) into `pos_export_dir`; shadow mode polls it every 2 s. Files already there at start are skipped.
   A receipt that arrives after the decision (batched exports) still counts for `late_receipt_window_s`
   (default 300 s) after the exit: it retracts or downgrades the would-be alert, never raises one. The
   retraction is a second record in `would_be_alerts.jsonl` (`retracts` = the earlier id) and the

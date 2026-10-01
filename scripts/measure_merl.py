@@ -101,9 +101,9 @@ for vf in vids:
 tot = lambda k: sum(v[k] for v in per_video)
 mins = tot("minutes")
 res = {
-    "source": "MERL Shopping Dataset, test subjects 27-41 (real video, overhead lab store, 1 shopper/video)",
+    "source": f"MERL Shopping Dataset, {'test subjects 27-41' if args.split == 'test' else 'train subjects 1-20'} (real video, overhead lab store, 1 shopper/video)",
     "license": "MERL research dataset (see data/LICENSES.md): evaluation only",
-    "hardware": hw.to_dict(), "stride": STRIDE, "split": args.split,
+    "hardware": {"device": hw.device, "device_name": hw.device_name}, "stride": STRIDE, "split": args.split,
     "config": {"det": det_w, "pose": pose_w, "imgsz": imgsz, "crop": args.crop, "person_conf": args.person_conf,
                "buffer_s": args.buffer, "new_track_thresh": args.new_track_thresh}, "n_videos": len(per_video), "minutes": round(mins, 1),
     "reach_recall": tot("reach_found") / max(tot("reach_instances"), 1),

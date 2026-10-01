@@ -2,15 +2,15 @@
 
 Two parts: **Phase 2 (2026-09-30, real data)** first, then last night's **Phase 1 report** unchanged below it. Every number names the file it came from; real-data results and simulated results are kept apart.
 
-# Overnight (2026-10-01, ~00:20 to ~06:20 UTC)
+# Overnight (2026-10-01, ~00:20 to ~06:20 EDT)
 
 **Bottom line.** No GPU quota yet (ticket #2610010040000169 still open, limits 0), so everything ran on the Mac. Four new capabilities are in and tested (131 tests pass, including vision smoke tests), two tuning experiments gave mixed results, and **concealment from pose is still not solved**.
 
 **New capabilities (merged)**
-- **Late POS receipts can retract an alert** (`late_receipt_window_s`, default 300 s). Simulator, seed 2, baseline noise, 200 h, with the POS exporting in 60 s batches (new `VisionNoise.pos_batch_s` option; default 0 keeps the headline bench unchanged): without retraction **2.54 false alerts/h at 28.1% precision**; with retraction **0.435/h at 69.0%**; with `exit_grace_s: 65` plus retraction 0.455/h at 72.1% and 47.5% recall, about the live-POS baseline (0.45/h, 72.5%, 47.9%). If the operator's POS exports in batches, this matters a lot.
+- **Late POS receipts can retract an alert** (`late_receipt_window_s`, default 300 s). Simulator, seed 2, baseline noise, 200 h, with the POS exporting in 60 s batches (new `VisionNoise.pos_batch_s` option; default 0 keeps the headline bench unchanged): without retraction **2.54 false alerts/h at 28.1% precision**; with retraction **0.435/h at 69.0%**; with `exit_grace_s: 65` plus retraction 0.455/h at 72.1% and 47.5% recall, about the live-POS baseline (0.45/h, 72.5%, 47.9%). Source: `results/late_receipts.json` (`scripts/late_receipts.py`). If the operator's POS exports in batches, this matters a lot.
 - **Multi-camera stores feed one ledger** (`bree run` with several `--source`/`--store`, `multicam:` in shadow mode); per-camera floor homographies, no appearance features. Tested on synthetic per-camera streams only; a handoff bug that dropped returning shoppers was found and fixed.
-- **ONNX runtime** (`--runtime onnx`) with the best ONNX Runtime provider present (TensorRT > CUDA > CoreML > CPU). Same input gives the same detections as PyTorch within 0.0003 px (`results/onnx_parity.json`). **On this Mac, CoreML runs the full pipeline at 77.0 FPS with the small models vs 45.9 FPS for PyTorch MPS** (`results/speed.json`), about 5 camera streams instead of 3.
-- **Isaac Sim 4.5 gas-station generator, ready to run** (`src/bree/sim/isaac/`, runbook in its README): store, cameras, behaviours, randomisation, truth files in our schema, converter, overlays, 8/1/1 split by scene seed (pilot 52 clips, full 2,080). Not executed (no GPU). It also fixed `scripts/azure_gpu.sh sim`, which could not have worked (current Isaac Automator only deploys Isaac Sim 5.x; now pinned to v3.13.0 for the 4.5.0 container) and locks the Automator's open SSH/VNC/NoMachine ports to this IP. Isaac Sim 4.5 has no concealment animation, so these renders help detection, tracking and event timing, not concealment poses.
+- **ONNX runtime** (`--runtime onnx`) with the best ONNX Runtime provider present (TensorRT > CUDA > CoreML > CPU). With the same letterboxed input it gives the same detections as PyTorch within 0.0003 px (`results/onnx_parity.json`); on the pipeline path, padding to 640x640 shifts boxes (median 11 px on MERL). CoreML parity was checked on CPU + Neural Engine, not the default compute units used in the speed run. **On this Mac, CoreML runs the full pipeline at 77.0 FPS with the small models vs 45.9 FPS for PyTorch MPS** (`results/speed.json`), about 5 camera streams instead of 3.
+- **Isaac Sim 4.5 gas-station generator, ready to run** (`src/bree/sim/isaac/`, runbook in its README): store, cameras, behaviours, randomisation, truth files in our schema, converter, overlays, 8/1/1 split by scene seed (pilot 52 clips, full 2,080). Not executed (no GPU). It also fixed `scripts/azure_gpu.sh sim`, which could not have worked (current Isaac Automator only deploys Isaac Sim 5.x; now pinned to v3.13.0 for the 4.5.0 container) and closes the Automator's open VNC/NoMachine ports while restricting SSH to this IP. Isaac Sim 4.5 has no concealment animation, so these renders help detection, tracking and event timing, not concealment poses.
 
 **Perception tuning** (chosen on MERL's train split, measured once on the test split; `results/tuning/`, `results/merl_measure_tuned.json`)
 | MERL test split (28 videos, 64.3 min) | current default (YOLO26s, conf 0.3, 2 s buffer) | tuned (YOLO26n, conf 0.15, 5 s buffer, new-track 0.15) |
@@ -18,10 +18,10 @@ Two parts: **Phase 2 (2026-09-30, real data)** first, then last night's **Phase 
 | reach recall | 64.2% | 62.7% |
 | false reaches / min | 0.78 | 0.25 |
 | extra track ids per single-shopper video | 11.0 | 7.3 |
-| detector + pose + tracker, ms / frame (MPS) | 30.4 | 23.3 |
-On the train split the tuned setting had 67.7% vs 57.1% reach recall; that gain did not carry over to the test split. Fewer false reaches and fewer track splits did. Defaults are unchanged; the trade-off is a choice to make on our own camera footage.
+| detector + pose + tracker, ms / frame (MPS; different sessions, same-session train split: 25.0 vs 24.1) | 30.4 | 23.3 |
+On the train split the tuned setting had 67.7% vs 57.1% reach recall; that gain did not carry over to the test split. Fewer track splits did carry over (5.3 to 3.8 on train, 11.0 to 7.3 on test). False reaches went up on train (0.00 to 0.22/min) and down on test (0.78 to 0.25/min), so that change is not consistent. Defaults are unchanged; the trade-off is a choice to make on our own camera footage.
 
-**Classifier v2** (features: wrist position relative to hips and torso, speed; augmentation: mirroring, speed change, keypoint dropout, jitter). Selected on PoseLift leave-one-camera-out only: AUC-ROC 0.681 vs 0.585 for v1 (`results/conceal_select.json`). Held-out sets, scored once (`results/conceal_variant.json`):
+**Classifier v2** (features: wrist position relative to hips and torso, speed; augmentation: mirroring, speed change, keypoint dropout, jitter). Selected on PoseLift leave-one-camera-out only: AUC-ROC 0.681 vs 0.585 for v1 (`results/conceal_select.json`, 2 seeds; P2.3's 0.592 for v1 is the same protocol from a different seed run). Held-out sets, scored once (`results/conceal_variant.json`):
 | AUC-ROC | v1 (shipped) | v2 + augmentation |
 |---|---|---|
 | RetailS staged | 0.501 | 0.504 |

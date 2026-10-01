@@ -13,6 +13,8 @@ def match_alerts(truth: dict, alerts: list[dict], tol_s: float = 3.0) -> list[di
     rows = []
     used = set()
     for p in truth["people"]:
+        if p.get("t_exit") is None:          # never left during the clip (staff, or cut off): no decision to score
+            continue
         hit = None
         for a in alerts:
             if a["alert_id"] in used:
@@ -33,18 +35,26 @@ def match_alerts(truth: dict, alerts: list[dict], tol_s: float = 3.0) -> list[di
     return rows
 
 
-def run_toy_suite(toy_dir: str | Path, out_dir: str | Path, store_path: str | Path, verbose: bool = False):
-    from bree.detect.toy import ToyBackend
+def run_toy_suite(toy_dir: str | Path, out_dir: str | Path, store_path: str | Path, verbose: bool = False,
+                  prefix: str = "toy_", make_backend=None):
+    """Score every `<prefix><clip>.truth.json` in toy_dir. A clip's own `<prefix><clip>.store.yaml` (Isaac Sim
+    clips carry zones projected into their camera) overrides `store_path`. `make_backend(store)` defaults to
+    the toy colour detector."""
     from bree.pipeline import run_pipeline
+    if make_backend is None:
+        from bree.detect.toy import ToyBackend
+        make_backend = lambda store: ToyBackend()  # noqa: E731
     toy_dir, out_dir = Path(toy_dir), Path(out_dir)
-    store = load_store_config(store_path)
+    default_store = load_store_config(store_path)
     rows, summaries = [], []
-    for truth_path in sorted(toy_dir.glob("toy_*.truth.json")):
+    for truth_path in sorted(toy_dir.glob(f"{prefix}*.truth.json")):
         truth = json.loads(truth_path.read_text())
         name = truth["clip"]
-        video = toy_dir / f"toy_{name}.mp4"
-        pays = JsonlPayments(toy_dir / f"toy_{name}.payments.jsonl")
-        s = run_pipeline(str(video), store, ToyBackend(), out_dir / name, payments=pays,
+        video = toy_dir / f"{prefix}{name}.mp4"
+        own = toy_dir / f"{prefix}{name}.store.yaml"
+        store = load_store_config(own) if own.exists() else default_store
+        pays = JsonlPayments(toy_dir / f"{prefix}{name}.payments.jsonl")
+        s = run_pipeline(str(video), store, make_backend(store), out_dir / name, payments=pays,
                          save_video=True, verbose=verbose)
         summaries.append(s)
         rows += match_alerts(truth, s.alerts)

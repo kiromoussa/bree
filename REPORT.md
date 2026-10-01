@@ -37,6 +37,7 @@ More thieves are caught (alert + review recall 37% to 57%) at slightly more fals
 **Tried and dropped (negative results, recorded in DECISIONS.md):**
 - Open-vocabulary product detection (YOLOE, text prompts, no training) to see a product in the hand: on MERL train videos it fired near the hand about as often with empty hands as with a product (best: 62% vs 50%; `results/merl_product_in_hand_train.json`). A product detector still needs our own labelled products.
 - Long-gap stitching (60 s when the new track is at almost the same spot): fewer visits but more split shoppers on train; left off.
+- Unsupervised concealment scoring (distance to normal shopping poses, fit on PoseLift normal only): held-out AUC-ROC RetailS staged 0.531, DCSASS 0.481, UCF-Crime 0.642 (`results/conceal_knn.json`). Like the classifiers, near chance. Conclusion: public pose-only data does not give a concealment signal that transfers; concealment evidence should come from the product leaving the hand near the torso (needs a product detector) and from shadow-mode labels.
 
 **Perception tuning** (chosen on MERL's train split, measured once on the test split; `results/tuning/`, `results/merl_measure_tuned.json`)
 | MERL test split (28 videos, 64.3 min) | current default (YOLO26s, conf 0.3, 2 s buffer) | tuned (YOLO26n, conf 0.15, 5 s buffer, new-track 0.15) |

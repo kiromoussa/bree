@@ -331,3 +331,23 @@ def test_resting_hand_in_a_shelf_zone_does_not_turn_a_conceal_into_a_put_back(st
     s.step({1: (fx, fy, [left_in_shelf_a, (fx + 6, fy - 65)])}, [(7, fx + 6, fy - 53, "soda_bottle")], n=5)
     s.step({1: (fx, fy, [left_in_shelf_a, (fx + 6, fy - 65)])}, [], n=30)
     assert s.of(E.PUT_BACK) == [] and len(s.of(E.CONCEAL)) == 1
+
+
+def test_no_stitch_when_two_lost_people_could_match(store):
+    s = Sim(store)
+    _walk_in(s, 1, to_x=600)
+    _walk_in(s, 3, to_x=640)
+    s.step({1: (600, 400, rest(600, 400)), 3: (640, 400, rest(640, 400))}, n=5)
+    s.step({}, n=30)                                        # both lost
+    s.step({2: (620, 400, rest(620, 400))}, n=5)            # new track between them: ambiguous
+    assert 2 in [e.person_id for e in s.of(E.ENTER)]
+
+
+def test_no_stitch_when_someone_visible_stands_there(store):
+    s = Sim(store)
+    _walk_in(s, 1, to_x=600)
+    _walk_in(s, 3, to_x=300)
+    s.step({1: (600, 400, rest(600, 400)), 3: (300, 400, rest(300, 400))}, n=5)
+    s.step({3: (610, 400, rest(610, 400))}, n=30)           # 1 lost; 3 now stands where 1 was
+    s.step({3: (610, 400, rest(610, 400)), 2: (605, 400, rest(605, 400))}, n=5)
+    assert 2 in [e.person_id for e in s.of(E.ENTER)]

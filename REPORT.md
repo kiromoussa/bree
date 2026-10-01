@@ -17,20 +17,20 @@ Three parts: **Overnight (2026-10-01)** first, then **Phase 2 (2026-09-30, real 
 |---|---|---|---|
 | reach recall (pick detection upper bound) | 64.2% | 64.2% | **87.6%** |
 | false reaches / min | 0.78 | 0.78 | 1.07 |
-| visits per single-shopper video | 5.8 | 3.0 | **2.4** |
-| shoppers split into more than one visit | 100% | 82% | **64%** |
-Sources: `results/merl_stitch.json` (stitching), `results/merl_offline_train.json` (selection), `results/merl_offline_test.json` (test). Stitching continues a visit when a new tracker id appears away from the door within 10 s and one body height of someone just lost (position and time only). The hand point is the wrist pushed half a forearm further (fingertips reach deeper than the wrist). Duplicate removal drops a person box lying 85% inside a larger one. One video got worse with stitching (4 to 7 visits), so it can mis-merge.
+| visits per single-shopper video | 5.8 | 3.1 | **2.5** |
+| shoppers split into more than one visit | 100% | 79% | **68%** |
+Sources: `results/merl_offline_train.json` (selection), `results/merl_offline_test.json` (test, current engine incl. the stitching ambiguity guard below). The first stitching run, before the guard, gave 3.0 visits and 82% split (`results/merl_stitch.json`). Stitching continues a visit when a new tracker id appears away from the door within 10 s and one body height of someone just lost (position and time only). The hand point is the wrist pushed half a forearm further (fingertips reach deeper than the wrist). Duplicate removal drops a person box lying 85% inside a larger one. Stitching can mis-merge different people; MOT16 (below) showed that in crowds, so stitching now skips ambiguous cases (two lost people qualify, or someone visible stands where the new track appeared).
 
 **A missed-theft bug found on the way.** The put-back rule counted any hand in a shelf zone; a resting hand next to a gondola turned a concealment by the other hand into a put-back. Now only the holding hand counts (regression test fails on the old code).
 
-**Simulator with the new measured rates** (`results/bench.json`, POS feed, 200 h, seed 2; measured pick detection 87.6%, visit splits 64%):
+**Simulator with the new measured rates** (`results/bench.json`, POS feed, 200 h, seed 2; measured pick detection 87.6%, visit splits 68%):
 | vision noise | precision | recall (alert) | recall (alert + review) | false alerts / hour |
 |---|---|---|---|---|
 | assumed baseline | 72.5% | 47.9% | 83.4% | 0.45 |
 | measured, Phase 2 rates | 24.2% | 13.5% | 37.4% | 1.05 |
-| **measured, rates after tonight** | **30.2%** | **22.2%** | **56.8%** | 1.27 |
+| **measured, rates after tonight** | **28.6%** | **18.0%** | **53.3%** | 1.11 |
 | measured tonight, ID switch at the assumed 3% | 54.9% | 28.1% | 79.0% | 0.57 |
-More thieves are caught (alert + review recall 37% to 57%) at more false alerts (1.05 to 1.27 per hour). Visit splitting is still the biggest drag: at the assumed split rate, false alerts would be 0.57 per hour. The toy clips are unchanged (2 of 2 thieves alerted, no flags on honest shoppers).
+More thieves are caught (alert + review recall 37% to 53%) at slightly more false alerts (1.05 to 1.11 per hour). Visit splitting is still the biggest drag: at the assumed split rate, false alerts would be 0.57 per hour. The toy clips are unchanged (2 of 2 thieves alerted, no flags on honest shoppers).
 
 **Tracking on real angled footage with ground truth (MOT16 train, 7 sequences, 517 people; evaluation only; `results/mot16.json`).** Settings fixed before running:
 | setting | MOTA | IDF1 | ID switches | fragmentations | recall | precision |
@@ -38,7 +38,10 @@ More thieves are caught (alert + review recall 37% to 57%) at more false alerts 
 | old default (YOLO26s, conf 0.3, 2 s buffer) | 0.325 | 0.435 | 487 | 1,369 | 38.5% | 87.4% |
 | **current default** (+ duplicate-box removal) | **0.327** | **0.438** | 454 | 1,357 | 37.9% | 88.6% |
 | MERL-tuned (YOLO26n, conf 0.15, 5 s buffer) | 0.300 | 0.395 | 430 | 978 | 34.3% | 89.8% |
-Duplicate removal helps slightly on real angled footage; the MERL-tuned detector loses too much recall, which confirms not making it the default. MOT16 is street scenes with many small pedestrians (hence the low recall); engine-level stitching needs store zones and is not measured here.
+| current default + engine stitching, no guard | 0.328 | 0.388 | 290 | 1,390 | 37.9% | 88.6% |
+| same, stricter distance (0.5 heights; exploratory) | 0.328 | 0.411 | 308 | 1,383 | 37.9% | 88.6% |
+| **current default + stitching with ambiguity guard** | **0.327** | **0.441** | 441 | 1,359 | 37.9% | 88.6% |
+Duplicate removal helps slightly on real angled footage; the MERL-tuned detector loses too much recall, which confirms not making it the default. Unguarded stitching cut ID switches by a third but merged different people in crowds (IDF1 0.438 to 0.388); with the ambiguity guard it is slightly better than no stitching (IDF1 0.441, 441 switches) while keeping most of the single-shopper gain on MERL. MOT16 is street scenes with many small pedestrians (hence the low recall); stitching here runs with no door zone.
 
 **Pilot day-one tools** (merged): `scripts/draw_zones.py` (click zone polygons and multi-camera floor points on a camera still, video or RTSP frame; writes the store YAML, validated by loading it back) and **POS CSV import** through a declarative column mapping (`configs/pos_mapping_example.yaml`: columns, time format and timezone, terminal names, POS item names to our SKUs or categories, clock offset). `bree pos-convert` turns an export into our receipt format; with `--video-start` it adds stream time so recorded footage can be replayed with its POS export (`bree run --payments`). Shadow mode reads CSV exports straight from the POS folder. Rehearsed end to end on a toy clip with the sample CSV.
 

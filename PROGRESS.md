@@ -33,7 +33,7 @@ Phases 0, 1, 4 (except GPU parts), 5, 6 done on the Mac. All real-data results r
 ## MORNING SUMMARY (2026-10-01, overnight run ~00:20 to ~06:20 EDT)
 Read REPORT.md "Overnight" first. All pushed to claude/new-session-v6zi52; 146 tests pass.
 - Merged: late-receipt alert retraction, multi-camera ledger, ONNX/CoreML runtime (77 FPS small models on this Mac), Isaac Sim 4.5 generator + runbook (not run: no quota), draw_zones.py, POS CSV import (+ pos-convert --video-start).
-- New engine defaults: track stitching, hand point (wrist + 0.5 forearm), contained duplicate-box removal; put-back now uses only the holding hand (missed-theft bug). MERL test: reach recall 64% -> 88%, visits per shopper 5.8 -> 2.4.
+- New engine defaults: track stitching, hand point (wrist + 0.5 forearm), contained duplicate-box removal; put-back now uses only the holding hand (missed-theft bug). MERL test: reach recall 64% -> 88%, visits per shopper 5.8 -> 2.5; stitching skips ambiguous cases (MOT16 IDF1 0.441 vs 0.438 without stitching).
 - Negative results recorded: perception size/threshold tuning (mixed), classifier v2 (marginal), open-vocabulary product-in-hand (no signal), kNN concealment (near chance), long-gap stitching (mixed).
 - Quota ticket #2610010040000169 still open, limits 0.
 Next (Kiro): operator footage + POS CSV export + camera stills (the tools for them now exist), staged session, quota. Next (Claude, when footage lands): draw_zones on stills, pos-convert with --video-start, `bree run` / `bree shadow`, label, measure rates on our own camera.

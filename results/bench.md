@@ -52,7 +52,7 @@ Test clips: 21; normal footage: 0.4 h.
 | p_false_held_at_exit | 0.03 | not measured | not measured: no labelled real data for this yet |
 | p_register_visit_detected | 0.97 | not measured | not measured: needs store footage with these events labelled (pilot shadow mode or staged session) |
 | p_exit_detected | 0.98 | not measured | not measured: needs store footage with these events labelled (pilot shadow mode or staged session) |
-| p_id_switch | 0.03 | 0.643 | MERL test split, current engine defaults: share of single-shopper videos (~2 min) that still became more than one visit (>= 2 s each). Overhead view, likely pessimistic for a real store. |
+| p_id_switch | 0.03 | 0.679 | MERL test split, current engine defaults: share of single-shopper videos (~2 min) that still became more than one visit (>= 2 s each). Overhead view, likely pessimistic for a real store. |
 | p_id_swap | 0.01 | not measured | not measured: no labelled real data for this yet |
 | p_pos_dropped | 0.01 | not measured | not measured: needs the operator's POS export |
 | pos_jitter_s | 2.0 | not measured | not measured: needs the operator's POS export |
@@ -78,12 +78,12 @@ Test clips: 21; normal footage: 0.4 h.
 | pos | perfect | 495 | 97.9% | 76.4% | 96.8% | 0.04 | 0.03 | 100.0% | 5.0 / 35.15 |
 | pos | baseline | 495 | 72.5% | 47.9% | 83.4% | 0.45 | 4.08 | 75.5% | 5.0 / 34.47 |
 | pos | pessimistic_2x | 495 | 45.4% | 20.0% | 65.1% | 0.59 | 5.43 | 58.0% | 5.0 / 62.75 |
-| pos | measured | 495 | 30.2% | 22.2% | 56.8% | 1.27 | 3.34 | 69.0% | 5.0 / 120.0 |
+| pos | measured | 495 | 28.6% | 18.0% | 53.3% | 1.11 | 3.73 | 68.3% | 5.0 / 120.0 |
 | pos | measured, id switch assumed | 495 | 54.9% | 28.1% | 79.0% | 0.57 | 3.85 | 72.1% | 5.0 / 37.15 |
 | dwell | perfect | 495 | 96.5% | 44.8% | 74.5% | 0.04 | 0.01 | 100.0% | 5.0 / 40.53 |
 | dwell | baseline | 495 | 65.1% | 33.1% | 59.6% | 0.44 | 1.61 | 75.5% | 5.0 / 35.07 |
 | dwell | pessimistic_2x | 495 | 38.1% | 15.6% | 46.5% | 0.62 | 2.91 | 58.0% | 5.0 / 95.84 |
-| dwell | measured | 495 | 27.0% | 20.0% | 38.4% | 1.33 | 1.87 | 69.0% | 5.0 / 120.0 |
+| dwell | measured | 495 | 26.2% | 16.2% | 36.6% | 1.12 | 2.29 | 68.3% | 5.0 / 120.0 |
 | dwell | measured, id switch assumed | 495 | 49.1% | 22.6% | 46.3% | 0.58 | 1.71 | 72.1% | 5.0 / 66.28 |
 
 Alert-threshold sweep (POS feed, baseline noise; uncorroborated decisions stay capped at review):

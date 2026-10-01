@@ -10,8 +10,8 @@
    "reach_recall": 0.6417657045840407,
    "reach_instances": 589,
    "false_reach_runs_per_min": 0.7784120394395433,
-   "visits_per_video": 3.0357142857142856,
-   "videos_split": 0.8214285714285714,
+   "visits_per_video": 3.0714285714285716,
+   "videos_split": 0.7857142857142857,
    "n_videos": 28
   },
   {
@@ -22,8 +22,8 @@
    "reach_recall": 0.8760611205432938,
    "reach_instances": 589,
    "false_reach_runs_per_min": 1.0742086144265697,
-   "visits_per_video": 2.357142857142857,
-   "videos_split": 0.6428571428571429,
+   "visits_per_video": 2.5357142857142856,
+   "videos_split": 0.6785714285714286,
    "n_videos": 28
   }
  ]

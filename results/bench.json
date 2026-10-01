@@ -1,5 +1,5 @@
 {
-  "generated_unix": 1790837522.526882,
+  "generated_unix": 1790841085.748193,
   "machine": "macOS-26.5.1-arm64-arm-64bit",
   "quick": false,
   "event_level": {
@@ -65,10 +65,10 @@
         },
         "crowd_pairs": 21,
         "events": 58568,
-        "ledger_events_per_s": 110391,
+        "ledger_events_per_s": 107811,
         "wall_s": {
-          "simulate": 1.04,
-          "ledger": 0.53
+          "simulate": 1.02,
+          "ledger": 0.54
         },
         "payment_mode": "pos",
         "noise": "perfect"
@@ -145,7 +145,7 @@
         },
         "crowd_pairs": 21,
         "events": 57160,
-        "ledger_events_per_s": 98183,
+        "ledger_events_per_s": 97875,
         "wall_s": {
           "simulate": 0.99,
           "ledger": 0.58
@@ -281,10 +281,10 @@
         },
         "crowd_pairs": 21,
         "events": 55869,
-        "ledger_events_per_s": 75840,
+        "ledger_events_per_s": 76354,
         "wall_s": {
-          "simulate": 0.94,
-          "ledger": 0.74
+          "simulate": 0.93,
+          "ledger": 0.73
         },
         "payment_mode": "pos",
         "noise": "pessimistic_2x"
@@ -294,76 +294,77 @@
         "thieves": 495,
         "honest": 9909,
         "store_hours": 200,
-        "alerts": 364,
-        "precision": 0.302,
-        "recall": 0.222,
-        "recall_alert_or_review": 0.568,
-        "false_alerts": 254,
-        "false_alerts_per_hour": 1.27,
-        "false_alerts_per_1000_honest_visitors": 25.63,
-        "reviews_on_honest_per_hour": 3.34,
-        "flagged_item_precision": 0.224,
-        "basket_exact_match": 0.69,
-        "basket_item_precision": 0.871,
-        "basket_item_recall": 0.865,
+        "alerts": 311,
+        "precision": 0.286,
+        "recall": 0.18,
+        "recall_alert_or_review": 0.533,
+        "false_alerts": 222,
+        "false_alerts_per_hour": 1.11,
+        "false_alerts_per_1000_honest_visitors": 22.4,
+        "reviews_on_honest_per_hour": 3.73,
+        "flagged_item_precision": 0.213,
+        "basket_exact_match": 0.683,
+        "basket_item_precision": 0.866,
+        "basket_item_recall": 0.863,
         "decision_latency_s_p50": 5.0,
         "decision_latency_s_p95": 120.0,
         "recall_by_theft_type": {
           "thief_conceal_partial": {
             "thieves": 176,
-            "alerted": 13,
-            "alert_or_review": 68
+            "alerted": 11,
+            "alert_or_review": 67
           },
           "thief_open_partial": {
             "thieves": 104,
-            "alerted": 5,
-            "alert_or_review": 51
+            "alerted": 6,
+            "alert_or_review": 46
           },
           "thief_walkout": {
             "thieves": 215,
-            "alerted": 92,
-            "alert_or_review": 162
+            "alerted": 72,
+            "alert_or_review": 151
           }
         },
         "alert_precision_by_evidence": {
           "conceal_seen": {
-            "correct": 56,
-            "alerts": 193,
-            "precision": 0.29
+            "correct": 42,
+            "alerts": 166,
+            "precision": 0.253
           },
           "no_conceal": {
-            "correct": 54,
-            "alerts": 171,
-            "precision": 0.316
+            "correct": 47,
+            "alerts": 145,
+            "precision": 0.324
           }
         },
         "false_alerts_by_shopper_type": {
-          "group": 150,
-          "cooler_tap": 33,
-          "normal": 61,
-          "browse_putback": 10
+          "browse_putback": 7,
+          "normal": 59,
+          "group": 129,
+          "cooler_tap": 25,
+          "pocket_then_pay": 2
         },
-        "retractions": 0,
+        "retractions": 1,
         "sim_notes": {
-          "id_switches": 6677,
-          "id_swaps": 198,
-          "missed_picks": 2366,
-          "false_conceals": 2142,
-          "missed_putbacks": 377,
-          "false_picks": 301,
-          "missed_conceals": 555,
-          "missed_exits": 198,
-          "category_confusions": 535,
-          "crowded_picks": 208,
-          "crowd_swaps": 58,
-          "pos_dropped": 83
+          "id_switches": 7037,
+          "id_swaps": 194,
+          "missed_putbacks": 356,
+          "false_conceals": 2212,
+          "category_confusions": 565,
+          "missed_picks": 2319,
+          "false_picks": 309,
+          "missed_conceals": 564,
+          "missed_exits": 206,
+          "crowded_picks": 209,
+          "crowd_swaps": 53,
+          "pos_dropped": 84
         },
         "crowd_pairs": 21,
-        "events": 64136,
-        "ledger_events_per_s": 34413,
+        "events": 64629,
+        "ledger_events_per_s": 33981,
         "wall_s": {
           "simulate": 0.97,
-          "ledger": 1.86
+          "ledger": 1.9
         },
         "payment_mode": "pos",
         "noise": "measured"
@@ -440,10 +441,10 @@
         },
         "crowd_pairs": 21,
         "events": 57817,
-        "ledger_events_per_s": 98038,
+        "ledger_events_per_s": 91213,
         "wall_s": {
-          "simulate": 0.95,
-          "ledger": 0.59
+          "simulate": 0.93,
+          "ledger": 0.63
         },
         "payment_mode": "pos",
         "noise": "measured, id switch assumed"
@@ -506,10 +507,10 @@
         },
         "crowd_pairs": 21,
         "events": 58568,
-        "ledger_events_per_s": 116301,
+        "ledger_events_per_s": 106750,
         "wall_s": {
-          "simulate": 1.05,
-          "ledger": 0.5
+          "simulate": 1.02,
+          "ledger": 0.55
         },
         "payment_mode": "dwell",
         "noise": "perfect"
@@ -586,10 +587,10 @@
         },
         "crowd_pairs": 21,
         "events": 57160,
-        "ledger_events_per_s": 88617,
+        "ledger_events_per_s": 91439,
         "wall_s": {
-          "simulate": 0.97,
-          "ledger": 0.65
+          "simulate": 0.98,
+          "ledger": 0.63
         },
         "payment_mode": "dwell",
         "noise": "baseline"
@@ -666,9 +667,9 @@
         },
         "crowd_pairs": 21,
         "events": 55869,
-        "ledger_events_per_s": 69507,
+        "ledger_events_per_s": 69812,
         "wall_s": {
-          "simulate": 0.94,
+          "simulate": 0.92,
           "ledger": 0.8
         },
         "payment_mode": "dwell",
@@ -679,77 +680,77 @@
         "thieves": 495,
         "honest": 9909,
         "store_hours": 200,
-        "alerts": 366,
-        "precision": 0.27,
-        "recall": 0.2,
-        "recall_alert_or_review": 0.384,
-        "false_alerts": 267,
-        "false_alerts_per_hour": 1.335,
-        "false_alerts_per_1000_honest_visitors": 26.95,
-        "reviews_on_honest_per_hour": 1.87,
-        "flagged_item_precision": 0.236,
-        "basket_exact_match": 0.69,
-        "basket_item_precision": 0.871,
-        "basket_item_recall": 0.865,
+        "alerts": 305,
+        "precision": 0.262,
+        "recall": 0.162,
+        "recall_alert_or_review": 0.366,
+        "false_alerts": 225,
+        "false_alerts_per_hour": 1.125,
+        "false_alerts_per_1000_honest_visitors": 22.71,
+        "reviews_on_honest_per_hour": 2.285,
+        "flagged_item_precision": 0.22,
+        "basket_exact_match": 0.683,
+        "basket_item_precision": 0.866,
+        "basket_item_recall": 0.863,
         "decision_latency_s_p50": 5.0,
         "decision_latency_s_p95": 120.0,
         "recall_by_theft_type": {
           "thief_conceal_partial": {
             "thieves": 176,
-            "alerted": 5,
-            "alert_or_review": 21
+            "alerted": 4,
+            "alert_or_review": 19
           },
           "thief_open_partial": {
             "thieves": 104,
-            "alerted": 2,
-            "alert_or_review": 7
+            "alerted": 3,
+            "alert_or_review": 10
           },
           "thief_walkout": {
             "thieves": 215,
-            "alerted": 92,
-            "alert_or_review": 162
+            "alerted": 73,
+            "alert_or_review": 152
           }
         },
         "alert_precision_by_evidence": {
           "conceal_seen": {
-            "correct": 45,
-            "alerts": 195,
-            "precision": 0.231
+            "correct": 32,
+            "alerts": 161,
+            "precision": 0.199
           },
           "no_conceal": {
-            "correct": 54,
-            "alerts": 171,
-            "precision": 0.316
+            "correct": 48,
+            "alerts": 144,
+            "precision": 0.333
           }
         },
         "false_alerts_by_shopper_type": {
-          "group": 164,
-          "cooler_tap": 31,
-          "normal": 63,
-          "browse_putback": 7,
-          "pocket_then_pay": 2
+          "browse_putback": 6,
+          "normal": 57,
+          "group": 136,
+          "cooler_tap": 25,
+          "pocket_then_pay": 1
         },
-        "retractions": 0,
+        "retractions": 1,
         "sim_notes": {
-          "id_switches": 6677,
-          "id_swaps": 198,
-          "missed_picks": 2366,
-          "false_conceals": 2142,
-          "missed_putbacks": 377,
-          "false_picks": 301,
-          "missed_conceals": 555,
-          "missed_exits": 198,
-          "category_confusions": 535,
-          "crowded_picks": 208,
-          "crowd_swaps": 58,
-          "pos_dropped": 83
+          "id_switches": 7037,
+          "id_swaps": 194,
+          "missed_putbacks": 356,
+          "false_conceals": 2212,
+          "category_confusions": 565,
+          "missed_picks": 2319,
+          "false_picks": 309,
+          "missed_conceals": 564,
+          "missed_exits": 206,
+          "crowded_picks": 209,
+          "crowd_swaps": 53,
+          "pos_dropped": 84
         },
         "crowd_pairs": 21,
-        "events": 64136,
-        "ledger_events_per_s": 32421,
+        "events": 64629,
+        "ledger_events_per_s": 30638,
         "wall_s": {
-          "simulate": 0.98,
-          "ledger": 1.98
+          "simulate": 0.99,
+          "ledger": 2.11
         },
         "payment_mode": "dwell",
         "noise": "measured"
@@ -827,10 +828,10 @@
         },
         "crowd_pairs": 21,
         "events": 57817,
-        "ledger_events_per_s": 96796,
+        "ledger_events_per_s": 87786,
         "wall_s": {
-          "simulate": 0.94,
-          "ledger": 0.6
+          "simulate": 0.93,
+          "ledger": 0.66
         },
         "payment_mode": "dwell",
         "noise": "measured, id switch assumed"
@@ -850,7 +851,7 @@
       "p_false_held_at_exit": 0.03,
       "p_register_visit_detected": 0.97,
       "p_exit_detected": 0.98,
-      "p_id_switch": 0.6428571428571429,
+      "p_id_switch": 0.6785714285714286,
       "p_id_swap": 0.01,
       "p_pos_dropped": 0.01,
       "pos_jitter_s": 2.0,
@@ -1297,7 +1298,7 @@
         },
         "p_id_switch": {
           "assumed": 0.03,
-          "value": 0.6428571428571429,
+          "value": 0.6785714285714286,
           "measured": true,
           "source": "MERL test split, current engine defaults: share of single-shopper videos (~2 min) that still became more than one visit (>= 2 s each). Overhead view, likely pessimistic for a real store."
         },
@@ -3771,5 +3772,5 @@
       "note": "ONNX rows run static exports (detector 640x640, pose 160x160 batch 1, one call per person crop) via bree.edge.ort; TensorRT/CUDA rows appear only with onnxruntime-gpu on an NVIDIA machine."
     }
   },
-  "bench_wall_s": 319.5
+  "bench_wall_s": 66.9
 }

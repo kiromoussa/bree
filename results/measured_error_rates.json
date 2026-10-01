@@ -80,7 +80,7 @@
   },
   "p_id_switch": {
    "assumed": 0.03,
-   "value": 0.6428571428571429,
+   "value": 0.6785714285714286,
    "measured": true,
    "source": "MERL test split, current engine defaults: share of single-shopper videos (~2 min) that still became more than one visit (>= 2 s each). Overhead view, likely pessimistic for a real store."
   },

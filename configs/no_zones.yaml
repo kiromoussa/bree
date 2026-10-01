@@ -1,0 +1,5 @@
+store:
+  name: "No zones (tracking evaluation only)"
+camera:
+  id: eval
+zones: []

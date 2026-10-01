@@ -55,6 +55,7 @@ class EngineRules:
     min_store_time_s: float = 2.0   # shorter tracks never count as a store visit
     stitch_s: float = 10.0          # a NEW track id appearing away from the door this soon after someone was lost
     stitch_dist: float = 1.0        # ...within this many of their body heights continues their visit (0 = off)
+    stitch_ambiguous_skip: bool = True   # don't stitch if two lost people qualify or someone visible stands there
     stitch_long_s: float = 0.0      # ...or this long (0 = off) when the new track is within stitch_near body heights
     stitch_near: float = 0.5        #    of where they were lost (overhead detectors drop people standing still)
     hand_extend: float = 0.5        # reach point = wrist + this * (wrist - elbow): MERL test reach recall 64% -> 88% (DECISIONS)
@@ -223,7 +224,14 @@ class EventEngine:
         fx, fy = po.foot_point(self.r.foot_point)
         if self.store.zone_at(fx, fy, "exit") is not None:
             return None                                      # someone new walking in
-        best, best_d = None, math.inf
+        if self.r.stitch_ambiguous_skip:
+            # Someone else visible right where the new track appeared: it may be them, or a third person.
+            for q in self.people.values():
+                if q.pid in self._present and q.t_last >= self.t and q.last is not po:
+                    qx, qy = q.last.foot_point(self.r.foot_point)
+                    if math.hypot(fx - qx, fy - qy) <= self.r.stitch_dist * max(q.last.bbox[3] - q.last.bbox[1], 1.0):
+                        return None
+        best, best_d, n_ok = None, math.inf, 0
         for ps in self.people.values():
             gap = self.t - ps.t_last
             if ps.exited or ps.pid in self._present or ps.t_last >= self.t or gap > max(self.r.stitch_s, self.r.stitch_long_s):
@@ -233,8 +241,12 @@ class EventEngine:
             d = math.hypot(fx - lx, fy - ly)
             ok = (gap <= self.r.stitch_s and d <= self.r.stitch_dist * h) or \
                  (gap <= self.r.stitch_long_s and d <= self.r.stitch_near * h)
-            if ok and d < best_d:
-                best, best_d = ps, d
+            if ok:
+                n_ok += 1
+                if d < best_d:
+                    best, best_d = ps, d
+        if n_ok > 1 and self.r.stitch_ambiguous_skip:
+            return None                                      # two lost people could be this one: don't guess
         if best is not None:
             self.alias[po.track_id] = best.pid
             self.log.append(f"{self.t:.1f}s track {po.track_id} stitched to person {best.pid} "

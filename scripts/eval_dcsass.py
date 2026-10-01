@@ -1,5 +1,5 @@
 """DCSASS Shoplifting clips through our own perception (EVALUATION ONLY: cut from UCF-Crime, research use).
-895 short clips from 28 UCF-Crime shoplifting videos, each labelled 0/1 (Labels/Shoplifting.csv).
+896 short clips from 28 UCF-Crime shoplifting videos, each labelled 0/1 (Labels/Shoplifting.csv).
 Clip score = max frame score (max over people); reports clip-level AUC-ROC / AUC-PR / EER and the share of
 clips that trigger at the fixed thresholds. Writes results/conceal_dcsass.json.
 """

@@ -4,7 +4,7 @@
    "assumed": 0.92,
    "value": 0.6417657045840407,
    "measured": true,
-   "source": "UPPER BOUND. MERL Shopping test split (28 real videos, overhead camera): share of 589 labelled reaches where our pose model put a wrist in the shelf zone. A pick also needs the product detected, which MERL can't measure (its products aren't COCO classes)."
+   "source": "UPPER BOUND. MERL Shopping test split (28 real videos, overhead camera): share of 589 labelled Reach To Shelf + Hand In Shelf instances where our pose model put a wrist in the shelf zone. A pick also needs the product detected, which MERL can't measure (its products aren't COCO classes)."
   },
   "pick_conf_mean": {
    "assumed": 0.85,
@@ -26,15 +26,15 @@
   },
   "p_conceal_detected": {
    "assumed": 0.6,
-   "value": 0.2764227642276423,
+   "value": 0.11736334405144695,
    "measured": true,
-   "source": "PoseLift (real store, Apache-2.0), 5-fold by video x 3 seeds: 34/123 held-out shoplifting clips where the classifier (threshold 0.5) triggered inside the labelled interval."
+   "source": "RetailS staged test (same store as PoseLift, clips never trained on, evaluation only): 73/622 shoplifting clips where the classifier (threshold 0.5) triggered on a labelled frame. Labels are per frame, not per person, so any person's trigger counts. (PoseLift chain-grouped CV is in-distribution and not used here.)"
   },
   "p_false_conceal": {
    "assumed": 0.03,
-   "value": 0.16258169934640523,
+   "value": 0.13925263494091344,
    "measured": true,
-   "source": "RetailS normal footage (36.4 h, real shoppers, evaluation only): share of 2448 person tracks (>= 2 s) with a classifier trigger at threshold 0.5. The simulator applies it per carried item, so this is a per-shopper stand-in."
+   "source": "RetailS normal footage (36.4 h, real shoppers, evaluation only): share of 3131 person tracks (>= 2 s, split at frame gaps) with a classifier trigger at threshold 0.5. A shopper can be several tracks, so per shopper it is likely higher; the simulator draws it per carried item, so shoppers carrying nothing never false-alarm there. A stand-in, not a like-for-like rate."
   },
   "p_category_confusion": {
    "assumed": 0.04,

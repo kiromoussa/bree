@@ -23,7 +23,7 @@ alerts per hour; we need far fewer before anything is shown to staff).
    PYTHONPATH=src .venv/bin/python scripts/draw_zones.py --source still_cam1.png \
        --out configs/store1_cam1.yaml --camera-id cam1 --preview cam1_zones.png
    ```
-   Check `cam1_zones.png`. If several cameras should share one ledger, also click 4 or more floor points per
+   Check `cam1_zones.png`. The preview is the raw frame (people in it are not pixelated): keep it on the box, out of shared folders. If several cameras should share one ledger, also click 4 or more floor points per
    camera (`f` key) with their positions in metres on a shared floor plan, and set `multicam: true` in the
    shadow config.
 4. **Replay first, if the operator can send recorded footage + the matching POS export** (no hardware needed):
@@ -48,15 +48,15 @@ alerts per hour; we need far fewer before anything is shown to staff).
    cameras (name, RTSP URL, store YAML), `pos_export_dir` (where the POS drops its exports), `pos_mapping`,
    `runtime: onnx`, and the ledger settings below.
 3. **POS timing.** If the POS exports in batches (every N seconds/minutes), set `ledger.exit_grace_s` to the batch
-   interval and keep `late_receipt_window_s: 300`; otherwise receipts arrive after people leave and paying
+   interval, keep `late_receipt_window_s: 300`, and raise `payment_expiry_s` past 300 s if batches are long; otherwise receipts arrive after people leave and paying
    customers become would-be alerts (simulator: 2.5 false alerts/hour with 60 s batches and no retraction,
    about 0.45 with the grace period plus retraction; `results/late_receipts.json`).
 4. **Clock offset.** Ring up a test sale and note the edge box's `date +%s` when the receipt prints. Set the
    mapping's `offset_s` to (box time) minus (printed time).
 5. Start: `.venv/bin/python -m bree.cli shadow --config configs/store1_shadow.yaml` (run it under a service
    manager so it restarts on reboot). Raw recording stays **off** unless needed; raw segments contain faces.
-6. Walk the store yourself: pick something, pay, walk out. Within a few seconds of the exit, nothing should be
-   logged for you (paid). Then pick something and walk out without paying (staff aware): a would-be alert should
+6. Walk the store yourself: pick something, pay, walk out. Within `exit_grace_s` plus a few seconds of the exit,
+   nothing should be logged for you (paid). Then pick something and walk out without paying (staff aware): a would-be alert should
    appear in `would_be_alerts.jsonl` and on the review page.
 
 ## 3. Daily, during the pilot
@@ -72,7 +72,7 @@ alerts per hour; we need far fewer before anything is shown to staff).
 - **Precision by evidence:** alerts with a concealment seen vs without; the first live mode, if any, should be
   "alert only with concealment seen", everything else to a manager review queue.
 - **Missed thefts:** ask the operator for known shrink incidents in the period and check whether BREE flagged them.
-- **Per-camera tracking:** how often one shopper becomes several visits (`ledger_log.txt` "stitched" / "lost
+- **Per-camera tracking:** how often one shopper becomes several visits (`engine_log.txt`: "stitched" and "track lost
   inside store" lines).
 
 ## 5. Privacy and data

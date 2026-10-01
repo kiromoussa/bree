@@ -240,4 +240,7 @@ def run_store(cameras: list[CameraInput], backend: PerceptionBackend, out_dir: s
     (out / "summary.json").write_text(json.dumps(asdict(summary), indent=2))
     (out / "ledger_log.txt").write_text("\n\n".join(
         f"person {pid}:\n" + "\n".join(rec.log) for pid, rec in sorted(ledger.people.items())))
+    # Event-engine notes per camera: stitched track ids, people lost inside the store, items lost from sight.
+    (out / "engine_log.txt").write_text("\n".join(
+        f"[{name}] {line}" for name, eng in fusion.engines.items() for line in eng.log))
     return summary

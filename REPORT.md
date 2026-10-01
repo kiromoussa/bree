@@ -19,7 +19,7 @@ Three parts: **Overnight (2026-10-01)** first, then **Phase 2 (2026-09-30, real 
 | false reaches / min | 0.78 | 0.78 | 1.07 |
 | visits per single-shopper video | 5.8 | 3.1 | **2.5** |
 | shoppers split into more than one visit | 100% | 79% | **68%** |
-Sources: `results/merl_offline_train.json` (selection), `results/merl_offline_test.json` (test, current engine incl. the stitching ambiguity guard below). The first stitching run, before the guard, gave 3.0 visits and 82% split (`results/merl_stitch.json`). Stitching continues a visit when a new tracker id appears away from the door within 10 s and one body height of someone just lost (position and time only). The hand point is the wrist pushed half a forearm further (fingertips reach deeper than the wrist). Duplicate removal drops a person box lying 85% inside a larger one. Stitching can mis-merge different people; MOT16 (below) showed that in crowds, so stitching now skips ambiguous cases (two lost people qualify, or someone visible stands where the new track appeared).
+Sources: `results/merl_stitch.json` (Phase 2 column: no stitching), `results/merl_offline_train.json` (selection), `results/merl_offline_test.json` (other columns: current engine incl. the stitching ambiguity guard below). The first stitching run, before the guard, gave 3.0 visits and 82% split (`results/merl_stitch.json`). Stitching continues a visit when a new tracker id appears away from the door within 10 s and one body height of someone just lost (position and time only). The hand point is the wrist pushed half a forearm further (fingertips reach deeper than the wrist). Duplicate removal drops a person box lying 85% inside a larger one. Stitching can mis-merge different people; MOT16 (below) showed that in crowds, so stitching now skips ambiguous cases (two lost people qualify, or someone visible stands where the new track appeared).
 
 **A missed-theft bug found on the way.** The put-back rule counted any hand in a shelf zone; a resting hand next to a gondola turned a concealment by the other hand into a put-back. Now only the holding hand counts (regression test fails on the old code).
 
@@ -27,12 +27,12 @@ Sources: `results/merl_offline_train.json` (selection), `results/merl_offline_te
 | vision noise | precision | recall (alert) | recall (alert + review) | false alerts / hour |
 |---|---|---|---|---|
 | assumed baseline | 72.5% | 47.9% | 83.4% | 0.45 |
-| measured, Phase 2 rates | 24.2% | 13.5% | 37.4% | 1.05 |
+| measured, Phase 2 rates (Phase 2 section; that bench.json since overwritten) | 24.2% | 13.5% | 37.4% | 1.05 |
 | **measured, rates after tonight** | **28.6%** | **18.0%** | **53.3%** | 1.11 |
 | measured tonight, ID switch at the assumed 3% | 54.9% | 28.1% | 79.0% | 0.57 |
 More thieves are caught (alert + review recall 37% to 53%) at slightly more false alerts (1.05 to 1.11 per hour). Visit splitting is still the biggest drag: at the assumed split rate, false alerts would be 0.57 per hour. The toy clips are unchanged (2 of 2 thieves alerted, no flags on honest shoppers).
 
-**Tracking on real angled footage with ground truth (MOT16 train, 7 sequences, 517 people; evaluation only; `results/mot16.json`).** Settings fixed before running:
+**Tracking on real angled footage with ground truth (MOT16 train, 7 sequences, 517 people; evaluation only; `results/mot16.json`).** Settings A to C (first three rows) fixed before running; the stitching rows were added afterwards:
 | setting | MOTA | IDF1 | ID switches | fragmentations | recall | precision |
 |---|---|---|---|---|---|---|
 | old default (YOLO26s, conf 0.3, 2 s buffer) | 0.325 | 0.435 | 487 | 1,369 | 38.5% | 87.4% |
@@ -47,7 +47,7 @@ Duplicate removal helps slightly on real angled footage; the MERL-tuned detector
 
 **Tried and dropped (negative results, recorded in DECISIONS.md):**
 - Open-vocabulary product detection (YOLOE, text prompts, no training) to see a product in the hand: on MERL train videos it fired near the hand about as often with empty hands as with a product (best: 62% vs 50%; `results/merl_product_in_hand_train.json`). A product detector still needs our own labelled products.
-- Long-gap stitching (30 to 120 s when the new track is within 0.25 to 0.5 body heights of where the shopper was lost): on the train cache, visits per shopper 1.58 to 1.50 but split shoppers 33% to 50%; left off.
+- Long-gap stitching (30 to 120 s when the new track is within 0.25 to 0.5 body heights of where the shopper was lost): on the train cache, visits per shopper 1.58 to 1.50 but split shoppers 33% to 50% (`results/merl_offline_train_extra.json`); left off.
 - Unsupervised concealment scoring (distance to normal shopping poses, fit on PoseLift normal only): held-out AUC-ROC RetailS staged 0.531, DCSASS 0.481, UCF-Crime 0.642 (`results/conceal_knn.json`). Like the classifiers, near chance. Conclusion: public pose-only data does not give a concealment signal that transfers; concealment evidence should come from the product leaving the hand near the torso (needs a product detector) and from shadow-mode labels.
 
 **Perception tuning** (chosen on MERL's train split, measured once on the test split; `results/tuning/`, `results/merl_measure_tuned.json`)

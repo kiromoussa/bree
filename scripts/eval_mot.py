@@ -41,14 +41,14 @@ SETTINGS = {"A": dict(det="yolo26s.pt", pose="yolo26s-pose.pt", conf=0.3, buffer
             # B scored on the event engine's person ids (track stitching, default 10 s / 1 body height; no door
             # zone here, so any new track may be stitched): do position-only merges confuse different people?
             "B_stitch": dict(det="yolo26s.pt", pose="yolo26s-pose.pt", conf=0.3, buffer=2.0, ntt=None, dedupe=0.85,
-                             stitch=True),
+                             stitch=True, guard=False),
             # EXPLORATORY (added after seeing B_stitch): stricter stitching distance.
             "B_stitch_d05": dict(det="yolo26s.pt", pose="yolo26s-pose.pt", conf=0.3, buffer=2.0, ntt=None, dedupe=0.85,
-                                 stitch=True, stitch_dist=0.5),
+                                 stitch=True, stitch_dist=0.5, guard=False),
             # Stitching with the ambiguity guard (engine default from 2026-10-01 ~03:50 EDT); B_stitch above ran
             # before the guard existed.
             "B_stitch_guard": dict(det="yolo26s.pt", pose="yolo26s-pose.pt", conf=0.3, buffer=2.0, ntt=None,
-                                   dedupe=0.85, stitch=True)}
+                                   dedupe=0.85, stitch=True, guard=True)}
 import sys
 ONLY = sys.argv[1:] or list(SETTINGS)
 hw = detect_hardware()
@@ -70,7 +70,8 @@ for name, cfg in [(n, SETTINGS[n]) for n in ONLY]:
                           bytetrack={"new_track_thresh": cfg["ntt"]} if cfg["ntt"] is not None else None)
         acc = mm.MOTAccumulator(auto_id=True)
         st = load_store_config("configs/no_zones.yaml")
-        eng = EventEngine(st, EngineRules.from_dict({**st.rules, "stitch_dist": cfg.get("stitch_dist", 1.0)})) \
+        eng = EventEngine(st, EngineRules.from_dict({**st.rules, "stitch_dist": cfg.get("stitch_dist", 1.0),
+                                                   "stitch_ambiguous_skip": cfg.get("guard", True)})) \
             if cfg.get("stitch") else None
         for fi, img in enumerate(sorted((seq / "img1").glob("*.jpg")), start=1):
             im = cv2.imread(str(img))

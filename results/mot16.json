@@ -33,7 +33,8 @@
    "buffer": 2.0,
    "ntt": null,
    "dedupe": 0.85,
-   "stitch": true
+   "stitch": true,
+   "guard": false
   },
   "B_stitch_d05": {
    "det": "yolo26s.pt",
@@ -43,7 +44,8 @@
    "ntt": null,
    "dedupe": 0.85,
    "stitch": true,
-   "stitch_dist": 0.5
+   "stitch_dist": 0.5,
+   "guard": false
   },
   "B_stitch_guard": {
    "det": "yolo26s.pt",
@@ -52,7 +54,8 @@
    "buffer": 2.0,
    "ntt": null,
    "dedupe": 0.85,
-   "stitch": true
+   "stitch": true,
+   "guard": true
   }
  },
  "results": {
@@ -548,5 +551,6 @@
     "num_unique_objects": 517.0
    }
   }
- }
+ },
+ "settings_note": "B_stitch and B_stitch_d05 ran before the ambiguity guard existed (guard=False); B_stitch_guard with it."
 }

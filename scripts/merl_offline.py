@@ -22,6 +22,7 @@ from bree.events.zones import Zone, load_store_config
 
 SPLIT = sys.argv[1]
 GRID = "--grid" in sys.argv
+EXTRA = "--extra" in sys.argv   # side experiments: no ambiguity guard, long-gap stitching -> results/merl_offline_<split>_extra.json
 SHELF = Zone("shelf", "shelf", [(190, 30), (880, 30), (880, 300), (190, 300)])
 STORE = load_store_config("configs/merl_overhead.yaml")
 L_EL, R_EL, L_WR, R_WR = 7, 8, 9, 10
@@ -64,12 +65,13 @@ def hand_points(k, kp):
     return out
 
 
-def evaluate(videos, hand_k, dd, stitch_s, stitch_dist, stitch_long_s=0.0, stitch_near=0.5):
+def evaluate(videos, hand_k, dd, stitch_s, stitch_dist, stitch_long_s=0.0, stitch_near=0.5, guard=True):
     tot = dict(reach=0, found=0, false_runs=0, minutes=0.0, visits=[], split=0)
     for stem, (frames, sampled, fps), gt in videos:
         pad = 0.5 * fps
         rules = EngineRules.from_dict({**STORE.rules, "stitch_s": stitch_s, "stitch_dist": stitch_dist,
-                                       "stitch_long_s": stitch_long_s, "stitch_near": stitch_near, "hand_extend": hand_k})
+                                       "stitch_long_s": stitch_long_s, "stitch_near": stitch_near, "hand_extend": hand_k,
+                                       "stitch_ambiguous_skip": guard})
         eng, enters, hits = EventEngine(STORE, rules), [], []
         for fi in sampled:
             ppl = frames.get(fi, [])
@@ -110,7 +112,11 @@ for f in sorted(Path(f"out/merl_tracks/{SPLIT}").glob("*.npz")):
     videos.append((f.stem, load(f), {k + 1: np.asarray(tl[k][0]).reshape(-1, 2) for k in range(5)}))
 
 base = dict(hand_k=0.0, dd=False, stitch_s=10.0, stitch_dist=1.0)
-if GRID:
+if EXTRA:
+    ch = json.loads(Path("results/merl_offline_train.json").read_text())["chosen"]
+    combos = [{**base, "guard": False}, {**ch, "guard": False}, {**ch, "guard": True}] + \
+             [{**ch, "guard": False, "stitch_long_s": ls, "stitch_near": near} for ls in (30.0, 60.0, 120.0) for near in (0.25, 0.5)]
+elif GRID:
     combos = [dict(hand_k=k, dd=d, stitch_s=s, stitch_dist=r)
               for k, d, s, r in itertools.product((0.0, 0.25, 0.5), (False, True), (10.0, 20.0), (0.0, 1.0, 2.0))]
 else:
@@ -128,4 +134,4 @@ if GRID:
     ch = min(ok, key=lambda r: (r["visits_per_video"], r["false_reach_runs_per_min"]))
     res["chosen"] = {k: ch[k] for k in ("hand_k", "dd", "stitch_s", "stitch_dist")}
     print("chosen", res["chosen"])
-Path(f"results/merl_offline_{SPLIT}.json").write_text(json.dumps(res, indent=1))
+Path(f"results/merl_offline_{SPLIT}{'_extra' if EXTRA else ''}.json").write_text(json.dumps(res, indent=1))

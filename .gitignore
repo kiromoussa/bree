@@ -25,3 +25,6 @@ results/*
 kaggle.json
 **/credentials*
 .claude/
+*.ts
+models/*
+!models/.gitkeep

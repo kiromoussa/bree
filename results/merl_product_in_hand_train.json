@@ -1,0 +1,127 @@
+{
+ "split": "train",
+ "radius_forearms": 1.0,
+ "frames_per_class_per_video": 40,
+ "rows": [
+  {
+   "prompts": "generic",
+   "conf": 0.05,
+   "pos": 475,
+   "pos_hit": 162,
+   "neg": 480,
+   "neg_hit": 105,
+   "in_hand_recall": 0.3410526315789474,
+   "empty_hand_false_rate": 0.21875
+  },
+  {
+   "prompts": "generic",
+   "conf": 0.1,
+   "pos": 475,
+   "pos_hit": 79,
+   "neg": 480,
+   "neg_hit": 59,
+   "in_hand_recall": 0.16631578947368422,
+   "empty_hand_false_rate": 0.12291666666666666
+  },
+  {
+   "prompts": "generic",
+   "conf": 0.2,
+   "pos": 475,
+   "pos_hit": 20,
+   "neg": 480,
+   "neg_hit": 23,
+   "in_hand_recall": 0.042105263157894736,
+   "empty_hand_false_rate": 0.04791666666666667
+  },
+  {
+   "prompts": "generic",
+   "conf": 0.3,
+   "pos": 475,
+   "pos_hit": 5,
+   "neg": 480,
+   "neg_hit": 12,
+   "in_hand_recall": 0.010526315789473684,
+   "empty_hand_false_rate": 0.025
+  },
+  {
+   "prompts": "snacks",
+   "conf": 0.05,
+   "pos": 475,
+   "pos_hit": 84,
+   "neg": 480,
+   "neg_hit": 79,
+   "in_hand_recall": 0.17684210526315788,
+   "empty_hand_false_rate": 0.16458333333333333
+  },
+  {
+   "prompts": "snacks",
+   "conf": 0.1,
+   "pos": 475,
+   "pos_hit": 57,
+   "neg": 480,
+   "neg_hit": 51,
+   "in_hand_recall": 0.12,
+   "empty_hand_false_rate": 0.10625
+  },
+  {
+   "prompts": "snacks",
+   "conf": 0.2,
+   "pos": 475,
+   "pos_hit": 50,
+   "neg": 480,
+   "neg_hit": 28,
+   "in_hand_recall": 0.10526315789473684,
+   "empty_hand_false_rate": 0.058333333333333334
+  },
+  {
+   "prompts": "snacks",
+   "conf": 0.3,
+   "pos": 475,
+   "pos_hit": 43,
+   "neg": 480,
+   "neg_hit": 22,
+   "in_hand_recall": 0.09052631578947369,
+   "empty_hand_false_rate": 0.04583333333333333
+  },
+  {
+   "prompts": "object",
+   "conf": 0.05,
+   "pos": 475,
+   "pos_hit": 294,
+   "neg": 480,
+   "neg_hit": 239,
+   "in_hand_recall": 0.6189473684210526,
+   "empty_hand_false_rate": 0.4979166666666667
+  },
+  {
+   "prompts": "object",
+   "conf": 0.1,
+   "pos": 475,
+   "pos_hit": 144,
+   "neg": 480,
+   "neg_hit": 115,
+   "in_hand_recall": 0.3031578947368421,
+   "empty_hand_false_rate": 0.23958333333333334
+  },
+  {
+   "prompts": "object",
+   "conf": 0.2,
+   "pos": 475,
+   "pos_hit": 25,
+   "neg": 480,
+   "neg_hit": 21,
+   "in_hand_recall": 0.05263157894736842,
+   "empty_hand_false_rate": 0.04375
+  },
+  {
+   "prompts": "object",
+   "conf": 0.3,
+   "pos": 475,
+   "pos_hit": 5,
+   "neg": 480,
+   "neg_hit": 4,
+   "in_hand_recall": 0.010526315789473684,
+   "empty_hand_false_rate": 0.008333333333333333
+  }
+ ]
+}

@@ -8,8 +8,8 @@
    "detect_model": "yolo26n.pt",
    "pose_model": "yolo26n-pose.pt",
    "device": "cpu",
-   "fps": 22.216806533177547,
-   "ms_per_frame": 45.01096944363477,
+   "fps": 25.088875424094585,
+   "ms_per_frame": 39.85830305648657,
    "frames": 300
   },
   {
@@ -17,17 +17,26 @@
    "detect_model": "yolo26n.pt",
    "pose_model": "yolo26n-pose.pt",
    "device": "mps",
-   "fps": 41.15685941532377,
-   "ms_per_frame": 24.297286386912067,
+   "fps": 49.26450893764608,
+   "ms_per_frame": 20.298588610021397,
    "frames": 300
   },
   {
    "runtime": "onnxruntime cpu",
-   "detect_model": "yolo26n_640.onnx",
-   "pose_model": "yolo26n-pose_160.onnx",
-   "device": "cpu",
-   "fps": 23.312881040035087,
-   "ms_per_frame": 42.89474124981401,
+   "detect_model": "yolo26n.pt",
+   "pose_model": "yolo26n-pose.pt",
+   "device": "CPUExecutionProvider",
+   "fps": 28.58181148064666,
+   "ms_per_frame": 34.98728555665973,
+   "frames": 300
+  },
+  {
+   "runtime": "onnxruntime coreml",
+   "detect_model": "yolo26n.pt",
+   "pose_model": "yolo26n-pose.pt",
+   "device": "CoreMLExecutionProvider",
+   "fps": 89.5100889059545,
+   "ms_per_frame": 11.171924999992674,
    "frames": 300
   },
   {
@@ -35,8 +44,8 @@
    "detect_model": "yolo26s.pt",
    "pose_model": "yolo26s-pose.pt",
    "device": "cpu",
-   "fps": 13.237975172422797,
-   "ms_per_frame": 75.54025347344577,
+   "fps": 15.96423656222073,
+   "ms_per_frame": 62.64001388995287,
    "frames": 300
   },
   {
@@ -44,19 +53,28 @@
    "detect_model": "yolo26s.pt",
    "pose_model": "yolo26s-pose.pt",
    "device": "mps",
-   "fps": 40.465059757505784,
-   "ms_per_frame": 24.71267819676238,
+   "fps": 45.9373865381698,
+   "ms_per_frame": 21.768761250035215,
    "frames": 300
   },
   {
    "runtime": "onnxruntime cpu",
-   "detect_model": "yolo26s_640.onnx",
-   "pose_model": "yolo26s-pose_160.onnx",
-   "device": "cpu",
-   "fps": 10.097189062880357,
-   "ms_per_frame": 99.03746416675858,
+   "detect_model": "yolo26s.pt",
+   "pose_model": "yolo26s-pose.pt",
+   "device": "CPUExecutionProvider",
+   "fps": 11.18610409947352,
+   "ms_per_frame": 89.39662916663413,
+   "frames": 300
+  },
+  {
+   "runtime": "onnxruntime coreml",
+   "detect_model": "yolo26s.pt",
+   "pose_model": "yolo26s-pose.pt",
+   "device": "CoreMLExecutionProvider",
+   "fps": 76.9779788412358,
+   "ms_per_frame": 12.990728193350757,
    "frames": 300
   }
  ],
- "note": "TensorRT needs an NVIDIA GPU (A100 / Jetson); not measurable on this machine."
+ "note": "ONNX rows run static exports (detector 640x640, pose 160x160 batch 1, one call per person crop) via bree.edge.ort; TensorRT/CUDA rows appear only with onnxruntime-gpu on an NVIDIA machine."
 }

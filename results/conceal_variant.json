@@ -1,0 +1,66 @@
+{
+ "variant": "v2_aug2",
+ "version": 2,
+ "augment": 2,
+ "selected_on": "leave one camera out on PoseLift, AUC-ROC on frames with a pose, mean over cameras and seeds",
+ "sets": {
+  "retails_staged": {
+   "v1": {
+    "auc_roc": 0.5010234880471569,
+    "auc_pr": 0.5067095515205087,
+    "eer": 0.5067821637798062,
+    "n_frames": 40400,
+    "n_pos": 20141,
+    "all_frames_auc_roc": 0.50398423595943,
+    "caught_at_0.5": 73,
+    "of": 622
+   },
+   "v2_aug2": {
+    "auc_roc": 0.5044130608809552,
+    "auc_pr": 0.5140116786398663,
+    "eer": 0.5036386449027617,
+    "n_frames": 40400,
+    "n_pos": 20141,
+    "all_frames_auc_roc": 0.50728375686453,
+    "caught_at_0.5": 76,
+    "of": 622
+   }
+  },
+  "dcsass": {
+   "v1": {
+    "auc_roc": 0.5172696008010099,
+    "auc_pr": 0.18373557677516617,
+    "eer": 0.4914500892429585,
+    "n_frames": 896,
+    "n_pos": 155,
+    "all_frames_auc_roc": 0.5172696008010099
+   },
+   "v2_aug2": {
+    "auc_roc": 0.5407949153280223,
+    "auc_pr": 0.18653601910060713,
+    "eer": 0.44525270993861826,
+    "n_frames": 896,
+    "n_pos": 155,
+    "all_frames_auc_roc": 0.5407949153280223
+   }
+  },
+  "ucf_shoplifting": {
+   "v1": {
+    "auc_roc": 0.6711079452380144,
+    "auc_pr": 0.19930235507032718,
+    "eer": 0.3672319491694771,
+    "n_frames": 32272,
+    "n_pos": 3578,
+    "all_frames_auc_roc": 0.6913270114453166
+   },
+   "v2_aug2": {
+    "auc_roc": 0.6853076503588315,
+    "auc_pr": 0.26827351464466254,
+    "eer": 0.3619281972345346,
+    "n_frames": 32272,
+    "n_pos": 3578,
+    "all_frames_auc_roc": 0.7025487160149283
+   }
+  }
+ }
+}

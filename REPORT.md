@@ -2,6 +2,37 @@
 
 Two parts: **Phase 2 (2026-09-30, real data)** first, then last night's **Phase 1 report** unchanged below it. Every number names the file it came from; real-data results and simulated results are kept apart.
 
+# Overnight (2026-10-01, ~00:20 to ~06:20 UTC)
+
+**Bottom line.** No GPU quota yet (ticket #2610010040000169 still open, limits 0), so everything ran on the Mac. Four new capabilities are in and tested (131 tests pass, including vision smoke tests), two tuning experiments gave mixed results, and **concealment from pose is still not solved**.
+
+**New capabilities (merged)**
+- **Late POS receipts can retract an alert** (`late_receipt_window_s`, default 300 s). Simulator, seed 2, baseline noise, 200 h, with the POS exporting in 60 s batches (new `VisionNoise.pos_batch_s` option; default 0 keeps the headline bench unchanged): without retraction **2.54 false alerts/h at 28.1% precision**; with retraction **0.435/h at 69.0%**; with `exit_grace_s: 65` plus retraction 0.455/h at 72.1% and 47.5% recall, about the live-POS baseline (0.45/h, 72.5%, 47.9%). If the operator's POS exports in batches, this matters a lot.
+- **Multi-camera stores feed one ledger** (`bree run` with several `--source`/`--store`, `multicam:` in shadow mode); per-camera floor homographies, no appearance features. Tested on synthetic per-camera streams only; a handoff bug that dropped returning shoppers was found and fixed.
+- **ONNX runtime** (`--runtime onnx`) with the best ONNX Runtime provider present (TensorRT > CUDA > CoreML > CPU). Same input gives the same detections as PyTorch within 0.0003 px (`results/onnx_parity.json`). **On this Mac, CoreML runs the full pipeline at 77.0 FPS with the small models vs 45.9 FPS for PyTorch MPS** (`results/speed.json`), about 5 camera streams instead of 3.
+- **Isaac Sim 4.5 gas-station generator, ready to run** (`src/bree/sim/isaac/`, runbook in its README): store, cameras, behaviours, randomisation, truth files in our schema, converter, overlays, 8/1/1 split by scene seed (pilot 52 clips, full 2,080). Not executed (no GPU). It also fixed `scripts/azure_gpu.sh sim`, which could not have worked (current Isaac Automator only deploys Isaac Sim 5.x; now pinned to v3.13.0 for the 4.5.0 container) and locks the Automator's open SSH/VNC/NoMachine ports to this IP. Isaac Sim 4.5 has no concealment animation, so these renders help detection, tracking and event timing, not concealment poses.
+
+**Perception tuning** (chosen on MERL's train split, measured once on the test split; `results/tuning/`, `results/merl_measure_tuned.json`)
+| MERL test split (28 videos, 64.3 min) | current default (YOLO26s, conf 0.3, 2 s buffer) | tuned (YOLO26n, conf 0.15, 5 s buffer, new-track 0.15) |
+|---|---|---|
+| reach recall | 64.2% | 62.7% |
+| false reaches / min | 0.78 | 0.25 |
+| extra track ids per single-shopper video | 11.0 | 7.3 |
+| detector + pose + tracker, ms / frame (MPS) | 30.4 | 23.3 |
+On the train split the tuned setting had 67.7% vs 57.1% reach recall; that gain did not carry over to the test split. Fewer false reaches and fewer track splits did. Defaults are unchanged; the trade-off is a choice to make on our own camera footage.
+
+**Classifier v2** (features: wrist position relative to hips and torso, speed; augmentation: mirroring, speed change, keypoint dropout, jitter). Selected on PoseLift leave-one-camera-out only: AUC-ROC 0.681 vs 0.585 for v1 (`results/conceal_select.json`). Held-out sets, scored once (`results/conceal_variant.json`):
+| AUC-ROC | v1 (shipped) | v2 + augmentation |
+|---|---|---|
+| RetailS staged | 0.501 | 0.504 |
+| DCSASS (clip level) | 0.517 | 0.541 |
+| UCF-Crime shoplifting | 0.671 | 0.685 |
+Slightly better everywhere, still near chance on RetailS and DCSASS. v1 stays the shipped model; v2 is kept as `models/conceal_poselift_v2_aug2.pt`.
+
+**Not done overnight:** YouTube or other unlicensed footage (terms of service, and the people filmed never consented); GPU work (no quota).
+
+---
+
 # Phase 2 (2026-09-30): real data
 
 **Bottom line.**
@@ -90,15 +121,17 @@ From `results/measured_error_rates.json`. Only four have a real measurement; the
 - A real end-to-end false-alert rate needs our cameras, zones, products and POS: that is what shadow mode is for.
 
 ## P2.6 Speed per hardware
-Measured on this Mac only (`results/speed.json`; 300 frames of a real 920x680 MERL video; detector + crop pose + ByteTrack + event engine):
+Measured on this Mac only, re-run 2026-10-01 with nothing else running (`results/speed.json`; 300 frames of a real 920x680 MERL video; detector + crop pose + ByteTrack + event engine):
 | runtime | nano models | small models |
 |---|---|---|
-| PyTorch CPU (M1 Max) | 22.2 FPS | 13.2 FPS |
-| PyTorch MPS (M1 Max GPU) | **41.2 FPS** | **40.5 FPS** |
-| ONNX Runtime CPU (M1 Max) | 23.3 FPS | 10.1 FPS |
+| PyTorch CPU (M1 Max) | 25.1 FPS | 16.0 FPS |
+| PyTorch MPS (M1 Max GPU) | 49.3 FPS | 45.9 FPS |
+| ONNX Runtime CPU | 28.6 FPS | 11.2 FPS |
+| **ONNX Runtime CoreML** (`--runtime onnx`) | **89.5 FPS** | **77.0 FPS** |
 - A100, A10 and TensorRT: **not measured** (no GPU quota yet).
-- Store cameras run about 15 fps, so an Apple-silicon GPU handles about 2 to 3 streams with the small models at these rates (40.5 / 15 = 2.7; more people per frame means more pose crops, so budget lower).
-- **Recommendation (not measured on the device itself):** for the pilot, one Apple-silicon mini PC per station (Mac mini class, roughly $600 list) running PyTorch MPS; measure a Jetson Orin (roughly $250 to $500 list for Orin Nano / NX kits) with TensorRT once we have one, because it is the cheaper ship target. Prices are list prices from memory, to confirm before buying.
+- Store cameras run about 15 fps, so this Mac handles about 5 streams with the small models on CoreML (77.0 / 15 = 5.1), or about 3 on PyTorch MPS (45.9 / 15 = 3.1); more people per frame means more pose crops, so budget lower.
+- (The first run on 2026-09-30, without CoreML, measured 41.2 / 40.5 FPS on MPS while other jobs were running; superseded.)
+- **Recommendation (not measured on the device itself):** for the pilot, one Apple-silicon mini PC per station (Mac mini class, roughly $600 list) running `--runtime onnx` (CoreML); measure a Jetson Orin (roughly $250 to $500 list for Orin Nano / NX kits) with TensorRT once we have one, because it is the cheaper ship target. Prices are list prices from memory, to confirm before buying.
 
 ## P2.7 Azure resources used
 None created. GPU quota is 0 pending the support ticket; no VM, disk or resource group exists, so spend is **$0**. `scripts/azure_gpu.sh` creates `bree-rg` (tagged `project=bree`), locks SSH to this machine's IP, sets auto-shutdown, and `stop` deallocates everything.

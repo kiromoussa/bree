@@ -14,6 +14,8 @@ camera ─► detect people + products ─► pose on each person ─► track (
 Start with `REPORT.md` for what works, the benchmark numbers, and what they do and don't prove.
 Design decisions and their reasons are in `DECISIONS.md`.
 
+**Pilot:** step-by-step runbook for a gas-station shadow-mode pilot in [docs/PILOT_RUNBOOK.md](docs/PILOT_RUNBOOK.md).
+
 ## Install
 
 Python 3.11+, [uv](https://github.com/astral-sh/uv).

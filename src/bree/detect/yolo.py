@@ -16,10 +16,13 @@ class YoloBackend:
 
     def __init__(self, pose_weights: str, detect_weights: str, class_map: dict[str, str],
                  device: str = "cpu", imgsz: int = 640, pose_crop: int = 160,
-                 person_conf: float = 0.3, product_conf: float = 0.25, products: bool = True):
-        from ultralytics import YOLO
-        self.det = YOLO(detect_weights, task="detect")
-        self.pose = YoloPose(pose_weights, device, crop_size=pose_crop)
+                 person_conf: float = 0.3, product_conf: float = 0.25, products: bool = True,
+                 runtime: str = "pytorch", providers: list | None = None):
+        from bree.edge.ort import load_yolo
+        self.det = load_yolo(detect_weights, "detect", imgsz, runtime, providers)
+        self.pose = YoloPose(pose_weights, device, crop_size=pose_crop, runtime=runtime, providers=providers)
+        if runtime == "onnx":
+            device = "cpu"   # Ultralytics pre/post-processing; ONNX Runtime picks the accelerator (bree.edge.ort)
         self.class_map = class_map if products else {}   # detector class name -> item category
         names = self.det.names
         self.person_id = next(i for i, n in names.items() if n == "person")

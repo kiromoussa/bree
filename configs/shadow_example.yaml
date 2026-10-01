@@ -20,6 +20,7 @@ pos_export_dir: /srv/bree/pos_exports
 
 output_dir: out/shadow
 backend: yolo                            # yolo | toy
+runtime: pytorch                         # pytorch | onnx (ONNX Runtime: TensorRT/CUDA/CoreML/CPU, best available)
 review_port: 8080                        # always bound to 127.0.0.1; 0 = no review page
 
 # LedgerConfig overrides. If the POS exports in batches, raise exit_grace_s to the batch

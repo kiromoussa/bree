@@ -84,7 +84,7 @@ def cmd_dashboard(args) -> None:
     print(f"dashboard: http://{args.host}:{httpd.server_address[1]}  (source: {source})")
 
     def work():
-        run_pipeline(source, store, make_backend(backend, store), args.out,
+        run_pipeline(source, store, make_backend(backend, store, runtime=args.runtime), args.out,
                      payments=open_payments(payments, stream_start_wall=time.time()),
                      on_alert=state.on_alert, on_frame=state.on_frame, verbose=False, realtime=True)
         state.done = True
@@ -101,6 +101,8 @@ def cmd_shadow(args) -> None:
     cfg = load_shadow_config(args.config)
     if args.backend:
         cfg.backend = args.backend
+    if args.runtime:
+        cfg.runtime = args.runtime
     if args.review_port is not None:
         cfg.review_port = args.review_port
     print(f"shadow mode: {len(cfg.cameras)} camera(s) {[c.name for c in cfg.cameras]}, "
@@ -144,9 +146,11 @@ def cmd_export(args) -> None:
 
 
 def register(sub) -> None:
+    from bree.cli import RUNTIME_HELP, RUNTIMES
     db = sub.add_parser("dashboard", help="local web dashboard: live alerts + baskets")
     db.add_argument("--source", default=None, help="video/webcam/rtsp; default: a toy clip")
     db.add_argument("--backend", choices=["yolo", "toy"], default="yolo")
+    db.add_argument("--runtime", choices=RUNTIMES, default="pytorch", help=RUNTIME_HELP)
     db.add_argument("--payments", default=None)
     db.add_argument("--store", default=str(STORE))
     db.add_argument("--out", default=str(ROOT / "out" / "dashboard"))
@@ -157,6 +161,7 @@ def register(sub) -> None:
     sh = sub.add_parser("shadow", help="pilot shadow mode: run silently, log would-be alerts for review")
     sh.add_argument("--config", required=True, help="shadow YAML (see configs/shadow_example.yaml)")
     sh.add_argument("--backend", choices=["yolo", "toy"], default=None, help="override the config")
+    sh.add_argument("--runtime", choices=RUNTIMES, default=None, help="override the config; " + RUNTIME_HELP)
     sh.add_argument("--review-port", type=int, default=None, help="override the config; 0 = no review page")
     sh.add_argument("--once", action="store_true",
                     help="run each source once and stop (recorded footage); default reconnects forever")

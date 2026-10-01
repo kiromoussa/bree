@@ -39,6 +39,7 @@ class ShadowConfig:
     output_dir: str
     pos_export_dir: str | None = None
     backend: str = "yolo"
+    runtime: str = "pytorch"                                 # pytorch | onnx (see bree.edge.ort)
     review_port: int = 8080                                  # 0 = don't serve the review page
     ledger: dict = field(default_factory=dict)               # LedgerConfig overrides, e.g. exit_grace_s
     record_raw: dict = field(default_factory=dict)           # enabled / segment_minutes / retention_hours
@@ -51,6 +52,7 @@ def load_shadow_config(path: str | Path) -> ShadowConfig:
         raise ValueError("camera names must be unique")
     return ShadowConfig(cameras=cams, output_dir=raw.get("output_dir", "out/shadow"),
                         pos_export_dir=raw.get("pos_export_dir"), backend=raw.get("backend", "yolo"),
+                        runtime=raw.get("runtime", "pytorch"),
                         review_port=int(raw.get("review_port", 8080)), ledger=raw.get("ledger") or {},
                         record_raw=raw.get("record_raw") or {})
 
@@ -180,7 +182,7 @@ def _run_camera(cam: Camera, cfg: ShadowConfig, log: ShadowLog, once: bool, stop
     from bree.ledger.payments import FolderPayments
     from bree.pipeline import run_pipeline
     store = load_store_config(cam.store)
-    backend = make_backend(cfg.backend, store)
+    backend = make_backend(cfg.backend, store, runtime=cfg.runtime)
     raw_cfg = cfg.record_raw
     while not stop.is_set():
         session = time.strftime("%Y%m%dT%H%M%S")

@@ -276,6 +276,16 @@ def model_track_scorer(bundle):
     return score
 
 
+def onnx_track_scorer(path: Path, providers: list | None = None):
+    """Same scores as model_track_scorer from the ONNX export (bree.edge.export.export_conceal), torch-free."""
+    import onnxruntime
+    sess = onnxruntime.InferenceSession(str(path), providers=providers or ["CPUExecutionProvider"])
+
+    def score(t: Track) -> np.ndarray:
+        return sess.run(None, {"windows": windows(track_features(t)).astype(np.float32)})[0]
+    return score
+
+
 def save_bundle(bundle, path: Path, meta: dict):
     import torch
     torch.save({"state": bundle["model"].state_dict(), "mu": bundle["mu"], "sd": bundle["sd"], "meta": meta}, path)

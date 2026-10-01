@@ -304,3 +304,18 @@ def test_stitching_can_be_switched_off(store):
     s.step({}, n=30)
     s.step({2: (610, 400, rest(610, 400))}, n=5)
     assert sorted(e.person_id for e in s.of(E.ENTER)) == [1, 2]
+
+
+def test_hand_point_extends_past_the_wrist():
+    k = np.zeros((17, 3), np.float32)
+    k[7] = (100, 100, 1)   # left elbow
+    k[9] = (100, 140, 1)   # left wrist
+    p = PersonObs(1, (0, 0, 200, 300), 1.0, k)
+    assert dict(p.hands(0.3, 0.0))["left"] == (100.0, 140.0)
+    assert dict(p.hands(0.3, 0.5))["left"] == (100.0, 160.0)
+
+
+def test_contained_boxes_are_dropped_as_duplicates():
+    from bree.detect.yolo import contained
+    b = np.array([[0, 0, 100, 200], [10, 10, 90, 120], [300, 0, 400, 200]], float)
+    assert contained(b, np.ones(3, bool), 0.85).tolist() == [False, True, False]

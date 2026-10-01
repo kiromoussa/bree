@@ -55,6 +55,7 @@ class EngineRules:
     min_store_time_s: float = 2.0   # shorter tracks never count as a store visit
     stitch_s: float = 10.0          # a NEW track id appearing away from the door this soon after someone was lost
     stitch_dist: float = 1.0        # ...within this many of their body heights continues their visit (0 = off)
+    hand_extend: float = 0.0        # reach point = wrist + this * (wrist - elbow); MERL suggests 0.5 (see DECISIONS)
 
     @staticmethod
     def from_dict(d: dict) -> "EngineRules":
@@ -190,7 +191,7 @@ class EventEngine:
             events += self._close_register(ps)
 
         # Wrists in shelf/cooler zones -> reaches.
-        wrists = dict(po.wrists(self.r.kpt_conf))
+        wrists = dict(po.hands(self.r.kpt_conf, self.r.hand_extend))
         for name in ("left", "right"):
             p = wrists.get(name)
             z = self.store.zone_at(p[0], p[1], "shelf", "cooler") if p else None

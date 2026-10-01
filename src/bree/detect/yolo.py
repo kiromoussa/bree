@@ -17,9 +17,10 @@ class YoloBackend:
     def __init__(self, pose_weights: str, detect_weights: str, class_map: dict[str, str],
                  device: str = "cpu", imgsz: int = 640, pose_crop: int = 160,
                  person_conf: float = 0.3, product_conf: float = 0.25, products: bool = True,
-                 runtime: str = "pytorch", providers: list | None = None):
+                 runtime: str = "pytorch", providers: list | None = None, dedupe_inside: float = 0.0):
         from bree.edge.ort import load_yolo
         self.det = load_yolo(detect_weights, "detect", imgsz, runtime, providers)
+        self.dedupe_inside = dedupe_inside   # drop a person box this much inside a larger one (0 = off)
         self.pose = YoloPose(pose_weights, device, crop_size=pose_crop, runtime=runtime, providers=providers)
         if runtime == "onnx":
             device = "cpu"   # Ultralytics pre/post-processing; ONNX Runtime picks the accelerator (bree.edge.ort)
@@ -40,8 +41,27 @@ class YoloBackend:
 
         is_person = (cls == self.person_id) & (confs >= self.person_conf)
         is_product = (cls != self.person_id) & (confs >= self.product_conf)
+        if self.dedupe_inside:
+            is_person &= ~contained(boxes, is_person, self.dedupe_inside)
         pb = boxes[is_person]
         persons = Detections(pb, confs[is_person], ["person"] * len(pb), self.pose(image, pb))
         products = Detections(boxes[is_product], confs[is_product],
                               [self.class_map[r.names[c]] for c in cls[is_product]])
         return persons, products
+
+
+def contained(boxes: np.ndarray, mask: np.ndarray, frac: float) -> np.ndarray:
+    """True for masked boxes that lie >= frac inside a larger masked box: duplicate detections of one person
+    (a partial-body box inside the full one), which would otherwise start a second track."""
+    out = np.zeros(len(boxes), bool)
+    idx = np.flatnonzero(mask)
+    area = (boxes[:, 2] - boxes[:, 0]).clip(0) * (boxes[:, 3] - boxes[:, 1]).clip(0)
+    for i in idx:
+        for j in idx:
+            if j != i and area[j] > area[i]:
+                ix = (min(boxes[i, 2], boxes[j, 2]) - max(boxes[i, 0], boxes[j, 0])).clip(0) * \
+                     (min(boxes[i, 3], boxes[j, 3]) - max(boxes[i, 1], boxes[j, 1])).clip(0)
+                if ix >= frac * max(area[i], 1.0):
+                    out[i] = True
+                    break
+    return out

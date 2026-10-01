@@ -8,6 +8,7 @@ import numpy as np
 # COCO-17 keypoint indices used by the event rules.
 NOSE, L_EYE, R_EYE, L_EAR, R_EAR = 0, 1, 2, 3, 4
 L_SHOULDER, R_SHOULDER = 5, 6
+L_ELBOW, R_ELBOW = 7, 8
 L_WRIST, R_WRIST = 9, 10
 L_HIP, R_HIP = 11, 12
 HEAD_KPTS = (NOSE, L_EYE, R_EYE, L_EAR, R_EAR)
@@ -32,6 +33,18 @@ class PersonObs:
             p = self.kpt(idx, min_conf)
             if p is not None:
                 out.append((name, p))
+        return out
+
+    def hands(self, min_conf: float = 0.3, extend: float = 0.0) -> list[tuple[str, tuple[float, float]]]:
+        """Wrists pushed `extend` forearm lengths past the wrist (wrist + extend * (wrist - elbow)): the fingertips
+        reach deeper into a shelf than the wrist. extend=0 (or no elbow) is the wrist itself."""
+        out = []
+        for name, w, e in (("left", L_WRIST, L_ELBOW), ("right", R_WRIST, R_ELBOW)):
+            p = self.kpt(w, min_conf)
+            if p is None:
+                continue
+            q = self.kpt(e, min_conf) if extend else None
+            out.append((name, (p[0] + extend * (p[0] - q[0]), p[1] + extend * (p[1] - q[1])) if q else p))
         return out
 
     def foot_point(self, mode: str = "bottom") -> tuple[float, float]:

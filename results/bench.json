@@ -1,5 +1,5 @@
 {
-  "generated_unix": 1790841085.748193,
+  "generated_unix": 1790841258.192669,
   "machine": "macOS-26.5.1-arm64-arm-64bit",
   "quick": false,
   "event_level": {
@@ -65,9 +65,9 @@
         },
         "crowd_pairs": 21,
         "events": 58568,
-        "ledger_events_per_s": 107811,
+        "ledger_events_per_s": 109370,
         "wall_s": {
-          "simulate": 1.02,
+          "simulate": 1.03,
           "ledger": 0.54
         },
         "payment_mode": "pos",
@@ -145,9 +145,9 @@
         },
         "crowd_pairs": 21,
         "events": 57160,
-        "ledger_events_per_s": 97875,
+        "ledger_events_per_s": 97837,
         "wall_s": {
-          "simulate": 0.99,
+          "simulate": 0.98,
           "ledger": 0.58
         },
         "threshold_sweep": [
@@ -281,9 +281,9 @@
         },
         "crowd_pairs": 21,
         "events": 55869,
-        "ledger_events_per_s": 76354,
+        "ledger_events_per_s": 76094,
         "wall_s": {
-          "simulate": 0.93,
+          "simulate": 0.92,
           "ledger": 0.73
         },
         "payment_mode": "pos",
@@ -361,10 +361,10 @@
         },
         "crowd_pairs": 21,
         "events": 64629,
-        "ledger_events_per_s": 33981,
+        "ledger_events_per_s": 34177,
         "wall_s": {
-          "simulate": 0.97,
-          "ledger": 1.9
+          "simulate": 0.99,
+          "ledger": 1.89
         },
         "payment_mode": "pos",
         "noise": "measured"
@@ -441,10 +441,10 @@
         },
         "crowd_pairs": 21,
         "events": 57817,
-        "ledger_events_per_s": 91213,
+        "ledger_events_per_s": 87508,
         "wall_s": {
-          "simulate": 0.93,
-          "ledger": 0.63
+          "simulate": 0.96,
+          "ledger": 0.66
         },
         "payment_mode": "pos",
         "noise": "measured, id switch assumed"
@@ -507,10 +507,10 @@
         },
         "crowd_pairs": 21,
         "events": 58568,
-        "ledger_events_per_s": 106750,
+        "ledger_events_per_s": 105000,
         "wall_s": {
-          "simulate": 1.02,
-          "ledger": 0.55
+          "simulate": 1.03,
+          "ledger": 0.56
         },
         "payment_mode": "dwell",
         "noise": "perfect"
@@ -587,10 +587,10 @@
         },
         "crowd_pairs": 21,
         "events": 57160,
-        "ledger_events_per_s": 91439,
+        "ledger_events_per_s": 93774,
         "wall_s": {
-          "simulate": 0.98,
-          "ledger": 0.63
+          "simulate": 0.99,
+          "ledger": 0.61
         },
         "payment_mode": "dwell",
         "noise": "baseline"
@@ -667,10 +667,10 @@
         },
         "crowd_pairs": 21,
         "events": 55869,
-        "ledger_events_per_s": 69812,
+        "ledger_events_per_s": 69356,
         "wall_s": {
           "simulate": 0.92,
-          "ledger": 0.8
+          "ledger": 0.81
         },
         "payment_mode": "dwell",
         "noise": "pessimistic_2x"
@@ -747,10 +747,10 @@
         },
         "crowd_pairs": 21,
         "events": 64629,
-        "ledger_events_per_s": 30638,
+        "ledger_events_per_s": 31121,
         "wall_s": {
-          "simulate": 0.99,
-          "ledger": 2.11
+          "simulate": 0.96,
+          "ledger": 2.08
         },
         "payment_mode": "dwell",
         "noise": "measured"
@@ -828,10 +828,10 @@
         },
         "crowd_pairs": 21,
         "events": 57817,
-        "ledger_events_per_s": 87786,
+        "ledger_events_per_s": 94300,
         "wall_s": {
-          "simulate": 0.93,
-          "ledger": 0.66
+          "simulate": 0.96,
+          "ledger": 0.61
         },
         "payment_mode": "dwell",
         "noise": "measured, id switch assumed"
@@ -1180,17 +1180,17 @@
       "reviews_on_thieves": 0
     },
     "frames": 3652,
-    "pipeline_fps": 16.91,
+    "pipeline_fps": 16.61,
     "stage_ms_mean": {
-      "detect": 51.66,
-      "track": 0.71,
-      "events": 3.08,
+      "detect": 52.44,
+      "track": 0.78,
+      "events": 3.17,
       "ledger": 0.01,
-      "render": 3.04
+      "render": 3.14
     },
     "alert_processing_latency_ms": [
-      296.72,
-      221.82
+      300.88,
+      230.5
     ]
   },
   "real_fps": {
@@ -1204,13 +1204,13 @@
       "imgsz": 640
     },
     "frames": 795,
-    "pipeline_fps": 21.5,
+    "pipeline_fps": 21.08,
     "stage_ms_mean": {
-      "detect": 41.59,
-      "track": 0.46,
-      "events": 0.29,
+      "detect": 42.46,
+      "track": 0.48,
+      "events": 0.3,
       "ledger": 0.01,
-      "render": 3.42
+      "render": 3.46
     },
     "persons_tracked": 37,
     "note": "zones are the example store's, so events on this street scene are meaningless; FPS only"
@@ -3772,5 +3772,5 @@
       "note": "ONNX rows run static exports (detector 640x640, pose 160x160 batch 1, one call per person crop) via bree.edge.ort; TensorRT/CUDA rows appear only with onnxruntime-gpu on an NVIDIA machine."
     }
   },
-  "bench_wall_s": 66.9
+  "bench_wall_s": 325.2
 }

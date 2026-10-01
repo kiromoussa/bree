@@ -134,7 +134,7 @@ Which vision errors cause false alerts? (perfect vision + one error source at it
 | pos_drops_and_jitter | 95.2% | 76.2% | 0.10 |
 
 ## Toy video clips (TOY DATA, full pipeline)
-10 people in 8 clips: 2/2 thieves alerted, 0 alerts and 0 reviews on honest people. Pipeline 16.91 FPS (toy colour detector). Alert processing latency (frame read -> alert written): [296.72, 221.82] ms.
+10 people in 8 clips: 2/2 thieves alerted, 0 alerts and 0 reviews on honest people. Pipeline 16.61 FPS (toy colour detector). Alert processing latency (frame read -> alert written): [300.88, 230.5] ms.
 
 ## Real footage throughput (vtest.avi, 795 frames, mps: Apple Silicon (MPS), 10 cores)
-Pipeline 21.5 FPS end to end; mean ms/frame by stage: {'detect': 41.59, 'track': 0.46, 'events': 0.29, 'ledger': 0.01, 'render': 3.42}; 37 person tracks.
+Pipeline 21.08 FPS end to end; mean ms/frame by stage: {'detect': 42.46, 'track': 0.48, 'events': 0.3, 'ledger': 0.01, 'render': 3.46}; 37 person tracks.

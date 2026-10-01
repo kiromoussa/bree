@@ -1,0 +1,88 @@
+{
+ "dataset": "UCF-Crime official test split (Dropbox of the authors), evaluation only",
+ "perception": {
+  "device": "mps",
+  "device_name": "Apple Silicon (MPS)",
+  "cpu_count": 10,
+  "detect_model": "yolo26s.pt",
+  "pose_model": "yolo26s-pose.pt",
+  "imgsz": 640,
+  "fps": 15.0
+ },
+ "model": "models/conceal_poselift.pt",
+ "shoplifting": {
+  "videos": [
+   "Shoplifting001_x264",
+   "Shoplifting004_x264",
+   "Shoplifting005_x264",
+   "Shoplifting007_x264",
+   "Shoplifting010_x264",
+   "Shoplifting015_x264",
+   "Shoplifting016_x264",
+   "Shoplifting017_x264",
+   "Shoplifting020_x264",
+   "Shoplifting021_x264",
+   "Shoplifting022_x264",
+   "Shoplifting027_x264",
+   "Shoplifting028_x264",
+   "Shoplifting029_x264",
+   "Shoplifting031_x264",
+   "Shoplifting033_x264",
+   "Shoplifting034_x264",
+   "Shoplifting037_x264",
+   "Shoplifting039_x264",
+   "Shoplifting044_x264",
+   "Shoplifting049_x264"
+  ],
+  "model": {
+   "auc_roc": 0.6711079452380144,
+   "auc_pr": 0.19930235507032718,
+   "eer": 0.3672319491694771,
+   "n_frames": 32272,
+   "n_pos": 3578,
+   "all_frames_auc_roc": 0.6913270114453166
+  },
+  "rule": {
+   "auc_roc": 0.5479762939126419,
+   "auc_pr": 0.12632711367062022,
+   "eer": 0.45995584058976147,
+   "n_frames": 32272,
+   "n_pos": 3578,
+   "all_frames_auc_roc": 0.5901866194620005
+  }
+ },
+ "normal": {
+  "videos": [
+   "Normal_Videos_010_x264",
+   "Normal_Videos_018_x264",
+   "Normal_Videos_033_x264",
+   "Normal_Videos_168_x264",
+   "Normal_Videos_251_x264",
+   "Normal_Videos_352_x264",
+   "Normal_Videos_778_x264",
+   "Normal_Videos_783_x264",
+   "Normal_Videos_874_x264",
+   "Normal_Videos_877_x264",
+   "Normal_Videos_881_x264",
+   "Normal_Videos_902_x264",
+   "Normal_Videos_904_x264",
+   "Normal_Videos_928_x264",
+   "Normal_Videos_939_x264"
+  ],
+  "hours": 0.37783333333333335,
+  "model": {
+   "triggers_per_hour_at": {
+    "0.5": 7.940008822232024,
+    "0.7": 2.646669607410675,
+    "0.9": 0.0
+   }
+  },
+  "rule": {
+   "triggers_per_hour_at": {
+    "0.25": 973.9744155271283,
+    "0.5": 788.7075430083811,
+    "0.75": 611.3806793118658
+   }
+  }
+ }
+}

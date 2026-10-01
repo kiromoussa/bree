@@ -27,12 +27,13 @@ Read this first after a context reset. Then BUILD_SPEC.md. Phase 2 instructions:
 | 20:00 | Leak found | RetailS_test_realworld == PoseLift test (same 47 clips, identical keypoints). Never evaluate a PoseLift-trained model on it. |
 | 20:30 | Concealment classifier | `src/bree/conceal.py`, `scripts/conceal_experiment.py` (MPS). PoseLift has NaN keypoints: cleaned at load. |
 
+## Status (2026-10-01 ~01:30 UTC)
+Phases 0, 1, 4 (except GPU parts), 5, 6 done on the Mac. All real-data results re-run after the adversarial review (`scripts/phase2_rerun.sh`), REPORT.md Phase 2 section written from them, 98 tests pass. Phase 2 (Azure VMs) and Phase 3 (Isaac Sim) blocked on GPU quota (ticket above).
+
 ## Next steps (exact)
-1. When `results/conceal_poselift.json` exists: `.venv/bin/python scripts/eval_retails.py 60` -> results/conceal_retails.json.
-2. When `data/logs/merl_measure.log` ends: results/merl_measure.json.
-3. When both UCF zips are complete (`unzip -t`): `.venv/bin/python scripts/eval_ucf.py 40` -> results/conceal_ucf.json.
-4. `.venv/bin/python scripts/measured_error_rates.py`, then (machine idle) `.venv/bin/python scripts/speed.py`, then `make bench`, `make test`.
-5. data/README.md, REPORT.md, adversarial review, commit + push.
+1. Check the quota ticket. When limits > 0: `scripts/azure_gpu.sh train eastus` (A100 VM, runs make test), then `NGC_API_KEY=... scripts/azure_gpu.sh sim eastus` (Isaac Automator, Isaac Sim 4.5.0 because of the GRID 570 driver), start from `src/bree/sim/isaac/`, pilot 50 clips, check overlays, then 2,000+ split by scene seed. Deallocate with `scripts/azure_gpu.sh stop`.
+2. On the A100: train the concealment classifier on synthetic + PoseLift, rerun `scripts/phase2_rerun.sh`; `python scripts/speed.py` for PyTorch/ONNX/TensorRT FPS.
+3. When operator/staged footage lands in data/operator, data/staged: draw zones, run `bree shadow` / `bree run`, hand-label, measure pick/put-back/register/exit rates, update measured_error_rates.py.
 
 ## Azure VM hours
 | VM | Size | Hours | State |

@@ -5,74 +5,88 @@ Two parts: **Phase 2 (2026-09-30, real data)** first, then last night's **Phase 
 # Phase 2 (2026-09-30): real data
 
 **Bottom line.**
-- **No GPUs yet.** Azure GPU quota is 0 and all 9 automatic quota requests were rejected (`ContactSupport`); a support ticket is needed (Kiro was filling it in on 2026-09-30). So Isaac Sim, the A100 training and TensorRT speed did not run. Everything else ran on the Mac (M1 Max).
-- **First real measurements of our own perception** (MERL Shopping, real video): the pose model puts a wrist in the shelf zone for **64.2%** of 589 labelled reach-to-shelf / hand-in-shelf instances (assumed pick detection: 92%), and a single shopper gets **11.0 extra track ids per ~2 min video** from an overhead camera (`results/merl_measure.json`).
-- **Concealment classifier trained on real shoplifting poses (PoseLift).** On held-out PoseLift clips it beats the pose-only rule (AUC-ROC **0.736** vs 0.676, AUC-PR 0.577 vs 0.429). On RetailS staged clips it is **at chance (0.519)** while the rule gets 0.616 (`results/conceal_poselift.json`, `results/conceal_retails.json`). It does not generalise yet.
-- **False alerts on real normal footage** (RetailS, 36.4 h of real shoppers, evaluation only): the classifier alone would trigger **14.1 times per hour** at threshold 0.5 (5.7 at 0.9); the pose-only rule **84.5 per hour**. Concealment from pose alone cannot be an alert on its own; it can only corroborate the ledger.
-- **Simulator re-run with the measured rates:** precision falls from 72.5% to **28.8%**, alert recall from 47.9% to **18.2%**, false alerts from 0.45 to **1.11 per hour** (POS feed, 200 h, `results/bench.json`). Keeping the assumed ID-switch rate (the overhead MERL camera is a worst case): 51.6% / 29.7% / 0.69 per hour.
-- **Shadow mode is built** (`bree shadow`), so the pilot can collect labelled data from the real cameras without showing staff anything.
+- **No GPUs yet.** Azure GPU quota is 0; all 9 automatic quota requests were rejected (`ContactSupport`). Kiro opened support ticket **#2610010040000169** (East US: NC A100 v4 -> 24 vCPUs, NVads A10 v5 -> 72), status Open. So Isaac Sim, the A100 training and TensorRT speed did not run; everything else ran on the Mac (M1 Max).
+- **First real measurements of our own perception** (MERL Shopping, real video, overhead camera): the pose model puts a wrist in the shelf zone for **64.2%** of 589 labelled reach instances (assumed pick detection: 92%), and every single-shopper video got more than one track id (mean 12.0) (`results/merl_measure.json`).
+- **Concealment from pose does not work yet.** A classifier trained on real shoplifting poses (PoseLift, Apache-2.0) beats a pose-only rule on held-out PoseLift incidents (AUC-ROC **0.649** vs 0.550), but is **at chance** on every dataset it was not trained on: RetailS staged 0.501, DCSASS 0.517 (`results/conceal_*.json`). UCF-Crime 0.671 is the one exception and is weak evidence (see P2.3).
+- **False triggers on real normal footage** (RetailS, 36.4 h of real shoppers, evaluation only): the classifier alone would fire **15.4 times per hour** at threshold 0.5 (5.5 at 0.9); the pose-only rule **99 per hour**. Pose-based concealment can only ever corroborate the ledger, never alert on its own.
+- **Simulator re-run with the measured rates:** precision falls from 72.5% to **24.2%**, alert recall from 47.9% to **13.5%**, false alerts rise from 0.45 to **1.05 per hour** (POS feed, 200 h, `results/bench.json`). With the assumed ID-switch rate instead of MERL's overhead worst case: 42.9% / 19.6% / 0.65 per hour.
+- **Shadow mode is built** (`bree shadow`), so the pilot can collect labelled data from our own cameras without showing staff anything. That data, plus Isaac Sim once quota lands, is the path forward.
+- An independent adversarial review found real flaws in the first version of these numbers (incident leakage, empty frames inflating AUC, loose event counting). All were fixed and every result was re-run; see DECISIONS.md, "Adversarial review of the classifier".
 
 ## P2.1 What changed since last night
 - `bree shadow` + `/review` page + `bree shadow-labels` (Phase 5; README "Shadow mode").
-- `src/bree/conceal.py`: PoseLift/RetailS loaders, pose-only rule, temporal CNN classifier, metrics, trigger logic. Scripts: `conceal_experiment.py`, `eval_retails.py`, `eval_dcsass.py`, `eval_ucf.py`, `measure_merl.py`, `measured_error_rates.py`, `speed.py`, `drive_fetch.py`, `azure_gpu.sh`.
-- `make bench` now prints a **REAL DATA** section (read from the result files) before the **SIMULATED** section, and adds "measured" noise rows to the simulator table.
+- `src/bree/conceal.py`: PoseLift/RetailS loaders, incident chains, gap splitting, pose-only rule, temporal CNN classifier, metrics, triggers. Scripts: `conceal_experiment.py`, `eval_retails.py`, `eval_dcsass.py`, `eval_ucf.py`, `measure_merl.py`, `measured_error_rates.py`, `speed.py`, `drive_fetch.py`, `azure_gpu.sh`, `phase2_rerun.sh` (re-runs every real-data result in order).
+- `make bench` prints a **REAL DATA** section (read from the result files) before the **SIMULATED** section, and adds "measured" noise rows to the simulator.
 - `data/README.md` (counts, formats, closeness to a gas station) and `data/LICENSES.md`.
-- 94 tests, all passing (the Phase 1 report had 80).
+- 98 tests, all passing (the Phase 1 report had 80).
 
 ## P2.2 Datasets
 | Dataset | License | Used for | What it gave us |
 |---|---|---|---|
-| PoseLift (official Drive) | Apache-2.0 | **train + eval** | 151 videos, 47 labelled (1,534 shoplifting frames). Trains the shipped classifier. |
-| RetailS | none stated ("academic use only" in an unfinished page) | eval only | 624 staged clips; 36.4 h sampled normal footage. Its real-world test set **is** the PoseLift test set, so not used. |
-| MERL Shopping | research only | eval only | 28 test videos, 64.3 min, 589 labelled reaches. |
-| UCF-Crime (authors' Dropbox) | research only | eval only | 21 shoplifting test videos + 40 of 150 normal test videos through our pipeline. |
-| DCSASS (Kaggle) | research only (from UCF-Crime) | eval only | 895 labelled shoplifting-category clips through our pipeline. |
-| Simuletic (Kaggle) | CC BY 4.0 | not used | Free release is only 8 clips. |
+| PoseLift (official Drive) | Apache-2.0 | **train + eval** | 151 clips (47 labelled) from 6 cameras; 36 incident chains contain labelled clips. Trains the shipped classifier. |
+| RetailS | none stated ("academic use only" on an unfinished page) | eval only | 624 staged clips; 36.4 h sampled normal footage. Its real-world test set **is** the PoseLift test set, so not used. |
+| MERL Shopping | research only | eval only | 28 test videos, 64.3 min, 589 labelled reach instances. |
+| UCF-Crime (authors' Dropbox) | research only | eval only | 21 shoplifting test videos + 15 of 150 normal test videos (0.38 h) through our pipeline. |
+| DCSASS (Kaggle) | research only (from UCF-Crime) | eval only | 896 labelled shoplifting-category clips (155 shoplifting) through our pipeline. |
+| Simuletic (Kaggle) | CC BY 4.0 | not used | The free release is only 8 clips. |
 | SKU-110K | research | not used | Download paused; no gas-station product labels to pair it with. |
 Details and counts: `data/README.md`, `data/LICENSES.md`.
 
 ## P2.3 Real-data results (no simulator)
-**Pose/track layer, MERL Shopping test split** (`results/merl_measure.json`; overhead lab camera, YOLO26s + crop pose + ByteTrack on MPS, 15 fps):
-- Reach recall **64.2%** (378 of 589 labelled "Reach To Shelf" + "Hand In Shelf" instances, wrist in the shelf zone within +-0.5 s; missed 35.8%). This is an **upper bound** on pick detection: a pick also needs the product detected, and MERL's products aren't COCO classes.
+**Pose/track layer, MERL Shopping test split** (`results/merl_measure.json`; overhead lab camera; YOLO26s + crop pose + ByteTrack on MPS at 15 fps):
+- Reach recall **64.2%**: 378 of 589 labelled "Reach To Shelf" + "Hand In Shelf" instances had a wrist in the shelf zone within +-0.5 s. An **upper bound** on pick detection: a pick also needs the product detected, and MERL's products aren't COCO classes.
 - False reaches: **0.78 per minute**.
-- Tracking: every one of 28 single-shopper videos got more than one track id (3 to 22, mean 12.0). Straight-overhead people are hard for a COCO person detector.
+- Tracking: all 28 single-shopper videos got more than one track id (3 to 22, mean 12.0). Straight-overhead views are hard for a COCO person detector.
 
-**Concealment, PoseLift held-out clips** (`results/conceal_poselift.json`; 5 folds grouped by video x 3 seeds; 4,846 frames, 1,534 shoplifting):
-| scorer | AUC-ROC | AUC-PR | EER | shoplifting clips caught (th 0.5) | clean clips triggered (th 0.5) |
+**Concealment, PoseLift** (`results/conceal_poselift.json`). Folds hold out whole incident chains (5 folds x 3 seeds); frame metrics on the 3,721 frames with a pose (1,489 shoplifting):
+| scorer | AUC-ROC | AUC-PR | EER | per-fold AUC-ROC mean [min-max] | AUC-ROC incl. empty frames |
 |---|---|---|---|---|---|
-| pose-only rule | 0.676 | 0.429 | 0.378 | 93/123 (rule th 0.5) | 18/18 |
-| classifier | **0.736 +- 0.015** | **0.577 +- 0.026** | 0.337 | 34/123 (27.6%) | 3/18 |
-Counts are pooled over 3 seeds (41 shoplifting clips and 6 clean clips each). Leave-one-camera-out AUC-ROC (rule / classifier): cam 1 0.48 / 0.60, cam 2 0.77 / 0.77, cam 3 0.50 / 0.74, cam 4 0.64 / 0.69, cam 5 0.46 / 0.45, cam 6 0.93 / 0.83.
+| pose-only rule | 0.550 | 0.435 | 0.475 | 0.560 [0.37-0.74] | 0.673 |
+| classifier | **0.649 +- 0.010** | **0.602** | 0.390 | 0.651 [0.49-0.81] | 0.746 |
+- Per unique clip, mean over seeds, at threshold 0.5: classifier caught 10.3 of 41 shoplifting clips and triggered on 1 of 6 clean clips; the rule caught 31 of 41 and triggered on all 6 clean clips.
+- Leave one camera out, AUC-ROC rule / classifier: cam 1 0.46 / 0.61, cam 2 0.69 / 0.68, cam 3 0.47 / 0.74, cam 4 0.64 / 0.72, cam 5 0.46 / 0.57, cam 6 0.69 / 0.24 (2 clips); mean 0.567 / 0.592.
 
-**Concealment, RetailS** (`results/conceal_retails.json`; evaluation only; model trained on all of PoseLift; no identical pose frames with PoseLift: pixel-rounded fingerprints of every frame with >= 10 visible keypoints):
-| scorer | staged AUC-ROC | AUC-PR | EER | triggers / hour on 36.4 h normal footage | share of 2,448 person tracks (>= 2 s) triggered |
-|---|---|---|---|---|---|
-| pose-only rule | 0.616 | 0.572 | 0.406 | 84.5 (th 0.5) | 91.9% |
-| classifier | 0.519 | 0.516 | 0.494 | **14.1** (th 0.5), 10.1 (0.7), **5.7** (0.9) | 16.3% (0.5), 6.5% (0.9) |
+**Concealment, RetailS** (`results/conceal_retails.json`; evaluation only; model trained on all of PoseLift; leak checks in DECISIONS.md found no shared or near-identical poses):
+| scorer | staged AUC-ROC | AUC-PR | EER | staged clips caught (th 0.5) | triggers / hour, 36.4 h normal footage | person tracks (>= 2 s) triggered |
+|---|---|---|---|---|---|---|
+| pose-only rule | 0.618 | 0.575 | 0.405 | 514 / 622 | 99.2 (th 0.5) | 90.1% of 3,131 |
+| classifier | **0.501** | 0.507 | 0.507 | 73 / 622 (11.7%) | **15.4** (th 0.5), 10.6 (0.7), **5.5** (0.9) | 13.9% (0.5), 4.9% (0.9) |
+The staged set has only 2 clean clips, so staged "caught" counts say nothing about false alarms; the normal footage does.
 
-**DCSASS and UCF-Crime through our own pipeline**: PENDING_DCSASS_UCF
+**Concealment, DCSASS through our own pipeline** (`results/conceal_dcsass.json`; 896 clips, 155 shoplifting, from 28 UCF-Crime videos; clip score = max frame score):
+| scorer | clip AUC-ROC | AUC-PR | clips triggered at 0.5: shoplifting / normal |
+|---|---|---|---|
+| pose-only rule | 0.412 | 0.144 | 30% / 43% |
+| classifier | 0.517 | 0.184 | 0.6% / 2.7% |
+
+**Concealment, UCF-Crime through our own pipeline** (`results/conceal_ucf.json`; 21 shoplifting test videos with the official temporal annotation, 32,272 frames with a person, 3,578 in the incident window; 15 normal test videos, 0.38 h):
+| scorer | AUC-ROC | AUC-PR | EER | triggers / hour on normal videos |
+|---|---|---|---|---|
+| pose-only rule | 0.548 | 0.126 | 0.460 | 789 (th 0.5) |
+| classifier | 0.671 | 0.199 | 0.367 | 7.9 (0.5), 2.6 (0.7), 0 (0.9) |
+UCF's labels mark the whole incident window, not the concealment itself, and only 0.38 h of normal video was scored, so this is weak evidence; DCSASS, cut from the same source videos with clip labels, shows no signal.
 
 ## P2.4 Measured vs assumed vision error rates
-From `results/measured_error_rates.json`. Only these four have a real measurement; the other 13 stay assumed and say why.
+From `results/measured_error_rates.json`. Only four have a real measurement; the other 13 stay assumed and say why.
 | parameter | assumed | measured | source |
 |---|---|---|---|
 | pick detected | 92% | <= 64.2% | MERL reach recall (upper bound) |
-| concealment detected | 60% | 27.6% | PoseLift held-out clips, classifier th 0.5 |
-| false concealment | 3% per carried item | 16.3% per person track (per-shopper stand-in) | RetailS normal footage, classifier th 0.5 |
+| concealment detected | 60% | 11.7% | RetailS staged, classifier th 0.5 (never trained on) |
+| false concealment | 3% per carried item | 13.9% per person track (per-shopper stand-in) | RetailS normal footage, classifier th 0.5 |
 | visit's track splits | 3% | 100% | MERL, overhead camera (worst case) |
 
 **Event-level simulator** (held-out seed 2, 200 h per row, `results/bench.json`; vision error rates are inputs):
 | vision noise | payment feed | precision | recall (alert) | recall (alert + review) | false alerts / hour |
 |---|---|---|---|---|---|
 | assumed baseline | POS | 72.5% | 47.9% | 83.4% | 0.45 |
-| **measured** | POS | **28.8%** | **18.2%** | 38.8% | **1.11** |
-| measured, ID switch assumed | POS | 51.6% | 29.7% | 72.5% | 0.69 |
+| **measured** | POS | **24.2%** | **13.5%** | 37.4% | **1.05** |
+| measured, ID switch assumed | POS | 42.9% | 19.6% | 64.6% | 0.65 |
 | assumed baseline | dwell only | 65.1% | 33.1% | 59.6% | 0.44 |
-| measured | dwell only | 26.9% | 16.6% | 32.3% | 1.12 |
+| measured | dwell only | 23.1% | 12.7% | 29.1% | 1.05 |
 
 ## P2.5 False alerts per hour: the number the operator will care about
-- **From the simulator with measured rates: 1.11 false alerts per hour** (POS feed), about 27 a day in a 24-hour store; 0.69 per hour if tracking is as good as assumed. Source: `results/bench.json`, "measured" rows.
-- **From real footage, concealment signal alone: 14.1 triggers per hour** on 36.4 h of real normal shopping (RetailS, classifier, th 0.5). This is not the pipeline's alert rate (alerts also need an unpaid item from the ledger), but it says concealment-from-pose would corroborate many honest shoppers.
+- **From the simulator with measured rates: 1.05 false alerts per hour** (POS feed), about 25 a day in a 24-hour store; 0.65 per hour if tracking is as good as assumed. Source: `results/bench.json`, "measured" rows.
+- **From real footage, concealment signal alone: 15.4 triggers per hour** on 36.4 h of real normal shopping (RetailS, classifier, th 0.5). Not the pipeline's alert rate (an alert also needs an unpaid item from the ledger), but it means concealment-from-pose would flag many honest shoppers.
 - A real end-to-end false-alert rate needs our cameras, zones, products and POS: that is what shadow mode is for.
 
 ## P2.6 Speed per hardware
@@ -82,19 +96,19 @@ Measured on this Mac only (`results/speed.json`; 300 frames of a real 920x680 ME
 | PyTorch CPU (M1 Max) | 22.2 FPS | 13.2 FPS |
 | PyTorch MPS (M1 Max GPU) | **41.2 FPS** | **40.5 FPS** |
 | ONNX Runtime CPU (M1 Max) | 23.3 FPS | 10.1 FPS |
-- A100, A10 and TensorRT: **not measured** (no GPU quota).
-- Store cameras run ~15 fps, so an Apple-silicon GPU handles about 2 to 3 streams with the small models at these rates (40.5 / 15 = 2.7; more people per frame means more pose crops, so budget lower).
-- **Recommendation (not measured on the device itself):** for the pilot, one Apple-silicon mini PC per station (Mac mini class, roughly $600 list) running PyTorch MPS; measure a Jetson Orin (roughly $250 to $500 list for Orin Nano / NX kits) with TensorRT once we have it, because it is the cheaper ship target. Both prices are list prices from memory, to confirm before buying.
+- A100, A10 and TensorRT: **not measured** (no GPU quota yet).
+- Store cameras run about 15 fps, so an Apple-silicon GPU handles about 2 to 3 streams with the small models at these rates (40.5 / 15 = 2.7; more people per frame means more pose crops, so budget lower).
+- **Recommendation (not measured on the device itself):** for the pilot, one Apple-silicon mini PC per station (Mac mini class, roughly $600 list) running PyTorch MPS; measure a Jetson Orin (roughly $250 to $500 list for Orin Nano / NX kits) with TensorRT once we have one, because it is the cheaper ship target. Prices are list prices from memory, to confirm before buying.
 
 ## P2.7 Azure resources used
-None created. GPU quota is 0 and the automatic requests failed; no VM, disk or resource group exists, so spend is **$0**. `scripts/azure_gpu.sh` creates `bree-rg` (tagged `project=bree`), SSH locked to this machine's IP, auto-shutdown, and `stop` deallocates everything.
+None created. GPU quota is 0 pending the support ticket; no VM, disk or resource group exists, so spend is **$0**. `scripts/azure_gpu.sh` creates `bree-rg` (tagged `project=bree`), locks SSH to this machine's IP, sets auto-shutdown, and `stop` deallocates everything.
 
 ## P2.8 Still missing before the pilot
-1. **GPU quota** (support ticket, Kiro) -> Isaac Sim gas-station renders (behaviours, product labels), A100 training, TensorRT speed.
-2. **Footage from our own cameras**: operator stills + a few hours + matching POS export; or the staged session. Every measured rate above comes from someone else's store, camera angle or lab.
+1. **GPU quota** (ticket #2610010040000169) -> Isaac Sim gas-station renders with labelled behaviours and products, A100 training, TensorRT speed.
+2. **Footage from our own cameras**: operator stills + a few hours + matching POS export, or the staged session. Every measured rate above comes from someone else's store, camera angle or lab.
 3. **A store-specific product detector.** Nothing measures product picks yet; MERL only bounds the reach half.
 4. **Tracking on the real camera angle.** MERL's overhead angle broke tracking; an angled ceiling camera must be checked before trusting multi-minute visits.
-5. **Concealment that generalises.** Train on synthetic concealment (Isaac Sim) + pilot labels from shadow mode; until then treat it as weak corroboration, never an alert by itself.
+5. **Concealment that generalises.** Train on synthetic concealment (Isaac Sim) + pilot labels from shadow mode; until then treat it as weak corroboration only. The first live policy should not depend on it.
 6. RetailS license answer from the authors (email not sent yet).
 
 ---

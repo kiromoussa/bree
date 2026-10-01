@@ -17,7 +17,7 @@ class YoloBackend:
     def __init__(self, pose_weights: str, detect_weights: str, class_map: dict[str, str],
                  device: str = "cpu", imgsz: int = 640, pose_crop: int = 160,
                  person_conf: float = 0.3, product_conf: float = 0.25, products: bool = True,
-                 runtime: str = "pytorch", providers: list | None = None, dedupe_inside: float = 0.0):
+                 runtime: str = "pytorch", providers: list | None = None, dedupe_inside: float = 0.85):
         from bree.edge.ort import load_yolo
         self.det = load_yolo(detect_weights, "detect", imgsz, runtime, providers)
         self.dedupe_inside = dedupe_inside   # drop a person box this much inside a larger one (0 = off)

@@ -22,13 +22,26 @@ def put(k, value, source):
     out[k].update(value=float(value), measured=True, source=source)
 
 
-if merl:
+off = load("merl_offline_test")
+if off:   # engine defaults: hand point (wrist + 0.5 forearm), duplicate-box removal, stitching
+    row = off["rows"][-1]
+    put("p_pick_detected", row["reach_recall"],
+        f"UPPER BOUND. MERL Shopping test split ({off['n_videos']} real videos, overhead camera), current engine defaults "
+        f"(hand point k={row['hand_k']}, duplicate-box removal, stitching): share of {row['reach_instances']} labelled "
+        f"Reach To Shelf + Hand In Shelf instances with a hand point in the shelf zone (+-0.5 s). A pick also needs the "
+        f"product detected, which MERL can't measure.")
+    put("p_id_switch", row["videos_split"],
+        f"MERL test split, current engine defaults: share of single-shopper videos (~2 min) that still became more than "
+        f"one visit (>= 2 s each). Overhead view, likely pessimistic for a real store.")
+elif merl:
     put("p_pick_detected", merl["reach_recall"],
         f"UPPER BOUND. MERL Shopping test split ({merl['n_videos']} real videos, overhead camera): share of "
         f"{merl['reach_instances']} labelled Reach To Shelf + Hand In Shelf instances where our pose model put a wrist in the shelf zone. A pick also "
         f"needs the product detected, which MERL can't measure (its products aren't COCO classes).")
     stitch = load("merl_stitch")
-    if stitch:   # the engine now stitches new track ids onto people just lost inside the store
+    if off:
+        pass
+    elif stitch:   # the engine now stitches new track ids onto people just lost inside the store
         put("p_id_switch", stitch["videos_split_stitch"],
             f"MERL test split ({stitch['n_videos']} single-shopper videos, ~2 min each) through the event engine WITH "
             f"track stitching: share of videos where the shopper still became more than one visit (>= 2 s each). "

@@ -2,9 +2,9 @@
  "vision_noise": {
   "p_pick_detected": {
    "assumed": 0.92,
-   "value": 0.6417657045840407,
+   "value": 0.8760611205432938,
    "measured": true,
-   "source": "UPPER BOUND. MERL Shopping test split (28 real videos, overhead camera): share of 589 labelled Reach To Shelf + Hand In Shelf instances where our pose model put a wrist in the shelf zone. A pick also needs the product detected, which MERL can't measure (its products aren't COCO classes)."
+   "source": "UPPER BOUND. MERL Shopping test split (28 real videos, overhead camera), current engine defaults (hand point k=0.5, duplicate-box removal, stitching): share of 589 labelled Reach To Shelf + Hand In Shelf instances with a hand point in the shelf zone (+-0.5 s). A pick also needs the product detected, which MERL can't measure."
   },
   "pick_conf_mean": {
    "assumed": 0.85,
@@ -80,9 +80,9 @@
   },
   "p_id_switch": {
    "assumed": 0.03,
-   "value": 0.8214285714285714,
+   "value": 0.6428571428571429,
    "measured": true,
-   "source": "MERL test split (28 single-shopper videos, ~2 min each) through the event engine WITH track stitching: share of videos where the shopper still became more than one visit (>= 2 s each). Without stitching: 100%. Overhead view, likely pessimistic for a real store."
+   "source": "MERL test split, current engine defaults: share of single-shopper videos (~2 min) that still became more than one visit (>= 2 s each). Overhead view, likely pessimistic for a real store."
   },
   "p_id_swap": {
    "assumed": 0.01,

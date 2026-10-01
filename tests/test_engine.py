@@ -319,3 +319,15 @@ def test_contained_boxes_are_dropped_as_duplicates():
     from bree.detect.yolo import contained
     b = np.array([[0, 0, 100, 200], [10, 10, 90, 120], [300, 0, 400, 200]], float)
     assert contained(b, np.ones(3, bool), 0.85).tolist() == [False, True, False]
+
+
+def test_resting_hand_in_a_shelf_zone_does_not_turn_a_conceal_into_a_put_back(store):
+    from bree.events.engine import EngineRules
+    s = Sim(store)
+    s.engine.r = EngineRules(hand_extend=0.0)
+    _pick_sequence(s)
+    fx, fy = 420, 300
+    left_in_shelf_a = (380, 238)                           # resting next to the gondola, inside its polygon
+    s.step({1: (fx, fy, [left_in_shelf_a, (fx + 6, fy - 65)])}, [(7, fx + 6, fy - 53, "soda_bottle")], n=5)
+    s.step({1: (fx, fy, [left_in_shelf_a, (fx + 6, fy - 65)])}, [], n=30)
+    assert s.of(E.PUT_BACK) == [] and len(s.of(E.CONCEAL)) == 1

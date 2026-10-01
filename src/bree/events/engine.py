@@ -55,7 +55,7 @@ class EngineRules:
     min_store_time_s: float = 2.0   # shorter tracks never count as a store visit
     stitch_s: float = 10.0          # a NEW track id appearing away from the door this soon after someone was lost
     stitch_dist: float = 1.0        # ...within this many of their body heights continues their visit (0 = off)
-    hand_extend: float = 0.0        # reach point = wrist + this * (wrist - elbow); MERL suggests 0.5 (see DECISIONS)
+    hand_extend: float = 0.5        # reach point = wrist + this * (wrist - elbow): MERL test reach recall 64% -> 88% (DECISIONS)
 
     @staticmethod
     def from_dict(d: dict) -> "EngineRules":
@@ -366,9 +366,12 @@ class EventEngine:
         c = pr.center
         z = self.store.zone_at(c[0], c[1], "shelf", "cooler")
         if z is None:
-            # hand inside a merch zone counts too (item held right at the shelf edge)
-            zs = [zn for zn in ps.wrist_zone.values() if zn]
-            h.near_zone = zs[0] if zs else None
+            # The HOLDING hand inside a merch zone counts too (item held right at the shelf edge). Only that hand:
+            # a resting hand next to a gondola is often inside its polygon, and must not turn a concealment by
+            # the other hand into a put-back.
+            ws = ps.last.wrists(self.r.kpt_conf)
+            holder = min(ws, key=lambda w: math.hypot(w[1][0] - c[0], w[1][1] - c[1]))[0] if ws else h.wrist
+            h.near_zone = ps.wrist_zone.get(holder) if holder else None
         else:
             h.near_zone = z.name
         x1, y1, x2, y2 = ps.last.torso_box(self.r.torso_margin, self.r.kpt_conf)

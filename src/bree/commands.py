@@ -142,10 +142,15 @@ def cmd_shadow_labels(args) -> None:
 
 
 def cmd_pos_convert(args) -> None:
-    from bree.ledger.pos_csv import load_mapping, read_csv_payments
+    from bree.ledger.pos_csv import _epoch, load_mapping, read_csv_payments
     m, unmapped, n = load_mapping(args.mapping), set(), 0
+    # Replaying recorded footage: receipts need stream seconds `t` = receipt time - when the video starts,
+    # with the video start given in the POS clock's wall time (same format/timezone/offset as the CSV).
+    t0 = _epoch(args.video_start, {**m.get("time", {}), "format": args.video_start_format}) if args.video_start else None
     for path in args.csv:
         for d in read_csv_payments(path, m, unmapped):
+            if t0 is not None:
+                d["t"] = round(d["ts"] - t0, 3)
             print(json.dumps(d))
             n += 1
     print(f"{n} receipt(s)", file=sys.stderr)
@@ -193,6 +198,8 @@ def register(sub) -> None:
 
     pc = sub.add_parser("pos-convert", help="POS CSV export -> payments JSONL (stdout), via a column mapping")
     pc.add_argument("--mapping", required=True, help="mapping YAML (see configs/pos_mapping_example.yaml)")
+    pc.add_argument("--video-start", help="wall time the recorded video starts, POS clock (e.g. 2026-10-01T14:00:00): adds stream time `t`")
+    pc.add_argument("--video-start-format", default="iso", help="strptime format of --video-start, or iso / epoch")
     pc.add_argument("csv", nargs="+")
     pc.set_defaults(func=cmd_pos_convert)
 

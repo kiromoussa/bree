@@ -32,6 +32,12 @@ Sources: `results/merl_stitch.json` (stitching), `results/merl_offline_train.jso
 | measured tonight, ID switch at the assumed 3% | 54.9% | 28.1% | 79.0% | 0.57 |
 More thieves are caught (alert + review recall 37% to 57%) at slightly more false alerts. Visit splitting is still the biggest drag: at the assumed split rate, false alerts would be 0.57 per hour. The toy clips are unchanged (2 of 2 thieves alerted, no flags on honest shoppers).
 
+**Pilot day-one tools** (merged): `scripts/draw_zones.py` (click zone polygons and multi-camera floor points on a camera still, video or RTSP frame; writes the store YAML, validated by loading it back) and **POS CSV import** through a declarative column mapping (`configs/pos_mapping_example.yaml`: columns, time format and timezone, terminal names, POS item names to our SKUs or categories, clock offset). `bree pos-convert` turns an export into our receipt format; with `--video-start` it adds stream time so recorded footage can be replayed with its POS export (`bree run --payments`). Shadow mode reads CSV exports straight from the POS folder. Rehearsed end to end on a toy clip with the sample CSV.
+
+**Tried and dropped (negative results, recorded in DECISIONS.md):**
+- Open-vocabulary product detection (YOLOE, text prompts, no training) to see a product in the hand: on MERL train videos it fired near the hand about as often with empty hands as with a product (best: 62% vs 50%; `results/merl_product_in_hand_train.json`). A product detector still needs our own labelled products.
+- Long-gap stitching (60 s when the new track is at almost the same spot): fewer visits but more split shoppers on train; left off.
+
 **Perception tuning** (chosen on MERL's train split, measured once on the test split; `results/tuning/`, `results/merl_measure_tuned.json`)
 | MERL test split (28 videos, 64.3 min) | current default (YOLO26s, conf 0.3, 2 s buffer) | tuned (YOLO26n, conf 0.15, 5 s buffer, new-track 0.15) |
 |---|---|---|

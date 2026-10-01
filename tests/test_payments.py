@@ -99,3 +99,13 @@ def test_pos_convert_cli(capsys):
     main(["pos-convert", "--mapping", str(MAPPING), str(SAMPLE)])
     rows = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
     assert [r["txn_id"] for r in rows] == ["10421", "10422", "10423"] and rows[0]["items"][0]["price"] == 2.49
+
+
+def test_pos_convert_adds_stream_time_for_recorded_footage(capsys):
+    import json as _json
+    from types import SimpleNamespace
+    from bree.commands import cmd_pos_convert
+    cmd_pos_convert(SimpleNamespace(mapping="configs/pos_mapping_example.yaml", csv=["tests/fixtures/pos_sample.csv"],
+                                    video_start="2026-10-01T14:15:00", video_start_format="iso"))
+    rows = [_json.loads(l) for l in capsys.readouterr().out.splitlines()]
+    assert rows[0]["t"] == 5.0 and rows[0]["txn_id"] == "10421"

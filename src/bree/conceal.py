@@ -314,11 +314,22 @@ def video_triggers(v: Video, per_track, th: float) -> list[int]:
                   for f in trigger_frames(per_track(t), t.frames, th, v.fps))
 
 
-def event_hit(v: Video, per_track, th: float, pad: int = 0) -> bool:
-    """Shoplifting video: did a trigger fire on a labelled frame? Labels are per frame, not per person, so
-    any person's trigger counts; read it next to the clean-clip trigger rate."""
-    pos = np.flatnonzero(v.labels)
-    return any(((pos >= f - pad) & (pos <= f + pad)).any() for f in video_triggers(v, per_track, th))
+def sustained_frames(scores: np.ndarray, frames: np.ndarray, th: float, fps: float = 15.0) -> np.ndarray:
+    """Frames at which one track's score has been >= th for at least MIN_RUN_S (no merging)."""
+    need = max(int(round(MIN_RUN_S * fps)), 1)
+    run = np.zeros(len(scores), int)
+    for i, s in enumerate(scores):
+        run[i] = run[i - 1] + 1 if s >= th and i else int(s >= th)
+    return frames[run >= need]
+
+
+def event_hit(v: Video, per_track, th: float) -> bool:
+    """Shoplifting video: was some person's score sustained over th (>= MIN_RUN_S) on a labelled frame?
+    Monotone in th (no merging). Labels are per frame, not per person, so any person counts; read it next
+    to the clean-clip trigger rate."""
+    lab = set(np.flatnonzero(v.labels).tolist())
+    return any(lab.intersection(sustained_frames(per_track(t), t.frames, th, v.fps).tolist())
+               for t in v.tracks.values() if len(t.frames))
 
 
 # ---------- metrics ----------

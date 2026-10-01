@@ -72,3 +72,12 @@ def test_metrics_mask_drops_empty_frames():
     y = np.array([0, 0, 1, 1]); s = np.array([0.0, 0.6, 0.5, 0.9]); m = np.array([False, True, True, True])
     r = metrics(y, s, m)
     assert r["n_frames"] == 3 and r["all_frames_auc_roc"] > r["auc_roc"]
+
+
+def test_event_hit_is_monotone_in_threshold():
+    from bree.conceal import event_hit
+    t = _track(60, True)
+    sc = lambda tr: np.r_[np.full(20, 0.3), np.full(40, 0.6)]   # low score early, higher later
+    lab = np.zeros(60, np.int8); lab[40:] = 1
+    v = Video("1_1", "1", "test", 60, {1: t}, lab)
+    assert event_hit(v, sc, 0.25) and event_hit(v, sc, 0.5) and not event_hit(v, sc, 0.7)

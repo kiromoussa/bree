@@ -53,6 +53,8 @@ class EngineRules:
     min_pick_move_px: float = 15.0  # ...and must have moved at least this far (a hand brushing past isn't a pick)
     handoff_frames: int = 5         # frames near someone else's hand (owner's hand visibly away) to transfer an item
     min_store_time_s: float = 2.0   # shorter tracks never count as a store visit
+    stitch_s: float = 10.0          # a NEW track id appearing away from the door this soon after someone was lost
+    stitch_dist: float = 1.0        # ...within this many of their body heights continues their visit (0 = off)
 
     @staticmethod
     def from_dict(d: dict) -> "EngineRules":
@@ -111,6 +113,8 @@ class EventEngine:
         self.store = store
         self.r = rules or EngineRules.from_dict(store.rules)
         self.people: dict[int, PersonState] = {}
+        self.alias: dict[int, int] = {}          # tracker id -> person id it was stitched to
+        self._present: set[int] = set()
         self.owner: dict[int, int] = {}          # product track id -> person id holding it
         self.log: list[str] = []                 # non-event observations (occlusion losses etc.)
         # Product track history (for pick/conceal evidence): last seen time, first seen centre,
@@ -128,9 +132,10 @@ class EventEngine:
         self.t, self.frame = obs.t, obs.frame
         events: list[Event] = []
         seen = set()
+        self._present = {self.alias.get(po.track_id, po.track_id) for po in obs.persons}   # never stitch onto these
         for po in obs.persons:
-            seen.add(po.track_id)
             events += self._update_person(po)
+            seen.add(self.alias.get(po.track_id, po.track_id))
         events += self._update_products(obs.products)
         events += self._check_releases()
         events += self._check_conceals()
@@ -149,7 +154,9 @@ class EventEngine:
 
     def _update_person(self, po: PersonObs) -> list[Event]:
         events = []
-        ps = self.people.get(po.track_id)
+        ps = self.people.get(self.alias.get(po.track_id, po.track_id))
+        if ps is None:
+            ps = self._stitch(po)
         if ps is None:
             ps = PersonState(po.track_id, self.t, self.t, po)
             self.people[po.track_id] = ps
@@ -202,6 +209,32 @@ class EventEngine:
         horizon = self.t - max(self.r.reach_window_s, self.r.crowd_window_s) - 5.0
         ps.reaches = [rc for rc in ps.reaches if rc.t_end is None or rc.t_end >= horizon]
         return events
+
+    def _stitch(self, po: PersonObs) -> PersonState | None:
+        """Trackers hand out a new id after an occlusion or a missed detection. A new id that appears away
+        from the door, soon after and close to where someone was lost inside the store, is that person
+        (position and time only, no appearance features). Otherwise the visit splits: the first half never
+        exits, so its basket is never reconciled."""
+        if self.r.stitch_dist <= 0:
+            return None
+        fx, fy = po.foot_point(self.r.foot_point)
+        if self.store.zone_at(fx, fy, "exit") is not None:
+            return None                                      # someone new walking in
+        best, best_d = None, math.inf
+        for ps in self.people.values():
+            if (ps.exited or ps.pid in self._present or ps.t_last >= self.t
+                    or self.t - ps.t_last > self.r.stitch_s):
+                continue
+            lx, ly = ps.last.foot_point(self.r.foot_point)
+            h = max(ps.last.bbox[3] - ps.last.bbox[1], 1.0)
+            d = math.hypot(fx - lx, fy - ly)
+            if d <= self.r.stitch_dist * h and d < best_d:
+                best, best_d = ps, d
+        if best is not None:
+            self.alias[po.track_id] = best.pid
+            self.log.append(f"{self.t:.1f}s track {po.track_id} stitched to person {best.pid} "
+                            f"({self.t - best.t_last:.1f}s, {best_d:.0f}px after losing them)")
+        return best
 
     def _close_register(self, ps: PersonState) -> list[Event]:
         events = []

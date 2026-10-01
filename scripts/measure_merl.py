@@ -22,6 +22,10 @@ import numpy as np
 from scipy.io import loadmat
 
 from bree.detect.yolo import YoloBackend
+from bree.events.engine import EngineRules, EventEngine
+from bree.events.observations import FrameObs
+from bree.events.types import EventType
+from bree.events.zones import load_store_config
 from bree.events.observations import L_WRIST, R_WRIST
 from bree.events.zones import Zone
 from bree.hw import detect_hardware
@@ -61,6 +65,10 @@ for vf in vids:
     cap = cv2.VideoCapture(vf)
     fps = cap.get(cv2.CAP_PROP_FPS)
     tracker = Tracker(fps / STRIDE, person_buffer_s=args.buffer, bytetrack=bt)
+    merl_store = load_store_config("configs/merl_overhead.yaml")
+    engines = {"no_stitch": EventEngine(merl_store, EngineRules.from_dict({**merl_store.rules, "stitch_dist": 0})),
+               "stitch": EventEngine(merl_store)}
+    enters = {k: [] for k in engines}
     in_zone, ids, fi = [], set(), 0
     while True:
         ok, im = cap.read()
@@ -69,6 +77,8 @@ for vf in vids:
         if fi % STRIDE == 0:
             t0 = time.perf_counter()
             persons, _ = tracker.update(*backend(im), im.shape[:2])
+            for k, eng in engines.items():
+                enters[k] += [e for e in eng.update(FrameObs(fi, fi / fps, persons, [])) if e.type == EventType.ENTER]
             t_det.append(time.perf_counter() - t0)
             ids.update(p.track_id for p in persons)
             hit = any(q and SHELF.contains(*q) for p in persons for q in (p.kpt(L_WRIST, KPT_CONF), p.kpt(R_WRIST, KPT_CONF)))
@@ -92,10 +102,15 @@ for vf in vids:
     runs = [(s, e) for s, e in runs if e > s]
     shelf_gt = np.concatenate([gt[1], gt[2], gt[3]])
     false_runs = [r for r in runs if not any(r[0] <= e + pad and r[1] >= s - pad for s, e in shelf_gt)]
+    for eng in engines.values():
+        eng.flush()
+    visits = {k: sum(1 for e in enters[k] if (p := eng.people[e.person_id]).t_last - p.t_first >= 2.0)
+              for k, eng in engines.items()}
     minutes = fi / fps / 60
     per_video.append({"video": stem, "minutes": round(minutes, 2), "reach_instances": len(reach_gt),
                       "reach_found": int(sum(found)), "detected_reach_runs": len(runs),
-                      "false_reach_runs": len(false_runs), "person_track_ids": len(ids)})
+                      "false_reach_runs": len(false_runs), "person_track_ids": len(ids),
+                      "visits_no_stitch": visits["no_stitch"], "visits_stitch": visits["stitch"]})
     print(per_video[-1], flush=True)
 
 tot = lambda k: sum(v[k] for v in per_video)
@@ -113,6 +128,10 @@ res = {
     "extra_person_tracks_per_video": float(np.mean([v["person_track_ids"] - 1 for v in per_video])),
     "extra_person_tracks_per_min": sum(max(v["person_track_ids"] - 1, 0) for v in per_video) / mins,
     "detect_pose_track_ms_per_frame": 1000 * float(np.mean(t_det)),
+    "visits_per_video_no_stitch": float(np.mean([v["visits_no_stitch"] for v in per_video])),
+    "visits_per_video_stitch": float(np.mean([v["visits_stitch"] for v in per_video])),
+    "videos_split_no_stitch": sum(v["visits_no_stitch"] > 1 for v in per_video) / len(per_video),
+    "videos_split_stitch": sum(v["visits_stitch"] > 1 for v in per_video) / len(per_video),
     "per_video": per_video,
 }
 Path("results").mkdir(exist_ok=True)

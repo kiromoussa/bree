@@ -1,0 +1,14 @@
+# MERL Shopping lab camera (920x680, straight overhead): one shelf, no door / register in view.
+# Used only to measure visit continuity (scripts/measure_merl.py); drawn on training-split frame 10_1.
+store:
+  name: "MERL Shopping overhead lab shelf (evaluation only)"
+camera:
+  id: merl_overhead
+  resolution: [920, 680]
+  fps: 15
+rules:
+  foot_point: center      # top-down view: the box centre is where the person stands
+zones:
+  - name: shelf
+    kind: shelf
+    polygon: [[190, 30], [880, 30], [880, 300], [190, 300]]

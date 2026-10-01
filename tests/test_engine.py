@@ -259,3 +259,48 @@ def test_passer_by_does_not_inherit_item(store):
     for _ in range(2):
         s.step({1: (fx, fy, []), 2: (fx + 20, fy + 5, [(hand[0] + 5, hand[1] + 5), (fx + 50, fy - 57)])}, [item])
     assert s.engine.owner[9] == 1
+
+
+def _walk_in(s, pid, to_x=600, y=400):
+    s.step({pid: (85, 690, rest(85, 690))}, n=5)
+    for x in range(85, to_x, 20):
+        s.step({pid: (x, y, rest(x, y))})
+
+
+def test_new_track_id_after_occlusion_continues_the_visit(store):
+    s = Sim(store)
+    _walk_in(s, 1)
+    s.step({1: (600, 400, rest(600, 400))}, n=10)
+    s.step({}, n=30)                                        # lost for 2 s (detector miss)
+    s.step({2: (610, 400, rest(610, 400))}, n=10)           # tracker hands out a new id, same place
+    for x in range(610, 60, -20):
+        s.step({2: (x, 640, rest(x, 640))})
+    s.step({}, n=60)
+    assert [e.person_id for e in s.of(E.ENTER)] == [1]
+    assert [e.person_id for e in s.of(E.EXIT)] == [1]
+
+
+def test_new_track_at_the_door_is_a_new_person(store):
+    s = Sim(store)
+    _walk_in(s, 1)
+    s.step({1: (600, 400, rest(600, 400))}, n=5)
+    s.step({}, n=10)
+    s.step({2: (85, 690, rest(85, 690))}, n=5)              # someone walking in
+    assert sorted(e.person_id for e in s.of(E.ENTER)) == [1, 2]
+
+
+def test_never_stitch_onto_someone_still_visible(store):
+    s = Sim(store)
+    _walk_in(s, 1)
+    s.step({1: (600, 400, rest(600, 400)), 2: (620, 400, rest(620, 400))}, n=5)
+    assert sorted(e.person_id for e in s.of(E.ENTER)) == [1, 2]
+
+
+def test_stitching_can_be_switched_off(store):
+    from bree.events.engine import EngineRules
+    s = Sim(store)
+    s.engine.r = EngineRules(stitch_dist=0)
+    _walk_in(s, 1)
+    s.step({}, n=30)
+    s.step({2: (610, 400, rest(610, 400))}, n=5)
+    assert sorted(e.person_id for e in s.of(E.ENTER)) == [1, 2]

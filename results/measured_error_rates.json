@@ -80,9 +80,9 @@
   },
   "p_id_switch": {
    "assumed": 0.03,
-   "value": 1.0,
+   "value": 0.8214285714285714,
    "measured": true,
-   "source": "MERL test split: share of single-shopper videos (~2 min each) whose shopper got more than one track id. Overhead view, harder than an angled ceiling camera, so likely pessimistic for a real store."
+   "source": "MERL test split (28 single-shopper videos, ~2 min each) through the event engine WITH track stitching: share of videos where the shopper still became more than one visit (>= 2 s each). Without stitching: 100%. Overhead view, likely pessimistic for a real store."
   },
   "p_id_swap": {
    "assumed": 0.01,
@@ -101,6 +101,12 @@
    "value": 2.0,
    "measured": false,
    "source": "not measured: needs the operator's POS export"
+  },
+  "pos_batch_s": {
+   "assumed": 0.0,
+   "value": 0.0,
+   "measured": false,
+   "source": "not measured: no labelled real data for this yet"
   }
  }
 }

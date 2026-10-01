@@ -27,10 +27,17 @@ if merl:
         f"UPPER BOUND. MERL Shopping test split ({merl['n_videos']} real videos, overhead camera): share of "
         f"{merl['reach_instances']} labelled Reach To Shelf + Hand In Shelf instances where our pose model put a wrist in the shelf zone. A pick also "
         f"needs the product detected, which MERL can't measure (its products aren't COCO classes).")
-    splits = sum(1 for v in merl["per_video"] if v["person_track_ids"] > 1) / merl["n_videos"]
-    put("p_id_switch", splits,
-        f"MERL test split: share of single-shopper videos (~2 min each) whose shopper got more than one track id. "
-        f"Overhead view, harder than an angled ceiling camera, so likely pessimistic for a real store.")
+    stitch = load("merl_stitch")
+    if stitch:   # the engine now stitches new track ids onto people just lost inside the store
+        put("p_id_switch", stitch["videos_split_stitch"],
+            f"MERL test split ({stitch['n_videos']} single-shopper videos, ~2 min each) through the event engine WITH "
+            f"track stitching: share of videos where the shopper still became more than one visit (>= 2 s each). "
+            f"Without stitching: {stitch['videos_split_no_stitch']:.0%}. Overhead view, likely pessimistic for a real store.")
+    else:
+        splits = sum(1 for v in merl["per_video"] if v["person_track_ids"] > 1) / merl["n_videos"]
+        put("p_id_switch", splits,
+            f"MERL test split: share of single-shopper videos (~2 min each) whose shopper got more than one track id. "
+            f"Overhead view, harder than an angled ceiling camera, so likely pessimistic for a real store.")
 if rs:
     e = rs["staged"]["model"]["events"][TH]
     put("p_conceal_detected", e["pos_hit"] / max(e["pos"], 1),

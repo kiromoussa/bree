@@ -52,20 +52,23 @@ Test clips: 21; normal footage: 0.4 h.
 | p_false_held_at_exit | 0.03 | not measured | not measured: no labelled real data for this yet |
 | p_register_visit_detected | 0.97 | not measured | not measured: needs store footage with these events labelled (pilot shadow mode or staged session) |
 | p_exit_detected | 0.98 | not measured | not measured: needs store footage with these events labelled (pilot shadow mode or staged session) |
-| p_id_switch | 0.03 | 1.0 | MERL test split: share of single-shopper videos (~2 min each) whose shopper got more than one track id. Overhead view, harder than an angled ceiling camera, so likely pessimistic for a real store. |
+| p_id_switch | 0.03 | 0.821 | MERL test split (28 single-shopper videos, ~2 min each) through the event engine WITH track stitching: share of videos where the shopper still became more than one visit (>= 2 s each). Without stitching: 100%. Overhead view, likely pessimistic for a real store. |
 | p_id_swap | 0.01 | not measured | not measured: no labelled real data for this yet |
 | p_pos_dropped | 0.01 | not measured | not measured: needs the operator's POS export |
 | pos_jitter_s | 2.0 | not measured | not measured: needs the operator's POS export |
+| pos_batch_s | 0.0 | not measured | not measured: no labelled real data for this yet |
 
 ## Speed (Apple M1 Max (macOS-26.5.1-arm64-arm-64bit), data/merl/Videos_MERL_Shopping_Dataset/27_1_crop.mp4)
 | runtime | detector | pose | full pipeline FPS | ms / frame |
 |---|---|---|---|---|
-| pytorch cpu | yolo26n.pt | yolo26n-pose.pt | 22.2 | 45.0 |
-| pytorch mps | yolo26n.pt | yolo26n-pose.pt | 41.2 | 24.3 |
-| onnxruntime cpu | yolo26n_640.onnx | yolo26n-pose_160.onnx | 23.3 | 42.9 |
-| pytorch cpu | yolo26s.pt | yolo26s-pose.pt | 13.2 | 75.5 |
-| pytorch mps | yolo26s.pt | yolo26s-pose.pt | 40.5 | 24.7 |
-| onnxruntime cpu | yolo26s_640.onnx | yolo26s-pose_160.onnx | 10.1 | 99.0 |
+| pytorch cpu | yolo26n.pt | yolo26n-pose.pt | 25.1 | 39.9 |
+| pytorch mps | yolo26n.pt | yolo26n-pose.pt | 49.3 | 20.3 |
+| onnxruntime cpu | yolo26n.pt | yolo26n-pose.pt | 28.6 | 35.0 |
+| onnxruntime coreml | yolo26n.pt | yolo26n-pose.pt | 89.5 | 11.2 |
+| pytorch cpu | yolo26s.pt | yolo26s-pose.pt | 16.0 | 62.6 |
+| pytorch mps | yolo26s.pt | yolo26s-pose.pt | 45.9 | 21.8 |
+| onnxruntime cpu | yolo26s.pt | yolo26s-pose.pt | 11.2 | 89.4 |
+| onnxruntime coreml | yolo26s.pt | yolo26s-pose.pt | 77.0 | 13.0 |
 
 # SIMULATED (event-level simulator and toy clips; vision error rates are inputs, see above)
 
@@ -73,15 +76,15 @@ Test clips: 21; normal footage: 0.4 h.
 | payment feed | vision noise | thieves | precision | recall (alert) | recall (alert+review) | false alerts / hour | honest reviews / hour | basket exact | latency p50 / p95 s |
 |---|---|---|---|---|---|---|---|---|---|
 | pos | perfect | 495 | 97.9% | 76.4% | 96.8% | 0.04 | 0.03 | 100.0% | 5.0 / 35.15 |
-| pos | baseline | 495 | 72.5% | 47.9% | 83.4% | 0.45 | 4.07 | 75.5% | 5.0 / 34.47 |
-| pos | pessimistic_2x | 495 | 45.4% | 20.0% | 65.1% | 0.59 | 5.44 | 58.0% | 5.0 / 62.75 |
-| pos | measured | 495 | 24.2% | 13.5% | 37.4% | 1.05 | 2.51 | 49.2% | 5.0 / 120.0 |
-| pos | measured, id switch assumed | 495 | 42.9% | 19.6% | 64.6% | 0.65 | 3.12 | 51.4% | 5.0 / 25.54 |
+| pos | baseline | 495 | 72.5% | 47.9% | 83.4% | 0.45 | 4.08 | 75.5% | 5.0 / 34.47 |
+| pos | pessimistic_2x | 495 | 45.4% | 20.0% | 65.1% | 0.59 | 5.43 | 58.0% | 5.0 / 62.75 |
+| pos | measured | 495 | 24.0% | 13.9% | 39.4% | 1.09 | 2.52 | 50.0% | 5.0 / 120.0 |
+| pos | measured, id switch assumed | 495 | 42.9% | 19.6% | 64.6% | 0.65 | 3.11 | 51.4% | 5.0 / 25.54 |
 | dwell | perfect | 495 | 96.5% | 44.8% | 74.5% | 0.04 | 0.01 | 100.0% | 5.0 / 40.53 |
 | dwell | baseline | 495 | 65.1% | 33.1% | 59.6% | 0.44 | 1.61 | 75.5% | 5.0 / 35.07 |
-| dwell | pessimistic_2x | 495 | 38.3% | 15.6% | 46.5% | 0.62 | 2.92 | 58.0% | 5.0 / 95.84 |
-| dwell | measured | 495 | 23.1% | 12.7% | 29.1% | 1.05 | 1.91 | 49.2% | 5.0 / 120.0 |
-| dwell | measured, id switch assumed | 495 | 41.6% | 18.4% | 37.4% | 0.64 | 1.38 | 51.4% | 5.0 / 27.34 |
+| dwell | pessimistic_2x | 495 | 38.1% | 15.6% | 46.5% | 0.62 | 2.91 | 58.0% | 5.0 / 95.84 |
+| dwell | measured | 495 | 22.5% | 12.9% | 26.9% | 1.10 | 1.77 | 50.0% | 5.0 / 120.0 |
+| dwell | measured, id switch assumed | 495 | 41.6% | 18.4% | 37.4% | 0.64 | 1.37 | 51.4% | 5.0 / 27.34 |
 
 Alert-threshold sweep (POS feed, baseline noise; uncorroborated decisions stay capped at review):
 | threshold | precision | recall | false alerts / hour |
@@ -109,8 +112,8 @@ Seed-to-seed spread (POS feed, seeds [2, 3, 4, 5, 6], mean [min-max]):
 | vision noise | precision | recall (alert) | recall (alert+review) | false alerts / hour |
 |---|---|---|---|---|
 | perfect | 97.6% [96.6-98.5] | 77.8% [76.0-79.5] | 97.0% [96.7-97.6] | 0.04 [0.03-0.07] |
-| baseline | 72.1% [67.0-75.5] | 50.2% [45.3-53.2] | 85.8% [83.4-88.3] | 0.46 [0.40-0.53] |
-| pessimistic_2x | 46.6% [42.7-49.1] | 21.2% [18.3-23.5] | 66.0% [62.0-68.1] | 0.57 [0.55-0.61] |
+| baseline | 72.2% [67.0-75.7] | 50.2% [45.3-53.2] | 85.8% [83.4-88.3] | 0.46 [0.40-0.53] |
+| pessimistic_2x | 46.5% [42.7-49.1] | 21.2% [18.3-23.5] | 66.0% [62.0-68.1] | 0.57 [0.55-0.61] |
 
 Which vision errors cause false alerts? (perfect vision + one error source at its baseline rate; same seed and 200 hours):
 | error source | precision | recall | false alerts / hour |

@@ -43,6 +43,7 @@ ap.add_argument("--person-conf", type=float, default=0.3)
 ap.add_argument("--buffer", type=float, default=2.0)
 ap.add_argument("--new-track-thresh", type=float)
 ap.add_argument("--every", type=int, default=1)   # take every k-th video (quick tuning subsets)
+ap.add_argument("--save-tracks")   # dir: per-video npz of person tracks (boxes, keypoints) for offline analysis
 ap.add_argument("--out", default="results/merl_measure.json")
 args = ap.parse_args()
 limit = args.limit
@@ -70,6 +71,7 @@ for vf in vids:
                "stitch": EventEngine(merl_store)}
     enters = {k: [] for k in engines}
     in_zone, ids, fi = [], set(), 0
+    rows = []
     while True:
         ok, im = cap.read()
         if not ok:
@@ -81,9 +83,15 @@ for vf in vids:
                 enters[k] += [e for e in eng.update(FrameObs(fi, fi / fps, persons, [])) if e.type == EventType.ENTER]
             t_det.append(time.perf_counter() - t0)
             ids.update(p.track_id for p in persons)
+            rows += [(fi, p.track_id, *p.bbox, *(p.keypoints.reshape(-1) if p.keypoints is not None else np.zeros(51)))
+                     for p in persons]
             hit = any(q and SHELF.contains(*q) for p in persons for q in (p.kpt(L_WRIST, KPT_CONF), p.kpt(R_WRIST, KPT_CONF)))
             in_zone.append((fi, hit))
         fi += 1
+    if args.save_tracks:
+        Path(args.save_tracks).mkdir(parents=True, exist_ok=True)
+        np.savez_compressed(Path(args.save_tracks) / f"{stem}.npz", rows=np.asarray(rows, np.float32).reshape(-1, 57),
+                            n_frames=fi, fps=fps, stride=STRIDE)
     frames = np.array([f for f, _ in in_zone])
     hits = np.array([h for _, h in in_zone])
     pad = PAD_S * fps

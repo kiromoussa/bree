@@ -20,6 +20,7 @@ class PersonObs:
     bbox: tuple[float, float, float, float]      # x1, y1, x2, y2
     conf: float = 1.0
     keypoints: np.ndarray | None = None          # (17, 3): x, y, visibility/conf
+    reid: object | None = None                   # bree.track.reid.ReidFeatures (body only, in memory only)
 
     def kpt(self, idx: int, min_conf: float = 0.3) -> tuple[float, float] | None:
         if self.keypoints is None:

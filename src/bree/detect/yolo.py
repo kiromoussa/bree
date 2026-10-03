@@ -28,19 +28,25 @@ class YoloBackend:
         names = self.det.names
         self.person_id = next(i for i, n in names.items() if n == "person")
         self.product_ids = [i for i, n in names.items() if n in self.class_map]
+        # Carried objects: a re-ID cue only (bree/track/reid.py), never products for the event engine.
+        self.bag_ids = [i for i, n in names.items() if n in ("backpack", "handbag", "suitcase")
+                        and n not in self.class_map]
+        self.last_bags = None
         self.device, self.imgsz = device, imgsz
         self.person_conf, self.product_conf = person_conf, product_conf
 
     def __call__(self, image: np.ndarray) -> tuple[Detections, Detections]:
         r = self.det.predict(image, imgsz=self.imgsz, conf=min(self.person_conf, self.product_conf),
-                             device=self.device, classes=[self.person_id] + self.product_ids,
+                             device=self.device, classes=[self.person_id] + self.product_ids + self.bag_ids,
                              verbose=False)[0]
         boxes = r.boxes.xyxy.cpu().numpy() if r.boxes is not None else np.zeros((0, 4))
         confs = r.boxes.conf.cpu().numpy() if r.boxes is not None else np.zeros(0)
         cls = r.boxes.cls.cpu().numpy().astype(int) if r.boxes is not None else np.zeros(0, int)
 
         is_person = (cls == self.person_id) & (confs >= self.person_conf)
-        is_product = (cls != self.person_id) & (confs >= self.product_conf)
+        is_bag = np.isin(cls, self.bag_ids)
+        self.last_bags = boxes[is_bag & (confs >= self.product_conf)]
+        is_product = (cls != self.person_id) & ~is_bag & (confs >= self.product_conf)
         if self.dedupe_inside:
             is_person &= ~contained(boxes, is_person, self.dedupe_inside)
         pb = boxes[is_person]

@@ -26,6 +26,9 @@ How it works, in one screen:
 
 Design rule: one uncorroborated pick must never be enough for an "alert".
 A missed put-back looks exactly like that, and false accusations kill a pilot.
+Same rule for identity: when the engine had to pick between two people it could not tell
+apart (closed-world identity, `meta.identity_uncertain` on their events), a decision that
+rests on that identity is capped at "review" and the reason goes into the audit log.
 """
 from __future__ import annotations
 
@@ -118,6 +121,7 @@ class PersonRecord:
     surplus: Counter = field(default_factory=Counter)         # paid-but-not-seen, by category
     group: list[int] = field(default_factory=list)
     t_last: float = 0.0                                       # last event time (stale-track pruning)
+    identity_uncertain: tuple[str, float] | None = None       # (why, until): engine could not tell this person from another
     log: list[str] = field(default_factory=list)              # human-readable audit trail
 
 
@@ -173,8 +177,16 @@ class Ledger:
         p = self._person(ev.person_id, ev.t)
         p.t_last = max(p.t_last, ev.t)
 
+        why = ev.meta.get("identity_uncertain")
+        if why and (p.identity_uncertain is None or p.identity_uncertain[0] != why):
+            p.log.append(f"{ev.t:7.1f}s identity uncertain: {why}")
+        if why:
+            p.identity_uncertain = (why, ev.meta.get("identity_uncertain_until", float("inf")))
+
         if ev.type == EventType.ENTER:
             p.t_enter = min(p.t_enter, ev.t)
+            if ev.meta.get("missed_entry"):
+                p.log.append(f"{ev.t:7.1f}s first seen inside the store (entry not seen)")
         elif ev.type == EventType.PICK:
             self._on_pick(p, ev)
         elif ev.type == EventType.PUT_BACK:
@@ -628,6 +640,14 @@ class Ledger:
             tier = "review"
             reasons.append("capped at review: " + ("no concealment or item-in-hand at exit" if not corroborated
                            else f"{unmatched_paid} paid item(s) didn't match the basket (possible misrecognition)"))
+        # Never accuse on a guessed identity: the basket may be someone else's.
+        unsure = [q for q in party if q.identity_uncertain and (q.t_exit or 0.0) <= q.identity_uncertain[1]]
+        if tier == "alert" and unsure:
+            tier, eligible = "review", False
+            reasons.append("capped at review: identity uncertain (" + "; ".join(q.identity_uncertain[0] for q in unsure) + ")")
+            for q in party:
+                q.log.append(f"{self.now:7.1f}s alert downgraded to review: identity uncertain "
+                             f"({'; '.join(r.identity_uncertain[0] for r in unsure)})")
         # in a group: the person holding the strongest unpaid item
         return conf, tier, eligible, items, reasons, best_owner
 

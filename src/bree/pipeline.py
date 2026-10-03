@@ -51,6 +51,8 @@ class RunSummary:
     decision_latency_s: list[float] = field(default_factory=list) # camera time: exit -> alert
     processing_latency_ms: list[float] = field(default_factory=list)  # wall: frame read -> alert written
     handoffs: int = 0                                             # multi-camera: tracks linked across cameras
+    identity: dict = field(default_factory=dict)                  # closed world, per camera: occupancy at the end,
+    #                                                               births by kind, assignments, uncertain marks, timeouts
 
 
 @dataclass
@@ -241,6 +243,8 @@ def run_store(cameras: list[CameraInput], backend: PerceptionBackend, out_dir: s
     summary.events = ev_counts
     summary.alerts = [a.to_dict() for a in sink.written]
     summary.handoffs = len(fusion.identity.handoffs) if fusion.identity else 0
+    summary.identity = {name: {"occupancy": eng.occupancy(), **eng.cw_stats}
+                        for name, eng in fusion.engines.items() if eng.r.closed_world}
     events_log.close(); sink.close()
     for c in cams:
         c.frames_log.close()

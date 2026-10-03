@@ -282,3 +282,7 @@ def test_reid_does_not_regress_on_mot16():
     assert on["false_merges"] <= ref["false_merges"], (on["false_merges"], ref)
     assert on["idf1"] >= off["idf1"] - ref["idf1_tolerance"] and on["false_merges"] <= off["false_merges"]
     assert res["reid"]["fused"]["rank1"] >= ref["rank1"] - ref["rank1_tolerance"]
+    # Flags off = the position-only guard, unchanged by closed-world identity (which is off unless a store asks for it).
+    same = ref["position_only_guard_same_run"]
+    assert abs(off["idf1"] - same["idf1"]) <= ref["idf1_tolerance"] and off["false_merges"] == same["false_merges"], off
+    assert "closed_world" not in off and res["tracking"]["closed_world"]["closed_world"]["assigned"] > 0

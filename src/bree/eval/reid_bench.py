@@ -14,7 +14,13 @@ computed and scored in memory in this one process.
    default before re-ID) and guard + re-ID. IDF1 / ID switches / MOTA (same protocol as scripts/eval_mot.py) and
    false merges: stitches that joined tracks of two different ground-truth people, the error that puts one
    shopper's basket on another and so creates false theft alerts.
-4. Toy clips: the full pipeline with re-ID on vs off (alert scorecard must not change).
+4. Toy clips: the full pipeline per identity setting (alert scorecard must not change).
+5. Closed-world identity (`rules.closed_world`, DECISIONS "Closed-world identity"): every table above also has
+   closed_world and closed_world + re-ID rows, and a scripted store (`synthetic_store_rows`: SYNTHETIC tracks
+   with a door, several shoppers, occlusions and known identities) counts false merges, splits and how often
+   an identity was marked uncertain. MOT16 is open-world street footage (people walk in and out of every
+   frame edge, nobody "exits"), so its closed-world rows are a sanity check only and play no part in the
+   store default.
 
 `--quick`: two short sequences only (the regression test, tests/test_reid.py). Not comparable to the full run.
 """
@@ -42,7 +48,13 @@ VARIANTS = {   # engine rule overrides per row
     "guard_reid_reject_0.05": {"reid": True, "reid_reject": 0.05},
     "guard_reid_reject_0.5": {"reid": True, "reid_reject": 0.5},
     "reid_no_guard": {"reid": True, "stitch_ambiguous_skip": False},
+    # Closed-world identity on OPEN-world footage: expected to be wrong here (module docstring, 5.). Sanity only.
+    "closed_world": {"closed_world": True},
+    "closed_world_reid": {"closed_world": True, "reid": True},
 }
+# The four identity settings compared on store data (both flags always explicit: store YAMLs may set either).
+ID_VARIANTS = {"off": {"reid": False, "closed_world": False}, "reid": {"reid": True, "closed_world": False},
+               "closed_world": {"reid": False, "closed_world": True}, "closed_world_reid": {"reid": True, "closed_world": True}}
 
 
 def iou_matrix(a: np.ndarray, b: np.ndarray) -> np.ndarray:
@@ -212,12 +224,15 @@ def replay(seq: dict, rules: dict):
                 a, b = tgt.get(p.track_id), tgt.get(last_tid.get(pid, pid))
                 stats["stitches"] += 1
                 stats["unscored" if a is None or b is None else "correct" if a == b else "false_merges"] += 1
+                stats["uncertain_at_false_merge"] += bool(a is not None and b is not None and a != b
+                                                          and eng.people[pid].uncertain_until >= t)
             last_tid[pid] = p.track_id
         hb = np.array([[p.bbox[0], p.bbox[1], p.bbox[2] - p.bbox[0], p.bbox[3] - p.bbox[1]] for p in persons]).reshape(-1, 4)
         iou = iou_matrix(gboxes, hb)
         d = 1 - iou
         d[iou < 0.5] = np.nan
         acc.update(gids, [eng.alias.get(p.track_id, p.track_id) for p in persons], d)
+    stats.update({f"cw_{k}": v for k, v in eng.cw_stats.items()})
     return acc, stats
 
 
@@ -239,6 +254,9 @@ def tracking_rows(seqs: list[dict], weights: dict) -> dict:
                  unscored_stitches=stats["unscored"],
                  false_merge_rate=round(stats["false_merges"] / scored, 4) if scored else 0.0,
                  per_sequence_idf1={k: round(float(v), 4) for k, v in summ["idf1"].items() if k != "OVERALL"})
+        if rules.get("closed_world"):
+            o["closed_world"] = {**{k[3:]: v for k, v in stats.items() if k.startswith("cw_")},
+                                 "false_merges_marked_uncertain": stats["uncertain_at_false_merge"]}
         out[name] = o
         print(f"[reid-bench] {name}: IDF1 {o['idf1']:.3f}  switches {o['num_switches']:.0f}  "
               f"stitches {o['stitches']}  false merges {o['false_merges']} ({o['false_merge_rate']:.1%})", flush=True)
@@ -248,14 +266,17 @@ def tracking_rows(seqs: list[dict], weights: dict) -> dict:
 # ------------------------------------------------------------------ MERL, toy clips, speed
 
 
-MERL_VARIANTS = {"guard": {}, "guard_reid_short": {"reid": True, "reid_long_s": 0.0}, "guard_reid": {"reid": True}}
+MERL_VARIANTS = {"guard": {}, "guard_reid_short": {"reid": True, "reid_long_s": 0.0}, "guard_reid": {"reid": True},
+                 "closed_world": {"closed_world": True}, "closed_world_reid": {"closed_world": True, "reid": True}}
 
 
 def merl_rows(embedder, variants: dict | None = None, split: str = "test", every: int = 1) -> dict:
     """MERL Shopping test subjects (overhead camera, ONE shopper per video; research licence, evaluation only):
-    visits per video with the position guard vs guard + re-ID. Every extra visit is a split shopper; there is
-    nobody to merge with, so this measures whether the appearance veto breaks correct stitches and whether the
-    appearance relink repairs longer gaps. Uses the shipped weights (MERL plays no part in fitting them)."""
+    visits per video per identity setting. Every extra visit is a split shopper; there is nobody to merge with,
+    so this measures splits only (whether the appearance veto breaks correct stitches, whether closed-world
+    identity keeps one shopper one person). The lab has no door in view, so closed world runs on its no-door
+    fallback: extra people can only come from a track that appears while the shopper is still visible (a
+    second detection, or a bystander). Uses the shipped weights (MERL plays no part in fitting them)."""
     import cv2
     from bree.detect.yolo import YoloBackend
     from bree.events.engine import EngineRules, EventEngine
@@ -275,6 +296,7 @@ def merl_rows(embedder, variants: dict | None = None, split: str = "test", every
     store = load_store_config(ROOT / "configs" / "merl_overhead.yaml")
     variants = variants or MERL_VARIANTS
     visits = {k: [] for k in variants}
+    cw = {k: Counter() for k in variants}
     for v in vids:
         cap = cv2.VideoCapture(str(v))
         fps = cap.get(cv2.CAP_PROP_FPS)
@@ -296,27 +318,163 @@ def merl_rows(embedder, variants: dict | None = None, split: str = "test", every
             eng.flush()
             visits[k].append(sum(1 for e in enters[k]
                                  if eng.people[e.person_id].t_last - eng.people[e.person_id].t_first >= 2.0))
+            cw[k] += eng.cw_stats
         print(f"[reid-bench] MERL {v.name}: " + ", ".join(f"{k} {n[-1]}" for k, n in visits.items()), flush=True)
     return {k: {"videos": len(n), "visits_per_video": round(float(np.mean(n)), 3),
-                "videos_split": round(float(np.mean([x > 1 for x in n])), 3)} for k, n in visits.items()}
+                "videos_split": round(float(np.mean([x > 1 for x in n])), 3),
+                **({"closed_world": dict(cw[k])} if cw[k] else {})} for k, n in visits.items()}
 
 
 def toy_rows() -> dict:
-    """Full pipeline on the toy clips with re-ID off and on: the alert scorecard should not move."""
+    """Full pipeline on the toy clips per identity setting: the alert scorecard should not move."""
     import yaml
     from bree.commands import ensure_toy
     from bree.eval.toy_eval import run_toy_suite, score_rows
     ensure_toy()
     base = yaml.safe_load((ROOT / "configs" / "store_gas_station_small.yaml").read_text())
     out = {}
-    for name, on in (("reid_off", False), ("reid_on", True)):
-        cfg = {**base, "rules": {**(base.get("rules") or {}), "reid": on}}
+    for name, rules in (("reid_off", ID_VARIANTS["off"]), ("reid_on", ID_VARIANTS["reid"]),
+                        ("closed_world", ID_VARIANTS["closed_world"]), ("closed_world_reid", ID_VARIANTS["closed_world_reid"])):
+        cfg = {**base, "rules": {**(base.get("rules") or {}), **rules}}
         path = ROOT / "out" / f"reid_bench_store_{name}.yaml"
         path.parent.mkdir(exist_ok=True)
         path.write_text(yaml.safe_dump(cfg))
         rows, summ = run_toy_suite(ROOT / "data" / "toy", ROOT / "out" / f"reid_bench_toy_{name}", path)
         out[name] = {**score_rows(rows), "pipeline_fps": round(float(np.mean([s.pipeline_fps for s in summ])), 1)}
+        ident = sum((Counter({k: v for k, v in cam.items() if k != "occupancy"}) for s in summ for cam in s.identity.values()), Counter())
+        if rules["closed_world"]:
+            out[name]["closed_world"] = dict(ident)
     return out
+
+
+# ------------------------------------------------------------------ scripted store (synthetic identities)
+
+
+def synthetic_store_rows(episodes: int = 1000, seed: int = 0, fps: float = 10.0, p_missed_entry: float = 0.05,
+                         p_lookalike: float = 0.25) -> dict:
+    """SYNTHETIC tracks, not footage: the example store (door zone, 1280x720), 2 to 4 shoppers per episode who
+    come in through the door, walk between aisle spots and leave. The tracker id of a shopper changes after
+    every occlusion (0.5 to 10 s). Half the occlusions hide two shoppers at once, and in half of those the two
+    trade places while unseen. `p_missed_entry` of shoppers are first seen inside (door occluded);
+    `p_lookalike` wear the same colours as someone else in the episode. Appearance is drawn so that the same
+    person scores like the same person in the fusion (side-view quality); an overhead camera would be worse.
+    Measures the identity logic only: false merges (a track joined to another shopper's identity; `silent` =
+    not marked uncertain at that moment), splits (extra identities of one shopper), uncertain marks."""
+    from bree.events.engine import EngineRules, EventEngine
+    from bree.events.observations import FrameObs, PersonObs
+    from bree.events.zones import load_store_config
+    store = load_store_config(ROOT / "configs" / "store_gas_station_small.yaml")
+    DOOR, H, SPEED, dt = np.array([85.0, 650.0]), 158.0, 160.0, 1.0 / fps
+
+    def look(rng, like=None):
+        """(embedding direction, per-part colour bins) of one shopper; `like` = dress like that shopper."""
+        common = np.ones(32) / np.sqrt(32)
+        e = rng.normal(size=32)
+        e = common + 0.8 * e / np.linalg.norm(e) if like is None else like[0] + 0.5 * e / np.linalg.norm(e)
+        return e / np.linalg.norm(e), (rng.integers(0, 52, 3) if like is None else like[1])
+
+    def feat(rng, lk, t):
+        e = lk[0] + 0.06 * rng.normal(size=32)
+        c = np.full((3, 52), 0.002) + 0.004 * rng.random((3, 52))
+        c[np.arange(3), lk[1]] = 1.0
+        return R.ReidFeatures(t, (e / np.linalg.norm(e)).astype(np.float32), (c / c.sum(1, keepdims=True)).astype(np.float32))
+
+    def episode(rng):
+        """Frames of [(track id, shopper, foot position, look)], scripted then replayed through each engine."""
+        n = int(rng.integers(2, 5))
+        spot = lambda: np.array([rng.uniform(220, 1200), rng.uniform(500, 700)])   # noqa: E731
+        ag = []
+        for i in range(n):
+            lk = look(rng, ag[int(rng.integers(i))]["look"] if i and rng.random() < p_lookalike else None)
+            ag.append({"t_in": rng.uniform(0, 15) + 6.0, "pos": DOOR.copy(), "target": spot(), "wait": 0.0, "legs": int(rng.integers(2, 5)),
+                       "hidden": rng.uniform(2, 4) if rng.random() < p_missed_entry else 0.0, "tid": None, "gone": False, "look": lk,
+                       "leaving": False})
+        frames, t, next_tid, next_occ = [], 0.0, 1, rng.uniform(8, 14)
+        while not all(a["gone"] for a in ag) and t < 180:
+            inside = [a for a in ag if t >= a["t_in"] and not a["gone"]]
+            free = [a for a in inside if a["hidden"] <= 0 and not a["leaving"] and a["pos"][0] > 300]
+            if t >= next_occ and free:
+                next_occ = t + rng.uniform(4, 10)
+                pick = list(rng.choice(len(free), size=min(len(free), 1 + int(rng.random() < 0.5)), replace=False))
+                gap = rng.uniform(0.5, 10)
+                for k in pick:
+                    free[k]["hidden"], free[k]["tid"] = gap, None
+                if len(pick) == 2 and rng.random() < 0.5:           # trade places while unseen
+                    a, b = free[pick[0]], free[pick[1]]
+                    a["target"], b["target"] = b["pos"].copy(), a["pos"].copy()
+                    a["wait"] = b["wait"] = 0.0
+                    a["hidden"] = b["hidden"] = max(gap, np.linalg.norm(a["pos"] - b["pos"]) / SPEED + 0.5)
+            row = []
+            for a in inside:
+                step = a["target"] - a["pos"]
+                dist = np.linalg.norm(step)
+                if a["wait"] > 0:
+                    a["wait"] -= dt
+                elif dist > SPEED * dt:
+                    a["pos"] = a["pos"] + step / dist * SPEED * dt
+                else:
+                    a["pos"] = a["target"].copy()
+                    if a["leaving"]:
+                        a["gone"] = True
+                        continue
+                    a["legs"] -= 1
+                    a["wait"] = rng.uniform(2, 6)
+                    a["leaving"] = a["legs"] <= 0
+                    a["target"] = DOOR.copy() if a["leaving"] else spot()
+                if a["hidden"] > 0:
+                    a["hidden"] -= dt
+                    continue
+                if a["tid"] is None:
+                    a["tid"], next_tid = next_tid, next_tid + 1
+                row.append((a["tid"], id(a), a["pos"].copy(), a["look"]))
+            frames.append((t, row))
+            t += dt
+        return frames
+
+    out = {}
+    for name, rules in ID_VARIANTS.items():
+        rng = np.random.default_rng(seed)                      # same episodes for every variant
+        tot = Counter()
+        for _ in range(episodes):
+            frames = episode(rng)
+            frng = np.random.default_rng(int(rng.integers(1 << 30)))
+            eng = EventEngine(store, EngineRules.from_dict({**store.rules, **rules}))
+            gt, last_tid = {}, {}
+            for fi, (t, row) in enumerate(frames):
+                persons = [PersonObs(tid, (x - 22, y - H, x + 22, y), 0.9, reid=feat(frng, lk, t) if rules["reid"] else None)
+                           for tid, _, (x, y), lk in row]
+                before = set(eng.alias)
+                eng.update(FrameObs(fi, t, persons, []))
+                for tid, who, _, _ in row:
+                    pid = eng.alias.get(tid, tid)
+                    if tid not in gt:
+                        tot["tracks"] += 1
+                        tot["reappearances"] += who in gt.values()
+                    gt[tid] = who
+                    if tid in eng.alias and tid not in before:
+                        ok = gt[last_tid.get(pid, pid)] == who
+                        tot["correct_joins" if ok else "false_merges"] += 1
+                        tot["false_merges_silent"] += (not ok) and eng.people[pid].uncertain_until < t
+                    last_tid[pid] = tid
+            eng.flush()
+            ident = {tid: eng.alias.get(tid, tid) for tid in gt}
+            owners = defaultdict(set)
+            for tid, pid in ident.items():
+                owners[pid].add(gt[tid])
+            for who in set(gt.values()):
+                mine = {ident[tid] for tid in gt if gt[tid] == who}
+                tot["shoppers"] += 1
+                tot["splits"] += len(mine) - 1
+                tot["clean_visits"] += len(mine) == 1 and owners[next(iter(mine))] == {who}
+                tot["visits_uncertain"] += any(eng.people[pid].uncertain_until >= eng.people[pid].t_last for pid in mine)
+            tot.update({f"cw_{k}": v for k, v in eng.cw_stats.items()})
+        out[name] = {k: tot[k] for k in ("shoppers", "tracks", "reappearances", "correct_joins", "false_merges",
+                                         "false_merges_silent", "splits", "clean_visits", "visits_uncertain")}
+        out[name]["clean_visit_rate"] = round(tot["clean_visits"] / tot["shoppers"], 4)
+        out[name]["closed_world"] = {k[3:]: v for k, v in tot.items() if k.startswith("cw_")}
+        print(f"[reid-bench] synthetic store {name}: {out[name]}", flush=True)
+    return {"what": "SYNTHETIC scripted tracks (no footage): identity logic only", "episodes": episodes, "seed": seed,
+            "p_missed_entry": p_missed_entry, "p_lookalike": p_lookalike, "rows": out}
 
 
 def speed(embedder_cls=R.Embedder) -> dict:
@@ -388,6 +546,7 @@ def run(quick: bool = False, toy: bool = True, max_frames: int | None = None) ->
     res["tracking"] = tracking_rows(seqs, loso)
     ms = [m for s in seqs for m in s["ms"]]
     res["speed"] = {**speed(), "in_pipeline_ms_per_crop_all_cues": round(float(np.mean(ms)), 2) if ms else None}
+    res["synthetic_store"] = synthetic_store_rows(episodes=60 if quick else 1000)
     if toy and not quick:
         res["toy"] = toy_rows()
         res["merl_test"] = merl_rows(embedder)

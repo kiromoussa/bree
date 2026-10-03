@@ -8,5 +8,28 @@
  "position_only_guard_same_run": {
   "idf1": 0.3904,
   "false_merges": 12
+ },
+ "closed_world_synthetic_store": {
+  "what": "Regression floor for tests/test_closed_world.py::test_scripted_store_does_not_regress: bree.eval.reid_bench.synthetic_store_rows (SYNTHETIC scripted tracks, seeded, no footage). Recorded 2026-10-03. Tighten when a change improves them; never loosen to make a test pass.",
+  "episodes": 60,
+  "seed": 0,
+  "off": {
+   "splits": 190,
+   "false_merges": 21,
+   "false_merges_silent": 21,
+   "clean_visit_rate": 0.2486
+  },
+  "closed_world": {
+   "splits": 72,
+   "false_merges": 66,
+   "false_merges_silent": 4,
+   "clean_visit_rate": 0.5763
+  },
+  "closed_world_reid": {
+   "splits": 30,
+   "false_merges": 24,
+   "false_merges_silent": 0,
+   "clean_visit_rate": 0.8192
+  }
  }
 }

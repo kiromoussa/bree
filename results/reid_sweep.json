@@ -1,0 +1,176 @@
+{
+ "what": "Exploratory sweep of reid_reject (rej) and reid_long_p (long; None = long tier off) with re-ID on. MOT16 train, 7 sequences, leave-one-sequence-out fusion weights; MERL TRAIN subjects, every 5th video (12 videos, one shopper each). 'guard' = re-ID off (position/time stitching with the ambiguity guard). Evaluation only.",
+ "rows": {
+  "rej0.2_longNone": {
+   "mot16_idf1": 0.4426,
+   "mot16_id_switches": 435,
+   "mot16_stitches": 29,
+   "mot16_correct_merges": 15,
+   "mot16_false_merges": 7,
+   "merl_train_visits_per_video": 4.25,
+   "merl_train_videos_split": 1.0
+  },
+  "rej0.2_long0.3": {
+   "mot16_idf1": 0.4427,
+   "mot16_id_switches": 434,
+   "mot16_stitches": 31,
+   "mot16_correct_merges": 17,
+   "mot16_false_merges": 7,
+   "merl_train_visits_per_video": 4.25,
+   "merl_train_videos_split": 1.0
+  },
+  "rej0.2_long0.5": {
+   "mot16_idf1": 0.4426,
+   "mot16_id_switches": 435,
+   "mot16_stitches": 29,
+   "mot16_correct_merges": 15,
+   "mot16_false_merges": 7,
+   "merl_train_visits_per_video": 4.167,
+   "merl_train_videos_split": 1.0
+  },
+  "rej0.05_longNone": {
+   "mot16_idf1": 0.444,
+   "mot16_id_switches": 429,
+   "mot16_stitches": 43,
+   "mot16_correct_merges": 21,
+   "mot16_false_merges": 11,
+   "merl_train_visits_per_video": 3.5,
+   "merl_train_videos_split": 1.0
+  },
+  "rej0.05_long0.3": {
+   "mot16_idf1": 0.444,
+   "mot16_id_switches": 430,
+   "mot16_stitches": 41,
+   "mot16_correct_merges": 20,
+   "mot16_false_merges": 10,
+   "merl_train_visits_per_video": 3.5,
+   "merl_train_videos_split": 1.0
+  },
+  "rej0.05_long0.5": {
+   "mot16_idf1": 0.444,
+   "mot16_id_switches": 429,
+   "mot16_stitches": 43,
+   "mot16_correct_merges": 21,
+   "mot16_false_merges": 11,
+   "merl_train_visits_per_video": 3.417,
+   "merl_train_videos_split": 1.0
+  },
+  "rej0.02_longNone": {
+   "mot16_idf1": 0.4435,
+   "mot16_id_switches": 427,
+   "mot16_stitches": 47,
+   "mot16_correct_merges": 21,
+   "mot16_false_merges": 13,
+   "merl_train_visits_per_video": 2.75,
+   "merl_train_videos_split": 1.0
+  },
+  "rej0.02_long0.3": {
+   "mot16_idf1": 0.4435,
+   "mot16_id_switches": 428,
+   "mot16_stitches": 45,
+   "mot16_correct_merges": 20,
+   "mot16_false_merges": 12,
+   "merl_train_visits_per_video": 2.75,
+   "merl_train_videos_split": 1.0
+  },
+  "rej0.02_long0.5": {
+   "mot16_idf1": 0.4435,
+   "mot16_id_switches": 427,
+   "mot16_stitches": 47,
+   "mot16_correct_merges": 21,
+   "mot16_false_merges": 13,
+   "merl_train_visits_per_video": 2.667,
+   "merl_train_videos_split": 1.0
+  },
+  "rej0.01_longNone": {
+   "mot16_idf1": 0.4386,
+   "mot16_id_switches": 434,
+   "mot16_stitches": 46,
+   "mot16_correct_merges": 15,
+   "mot16_false_merges": 17,
+   "merl_train_visits_per_video": 2.667,
+   "merl_train_videos_split": 1.0
+  },
+  "rej0.01_long0.3": {
+   "mot16_idf1": 0.4392,
+   "mot16_id_switches": 436,
+   "mot16_stitches": 42,
+   "mot16_correct_merges": 14,
+   "mot16_false_merges": 14,
+   "merl_train_visits_per_video": 2.667,
+   "merl_train_videos_split": 1.0
+  },
+  "rej0.01_long0.5": {
+   "mot16_idf1": 0.4386,
+   "mot16_id_switches": 434,
+   "mot16_stitches": 46,
+   "mot16_correct_merges": 15,
+   "mot16_false_merges": 17,
+   "merl_train_visits_per_video": 2.583,
+   "merl_train_videos_split": 1.0
+  },
+  "rej0.005_longNone": {
+   "mot16_idf1": 0.4391,
+   "mot16_id_switches": 435,
+   "mot16_stitches": 42,
+   "mot16_correct_merges": 15,
+   "mot16_false_merges": 16,
+   "merl_train_visits_per_video": 2.5,
+   "merl_train_videos_split": 0.917
+  },
+  "rej0.005_long0.3": {
+   "mot16_idf1": 0.4392,
+   "mot16_id_switches": 436,
+   "mot16_stitches": 40,
+   "mot16_correct_merges": 15,
+   "mot16_false_merges": 14,
+   "merl_train_visits_per_video": 2.5,
+   "merl_train_videos_split": 0.917
+  },
+  "rej0.005_long0.5": {
+   "mot16_idf1": 0.4391,
+   "mot16_id_switches": 435,
+   "mot16_stitches": 42,
+   "mot16_correct_merges": 15,
+   "mot16_false_merges": 16,
+   "merl_train_visits_per_video": 2.417,
+   "merl_train_videos_split": 0.917
+  },
+  "rej0.0_longNone": {
+   "mot16_idf1": 0.4412,
+   "mot16_id_switches": 441,
+   "mot16_stitches": 29,
+   "mot16_correct_merges": 8,
+   "mot16_false_merges": 13,
+   "merl_train_visits_per_video": 1.917,
+   "merl_train_videos_split": 0.667
+  },
+  "rej0.0_long0.3": {
+   "mot16_idf1": 0.4413,
+   "mot16_id_switches": 442,
+   "mot16_stitches": 27,
+   "mot16_correct_merges": 8,
+   "mot16_false_merges": 11,
+   "merl_train_visits_per_video": 1.917,
+   "merl_train_videos_split": 0.583
+  },
+  "rej0.0_long0.5": {
+   "mot16_idf1": 0.4412,
+   "mot16_id_switches": 441,
+   "mot16_stitches": 29,
+   "mot16_correct_merges": 8,
+   "mot16_false_merges": 13,
+   "merl_train_visits_per_video": 1.833,
+   "merl_train_videos_split": 0.583
+  },
+  "guard": {
+   "mot16_idf1": 0.4412,
+   "mot16_id_switches": 441,
+   "mot16_stitches": 29,
+   "mot16_correct_merges": 8,
+   "mot16_false_merges": 13,
+   "merl_train_visits_per_video": 1.917,
+   "merl_train_videos_split": 0.667
+  }
+ }
+}

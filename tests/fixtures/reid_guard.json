@@ -1,0 +1,12 @@
+{
+ "what": "Regression floor for tests/test_reid.py::test_reid_does_not_regress_on_mot16: quick re-ID benchmark (MOT16-10 + MOT16-13, shipped fusion weights, re-ID on with default thresholds). Recorded 2026-10-03. Raise these when a change improves them; never lower them to make a test pass.",
+ "idf1": 0.3917,
+ "idf1_tolerance": 0.002,
+ "false_merges": 7,
+ "rank1": 0.5598,
+ "rank1_tolerance": 0.01,
+ "position_only_guard_same_run": {
+  "idf1": 0.3904,
+  "false_merges": 12
+ }
+}

@@ -151,6 +151,71 @@ make dashboard  # local web page with live alerts + baskets (http://127.0.0.1:80
 make export     # YOLO -> ONNX for edge devices
 ```
 
+## Simulator scoring (`make sim-eval`)
+
+Runs the pipeline on simulator camera frames and scores its alerts against the simulator's own
+ground truth. The loop:
+
+1. **Browser sim** (`~/bree/software/sim-prototype/`): place cameras, **Export layout**. That is the shared
+   layout JSON (`~/bree/software/isaac-sim/layout_schema.json`). The browser sim's ground-truth JSON and
+   single COCO frames are not used here: it exports no video.
+2. **Isaac Sim on a cloud GPU** (`~/bree/software/isaac-sim/run.sh my_layout.json out_my_store`, see that
+   kit's README): per-camera frames and `run1/events.jsonl` (one line per picked item: time, shopper,
+   SKU, slot, `paid` or `concealed`, cameras that saw it). Copy `out_my_store/run1` back.
+3. **Score**:
+   ```bash
+   make sim-eval SIM_OUT=~/bree/software/isaac-sim/out_my_store/run1 LAYOUT=~/bree/software/isaac-sim/my_layout.json
+   # options: SIM_BACKEND=yolo|toy   SIM_ARGS="--pos-dropout 0.1 --pos-sku-noise 0.05 --fps 10 --zone-owner all --save-video"
+   make sim-fixture      # the same chain on a generated TOY fixture, no GPU needed (about a minute)
+   ```
+4. **Scorecard** in `<SIM_OUT>/sim_eval/`: `scorecard.json`, `scorecard.md`, `inputs/` (what the adapter
+   made), `pipeline/` (the usual `events.jsonl`, `alerts.jsonl`, `ledger_log.txt`). Change cameras or
+   pipeline code, re-run, compare.
+
+What each step does (`src/bree/sim/`):
+
+- **Adapter** (`isaac_adapter.py`): finds every folder of `rgb_*.png` named like a layout camera (any
+  nesting, `static/` skipped) and writes `<camera>.mp4` at the written frame rate (inferred from IRA's
+  `config.yaml` and the events, else 10) plus `<camera>.store.yaml`:
+  - zones projected through that camera's `camera_params` into pixel polygons, clipped to the frame.
+    Shelf and cooler zones are the hull of the fixture's product slots (the event engine only counts
+    an item as in a hand once it is outside the merch zone, so the zone is the stock, not the carcass).
+    The register zone is a 1.2 m floor strip on the counter's customer side, the exit zone a 1.5 m floor
+    strip inside the door. Zone name = fixture id;
+  - `camera.floor_points` from a floor grid seen by that camera (floor plan metres = layout x, z);
+  - one product class and one ledger category per SKU id.
+  Each zone goes to the one camera that sees it largest (`--zone-owner best`): the pipeline does not
+  merge one pick seen by two cameras, so `all` double-counts. Every camera is checked against the
+  layout (a point on its optical axis must land on the image centre); transposed matrices are detected.
+- **POS feed** (`pos_feed`): one receipt per paying shopper from the `paid` events, stamped at the last
+  paid item plus a delay (`--pos-delay` 1.0 s, `--pos-delay-sd` 0.5), with optional lost receipts
+  (`--pos-dropout`) and mis-rung lines (`--pos-sku-noise`), seeded.
+- **Scorer** (`sim_eval.py`): an alert belongs to a shopper when one of its unpaid items was picked within
+  3 s of one of that shopper's true picks at the same fixture (pipeline person ids are tracker ids, so
+  identity is matched through the pick). A concealed item is caught when an alert-tier alert on its
+  shopper is emitted after the concealment and within 300 s of it. Scorecard fields: `theft_recall`
+  (also alert-or-review), `alert_precision`, `sku_correct_rate`, `time_to_alert_s` (alert minus
+  concealment; the sim does not log exits), `false_alerts_per_hour`, review-tier count, false alerts
+  split into honest-shopper vs unmatched; the same block `by_zone_kind`, `by_zone` (fixture) and
+  `by_camera_kind` (thefts: kinds of camera that had the item in view; alerts: kind of the camera whose
+  pick raised it); then one row per concealed event and per alert.
+
+**What has and has not run.** Isaac Sim has not produced any output yet (no GPU), so none of this has
+seen a real Isaac frame. It is tested on a synthetic fixture (`sim_fixture.py`, `tests/test_sim_eval.py`):
+flat OpenCV drawings in the toy palette, written in the folder layout the Isaac kit documents, three
+cameras, one paying shopper and one who conceals an energy drink. On it the chain gives 1 of 1 thefts
+caught, 1 alert, 0 false, SKU correct; with the receipt dropped the honest shopper gets a review-tier
+flag. That proves the harness, not accuracy. Expect to adjust on the first real run:
+
+- Folder nesting, file names and frame numbering of IRA's writer may differ from what the adapter
+  expects; video time 0 is assumed to be sim time 0.
+- The default `yolo` backend uses COCO weights, which do not know the layout's SKUs: with no product
+  detections there are no picks, so recall will read near zero until a product detector is trained on
+  the Isaac labels (`bounding_box_2d_tight`), or an oracle-box backend is added.
+- A shopper whose first box in a camera is cut by the frame edge gets a wrong floor position and so a
+  second cross-camera id (seen while building the fixture, which is why its door faces all cameras).
+- One zone per fixture: a long gondola watched by several shelf cameras is owned by one of them.
+
 ## Layout
 
 ```
@@ -162,7 +227,8 @@ src/bree/
   events/     zones, observations, rule-based event engine, event types
   ledger/     baskets, payment attribution, reconciliation + scoring, payment inputs
   alerts/     alert records, annotation + head pixelation, evidence clips
-  sim/        event-level simulator (ground truth + vision noise), toy clip renderer, isaac/ (prep)
+  sim/        event-level simulator (ground truth + vision noise), toy clip renderer, isaac/ (prep),
+              Isaac kit adapter + POS feed + scorer + synthetic fixture (make sim-eval)
   eval/       metrics, benchmark harness, toy-clip scoring
   dashboard/  tiny local web dashboard
 configs/      store layouts (YAML)

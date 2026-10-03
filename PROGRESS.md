@@ -30,6 +30,9 @@ Read this first after a context reset. Then BUILD_SPEC.md. Phase 2 instructions:
 ## Status (2026-10-01 ~01:30 UTC)
 Phases 0, 1, 4 (except GPU parts), 5, 6 done on the Mac. All real-data results re-run after the adversarial review (`scripts/phase2_rerun.sh`), REPORT.md Phase 2 section written from them, 98 tests pass. Phase 2 (Azure VMs) and Phase 3 (Isaac Sim) blocked on GPU quota (ticket above).
 
+## RE-ID (2026-10-03)
+Body re-ID (no face) in `src/bree/track/reid.py`, wired into engine stitching, multicam handoff and the pipeline behind `rules: {reid: true}` (default off: better on MOT16, worse on MERL overhead; REPORT "Re-ID without the face"). `make reid-bench` -> results/reid_bench.json; regression guard in tests/test_reid.py. Legal notes for counsel in DECISIONS.md. Next: label identities on pilot footage and rerun; measure on the edge box.
+
 ## MORNING SUMMARY (2026-10-01, overnight run ~00:20 to ~06:20 EDT)
 Read REPORT.md "Overnight" first. All pushed to claude/new-session-v6zi52; 148 tests pass.
 - Merged: late-receipt alert retraction, multi-camera ledger, ONNX/CoreML runtime (77 FPS small models on this Mac), Isaac Sim 4.5 generator + runbook (not run: no quota), draw_zones.py, POS CSV import (+ pos-convert --video-start).

@@ -58,14 +58,28 @@ Only `--preview` writes an image, and it is the raw frame (not pixelated): keep 
 
 Several cameras of one store: repeat `--source` and `--store` (one YAML per camera, zones in that
 camera's pixels, plus `camera.floor_points`: 4+ marks mapping its pixels to a shared floor plan in
-metres). People keep one id across cameras by floor position and time only (no appearance
-features), and one ledger reconciles the store, so a pick on the cooler camera, payment at the
+metres). People keep one id across cameras by floor position and time, plus body appearance when
+`reid` is on (see "Re-ID" below; never the face), and one ledger reconciles the store, so a pick on the cooler camera, payment at the
 register camera and the exit at the door camera are one visit. Only door cameras need an `exit` zone.
 
 ```bash
 .venv/bin/python -m bree.cli run --source rtsp://.../door --store configs/door_cam.yaml \
   --source rtsp://.../cooler --store configs/cooler_cam.yaml --source rtsp://.../register --store configs/register_cam.yaml
 ```
+
+### Re-ID (same shopper across occlusions, cameras, shelf to register to door)
+`rules: {reid: true}` in the store YAML turns on body re-identification (off by default: it helps on
+angled, busy views and hurts on a straight-overhead camera, see REPORT.md "Re-ID without the face") (`src/bree/track/reid.py`): an
+appearance embedding of the body below the shoulders (DINOv2 ViT-S/14, Apache-2.0, ONNX on CPU), clothing
+colour per body part from the pose keypoints, body proportions and carried bags, fused into one match
+score. It only extends the position/time rules: a stitch or camera handoff candidate that looks different
+is rejected, and someone lost for up to a minute is relinked if they look the same and could have walked
+there (lost at the cooler, picked up again at the register, so the receipt lands on the right basket).
+The face is never used: the head is cut off before any feature is computed. Features live in memory for
+the visit only (at most `reid_max_age_s`, default 2 h), are never written to disk or sent anywhere, and
+there is no identity across visits. Some laws may still treat body or gait measurements as biometric
+data: read DECISIONS.md "Re-identification without the face" and get legal advice before a pilot.
+The first run exports `models/dinov2_vits14_reid.onnx` (downloads the DINOv2 weights once).
 
 ### Payments (POS / cooler taps)
 One JSON object per payment, e.g.
@@ -144,9 +158,11 @@ cp configs/shadow_example.yaml configs/shadow_store1.yaml   # camera RTSP URLs, 
 
 ```bash
 make demo       # 8 rendered TOY clips end to end (pixels -> tracker -> events -> ledger -> alerts) + scorecard
-make test       # unit tests: ledger, event engine, simulator, payments; + vision smoke tests
+make test       # unit tests: ledger, event engine, simulator, payments, re-ID; + vision smoke tests
+                # + the re-ID regression guard (two MOT16 sequences; fails if IDF1 drops or false merges rise)
 make sim        # event-level simulator: ledger accuracy under perfect / baseline / 2x vision noise
-make bench      # everything -> results/bench.json + results/bench.md (~10 min on 4 CPU cores)
+make reid-bench # re-ID: rank-1 / mAP, IDF1, ID switches, false merges, before vs after -> results/reid_bench.json
+make bench      # reid-bench, then everything else -> results/bench.json + results/bench.md
 make dashboard  # local web page with live alerts + baskets (http://127.0.0.1:8080)
 make export     # YOLO -> ONNX for edge devices
 ```
@@ -223,7 +239,7 @@ src/bree/
   ingest/     video files, webcams, RTSP (with reconnect)
   detect/     YOLO backend (people + products in one pass), toy colour backend for toy clips
   pose/       top-down pose on person crops (COCO-17 keypoints)
-  track/      ByteTrack for people, centroid tracker for small products
+  track/      ByteTrack for people, centroid tracker for small products, multi-camera handoff, body re-ID
   events/     zones, observations, rule-based event engine, event types
   ledger/     baskets, payment attribution, reconciliation + scoring, payment inputs
   alerts/     alert records, annotation + head pixelation, evidence clips

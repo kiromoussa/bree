@@ -1,6 +1,56 @@
 # BREE vision: report
 
-Three parts: **Overnight (2026-10-01)** first, then **Phase 2 (2026-09-30, real data)**, then the **Phase 1 report** unchanged. Every number names the file it came from; real-data results and simulated results are kept apart.
+Four parts: **Re-ID without the face (2026-10-03)** first, then **Overnight (2026-10-01)**, then **Phase 2 (2026-09-30, real data)**, then the **Phase 1 report** unchanged. Every number names the file it came from; real-data results and simulated results are kept apart.
+
+# Re-ID without the face (2026-10-03)
+
+**Bottom line.** Body re-identification is built, tested and benchmarked, and it is **off by default** (`rules: {reid: true}` turns it on). On angled street footage with crowds (MOT16) it roughly halves false merges, the error that puts one shopper's basket on another, and nudges IDF1 up. On the overhead single-shopper lab footage (MERL) the same setting breaks correct stitches and doubles the number of split visits. It does not beat the current numbers on both, so it does not become the default. No face is used, features stay in memory for one visit, and DECISIONS.md "Re-identification without the face" lists the laws to take to a lawyer first. Everything below is from `results/reid_bench.json` (`make reid-bench`) unless another file is named; all public data here is evaluation only.
+
+**What it does.** `src/bree/track/reid.py`: appearance embedding of the body below the shoulder line (DINOv2 ViT-S/14, Apache-2.0 code and weights, ONNX on CPU), clothing colour per body part from pose (upper, lower, shoes), body proportions, carried bag (detector's backpack / handbag / suitcase classes), fused by one logistic score. Used in three places: engine stitching (a candidate that looks different is rejected; someone lost up to 60 s ago is relinked if they look the same and could have walked there), cross-camera handoff on the floor plan, and through those the register link (a shopper lost at the shelf and picked up as a new track at the counter keeps the basket, so the receipt lands on it).
+
+**Re-ID retrieval (MOT16 train ground-truth boxes, one sample per person per second, 2,042 samples of 315 people; query against samples of the same sequence at least 3 s away; 1,735 queries; fusion weights fitted on the other six sequences).**
+| cue | rank-1 | mAP |
+|---|---|---|
+| DINOv2 embedding alone | 58.6% | 39.8% |
+| clothing colour per body part alone | 65.0% | 49.4% |
+| **fused (embedding, colours, shape, bag)** | **72.8%** | **57.4%** |
+Not comparable to published Market-1501 numbers (different protocol, single camera, small low-resolution pedestrians). Market-1501 itself was not downloaded: its terms are research only and the official links are Drive/Baidu; MOT16 was already here under the same evaluation-only rule. The general-purpose embedding is weaker than hand-made colour histograms on this data, which says how much a re-ID-trained model would add if one with a usable licence existed (DECISIONS).
+
+**Tracking on MOT16 train (7 sequences, 517 people, same protocol and detector as the earlier MOT16 table; "before" reproduces `results/mot16.json` exactly).** A false merge is a stitch that joined tracks of two different ground-truth people; stitches involving a track with no ground-truth match are not scored.
+| setting | IDF1 | ID switches | MOTA | stitches | correct merges | false merges | false-merge rate |
+|---|---|---|---|---|---|---|---|
+| no stitching | 0.438 | 454 | 0.327 | 0 | 0 | 0 | n/a |
+| **before: position/time + ambiguity guard (default)** | **0.441** | **441** | 0.327 | 29 | 8 | 13 | 62% (13 of 21) |
+| guard + re-ID veto only | 0.443 | 435 | 0.327 | 29 | 15 | 7 | 32% (7 of 22) |
+| **after: guard + re-ID (veto + long-gap relink), `reid: true`** | **0.443** | **434** | 0.327 | 31 | 17 | 7 | **29% (7 of 24)** |
+| exploratory: veto threshold 0.05 | 0.444 | 430 | 0.327 | 41 | 20 | 10 | 33% |
+| exploratory: veto threshold 0.5 | 0.438 | 453 | 0.327 | 3 | 2 | 0 | 0% (of 2) |
+| exploratory: re-ID without the guard | 0.430 | 374 | 0.327 | 160 | 79 | 45 | 36% |
+Reading: the position-only guard was right in only 8 of its 21 scored stitches on crowds, which the earlier IDF1 number hid. Appearance removes six of the 13 wrong merges and, by ruling out the lookalike-by-position candidate, frees nine more correct ones. The IDF1 change itself is small (0.441 to 0.443) because stitches are a small share of all identity errors here; most are tracker switches and missed detections. Re-ID is not good enough to replace the guard (last row).
+
+**MERL Shopping test subjects (28 videos, overhead camera, one shopper per video, so every extra visit is a split and no false merge is possible).**
+| setting | visits per shopper | videos with a split |
+|---|---|---|
+| before: position/time + guard | 2.43 | 68% |
+| guard + re-ID veto only | 4.82 | 100% |
+| guard + re-ID (`reid: true`, same thresholds as above) | 4.64 | 100% |
+The veto rejects the same person: seen from straight above, a body's crop changes with every turn, and the score was fitted on side views. A follow-up sweep on MERL train videos and MOT16 (`results/reid_sweep.json`, exploratory) found no veto threshold that helps one without hurting the other: at 0.02 MOT16 IDF1 is 0.4435 but false merges are back to 13 and MERL train is still worse (2.75 visits vs 1.92); with the veto off and only the long-gap relink, both are within noise of the guard (MOT16 0.441, 11 to 13 false merges; MERL train 1.83 to 1.92 visits, 58% split vs 67%). (The "before" row is 2.43 here vs 2.54 in the Overnight table, which came from tracks cached on 2026-10-01 and an offline duplicate filter; the difference was not investigated.)
+
+**Decision.** `reid` defaults to off. Turn it on per camera where the view is angled and more than one shopper is usually in frame; for an overhead camera set `reid_reject: 0` (relink only) or leave it off. The pilot's own footage should settle the default: it needs a few hours with identities labelled, which is the same labelling already asked for in P2.8.
+
+**Toy clips (full pipeline, 8 clips, 10 people, 2 thieves).** Same scorecard with re-ID off and on (2 alerts on thieves, 0 on honest shoppers); pipeline 15.4 vs 15.0 FPS.
+
+**Cost on CPU (ONNX Runtime, this Mac's CPU, not the edge box).** Embedding 23 ms per crop on 4 threads, 77 ms on 1 thread; colours + shape 0.6 ms per crop; measured inside the pipeline 23 ms per crop for all cues. A track gets features on its first frame and then every 0.5 s, so 5 people in view cost about 230 ms of CPU per second of video. Not yet measured on the actual edge hardware or exported to TensorRT.
+
+**Constant testing.** `tests/test_reid.py`: 19 unit tests (head pixels never reach a feature, lighting change, veto, two-candidate case, shelf to register relink, payment lands on the right shopper, cross-camera cases, features forgotten at exit and never serialised) plus a regression guard that runs the quick benchmark on two MOT16 sequences inside `make test` and fails if IDF1 or false merges with re-ID on get worse than `tests/fixtures/reid_guard.json` or worse than position-only in the same run (about 2 minutes; skipped if MOT16 or weights are missing). `make bench` now runs `make reid-bench` first.
+
+**Not done / limits.**
+- Height in metres: floor points give the floor plane only, so a head height cannot be measured without a full camera calibration. Left out.
+- Gait: only walking speed, and its fitted weight is 0 because a new track has no motion history when it must be matched. Speed is used as a "could they have walked there" gate.
+- Cross-camera handoff and the register link are covered by synthetic unit tests only; there is no multi-camera footage with identities here.
+- MOT16 is street scenes, MERL is a lab. Neither is a gas station. The simulator is event-level (no pixels), so it cannot measure re-ID; only the toy clips ran.
+- Fusion weights and `reid_long_p` were fitted or chosen on MOT16; the reported MOT16 numbers use leave-one-sequence-out weights, the thresholds are shared.
+- Speed numbers were taken while another job was using the machine.
 
 # Overnight (2026-10-01, ~00:20 to ~06:20 EDT)
 

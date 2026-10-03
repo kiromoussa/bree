@@ -13,7 +13,8 @@ from bree.events.observations import HEAD_KPTS, PersonObs, ProductObs
 from bree.events.types import Event
 from bree.events.zones import StoreConfig
 
-ZONE_COLORS = {"shelf": (80, 180, 80), "cooler": (200, 160, 40), "register": (60, 200, 230), "exit": (60, 60, 220)}
+ZONE_COLORS = {"shelf": (80, 180, 80), "cooler": (200, 160, 40), "register": (60, 200, 230), "exit": (60, 60, 220),
+               "entrance": (220, 60, 160)}
 SKELETON = [(5, 6), (5, 7), (7, 9), (6, 8), (8, 10), (5, 11), (6, 12), (11, 12), (11, 13), (13, 15), (12, 14), (14, 16)]
 EVENT_COLORS = {"pick": (0, 200, 0), "put_back": (200, 200, 0), "conceal": (0, 0, 255),
                 "pay": (0, 200, 255), "exit": (255, 0, 255), "enter": (200, 200, 200)}

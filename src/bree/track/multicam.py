@@ -161,6 +161,13 @@ class StoreEvents:
             if missing:
                 raise ValueError(f"multi-camera store: camera(s) {missing} need camera.floor_points "
                                  "(4+ [x_px, y_px, x_m, y_m] marks) in their store YAML")
+            for e in self.engines.values():
+                if e.r.closed_world:
+                    # ponytail: closed-world identity is per camera for now. With several cameras a person walking in
+                    # from another camera's area would be taken for someone lost here, so it is switched off and the
+                    # floor-plane handoff below stays in charge. Upgrade: one lost pool per store in MultiCamIdentity.
+                    e.r.closed_world = False
+                    e.log.append("closed_world is single-camera only: off for this multi-camera store")
             foot = next(iter(stores.values())).rules.get("foot_point", "bottom")
             handoff = {"reid": any(e.r.reid for e in self.engines.values()), **(handoff or {})}
             self.identity = MultiCamIdentity({n: s.floor_homography() for n, s in stores.items()},

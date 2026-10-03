@@ -9,7 +9,9 @@ import yaml
 
 from bree.events.types import Catalog
 
-ZONE_KINDS = ("shelf", "cooler", "register", "exit")
+# "exit" is the door (people come in and leave through it). "entrance" is a one-way way in: closed-world
+# identity creates new people there too, but nobody is counted as leaving through it.
+ZONE_KINDS = ("shelf", "cooler", "register", "exit", "entrance")
 
 
 @dataclass

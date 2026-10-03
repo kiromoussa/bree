@@ -73,6 +73,7 @@ class _Cam:
         self.video_path = out / f"annotated{suffix}.mp4"
         self.writer = None
         self.recent: list[Event] = []
+        self.reid = None      # ReidExtractor when the store's rules turn re-ID on (set in run_store)
 
 
 def _obs_to_json(obs: FrameObs, events: list[Event]) -> dict:
@@ -116,6 +117,12 @@ def run_store(cameras: list[CameraInput], backend: PerceptionBackend, out_dir: s
     ledger = build_ledger(merge_stores([c.store for c in cameras]), **(ledger_overrides or {}))
     cams = [_Cam(c, out, f"_{c.name}" if multi else "", max_frames, Tracker) for c in cameras]
     by_name = {c.name: c for c in cams}
+    if any(e.r.reid for e in fusion.engines.values()):
+        # Body re-ID (never the face). Features stay in memory: nothing below writes them anywhere.
+        from bree.track.reid import Embedder, ReidExtractor
+        embedder = Embedder()
+        for c in cams:
+            c.reid = ReidExtractor(embedder)
     payments = payments or MockPayments([])
     sink = AlertSink(out, MultiEvidence([c.evidence for c in cams]) if multi else cams[0].evidence)
     summary = RunSummary(source=",".join(str(c.source) for c in cameras), backend=backend.name,
@@ -167,6 +174,8 @@ def run_store(cameras: list[CameraInput], backend: PerceptionBackend, out_dir: s
         persons_det, products_det = backend(fr.image)
         f1 = time.perf_counter()
         persons, products = c.tracker.update(persons_det, products_det, fr.image.shape[:2])
+        if c.reid is not None:
+            c.reid.update(fr.image, persons, fr.t, getattr(backend, "last_bags", None))
         f2 = time.perf_counter()
         obs = FrameObs(fr.index, fr.t, persons, products)
         events = fusion.update(c.name, obs)

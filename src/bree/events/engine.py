@@ -31,6 +31,7 @@ from dataclasses import dataclass, field
 from bree.events.observations import FrameObs, PersonObs, ProductObs
 from bree.events.types import Event, EventType
 from bree.events.zones import StoreConfig
+from bree.track.reid import match_prob, remember
 
 
 @dataclass
@@ -59,6 +60,15 @@ class EngineRules:
     stitch_long_s: float = 0.0      # ...or this long (0 = off) when the new track is within stitch_near body heights
     stitch_near: float = 0.5        #    of where they were lost (overhead detectors drop people standing still)
     hand_extend: float = 0.5        # reach point = wrist + this * (wrist - elbow): MERL test reach recall 64% -> 88% (DECISIONS)
+    # Body re-ID in stitching (bree/track/reid.py; needs PersonObs.reid from a ReidExtractor; DECISIONS "Re-ID").
+    reid: bool = False              # use appearance (body only, never the face) when stitching
+    # Match probabilities are on the scale of "anyone lost in the last minute who could have walked here"
+    # (about 2% are the same person), so 0.2 is already a strong match. Sweep: REPORT "Re-ID".
+    reid_reject: float = 0.2        # a position/time candidate below this match probability is someone else
+    reid_long_s: float = 60.0       # appearance relink of someone lost up to this long ago (0 = off)...
+    reid_long_p: float = 0.3        # ...at this probability...
+    reid_max_speed: float = 1.5     # ...if they could have walked there (body heights per second)
+    reid_max_age_s: float = 7200.0  # features older than this are forgotten (one store visit at most)
 
     @staticmethod
     def from_dict(d: dict) -> "EngineRules":
@@ -108,6 +118,7 @@ class PersonState:
     held: dict[int, HeldItem] = field(default_factory=dict)
     picked_tracks: set[int] = field(default_factory=set)      # product tracks this person already picked
     conceal_pending: list[HeldItem] = field(default_factory=list)
+    gallery: list = field(default_factory=list)               # recent ReidFeatures (memory only, this visit only)
     done: bool = False
     exited: bool = False
 
@@ -172,6 +183,8 @@ class EventEngine:
         if ps.done:
             return events
         ps.t_last, ps.last = self.t, po
+        if self.r.reid:
+            remember(ps.gallery, po.reid, self.t, self.r.reid_max_age_s)
 
         fx, fy = po.foot_point(self.r.foot_point)
         exit_zone = self.store.zone_at(fx, fy, "exit")
@@ -217,8 +230,10 @@ class EventEngine:
     def _stitch(self, po: PersonObs) -> PersonState | None:
         """Trackers hand out a new id after an occlusion or a missed detection. A new id that appears away
         from the door, soon after and close to where someone was lost inside the store, is that person
-        (position and time only, no appearance features). Otherwise the visit splits: the first half never
-        exits, so its basket is never reconciled."""
+        (position and time). Otherwise the visit splits: the first half never exits, so its basket is never
+        reconciled. With `reid` on, body appearance (never the face) also vetoes a candidate that looks
+        different (which also settles which of two lost people it is when only one looks right), and relinks someone lost up to `reid_long_s` ago
+        who could have walked there (lost at the shelf, picked up again at the register)."""
         if self.r.stitch_dist <= 0:
             return None
         fx, fy = po.foot_point(self.r.foot_point)
@@ -231,26 +246,37 @@ class EventEngine:
                     qx, qy = q.last.foot_point(self.r.foot_point)
                     if math.hypot(fx - qx, fy - qy) <= self.r.stitch_dist * max(q.last.bbox[3] - q.last.bbox[1], 1.0):
                         return None
-        best, best_d, n_ok = None, math.inf, 0
+        f = po.reid if self.r.reid else None
+        horizon = max(self.r.stitch_s, self.r.stitch_long_s, self.r.reid_long_s if f is not None else 0.0)
+        cands = []                                           # (person, distance px, match probability or None)
         for ps in self.people.values():
             gap = self.t - ps.t_last
-            if ps.exited or ps.pid in self._present or ps.t_last >= self.t or gap > max(self.r.stitch_s, self.r.stitch_long_s):
+            if ps.exited or ps.pid in self._present or ps.t_last >= self.t or gap > horizon:
                 continue
             lx, ly = ps.last.foot_point(self.r.foot_point)
             h = max(ps.last.bbox[3] - ps.last.bbox[1], 1.0)
             d = math.hypot(fx - lx, fy - ly)
             ok = (gap <= self.r.stitch_s and d <= self.r.stitch_dist * h) or \
                  (gap <= self.r.stitch_long_s and d <= self.r.stitch_near * h)
+            p = match_prob(ps.gallery, f) if f is not None else None
+            if not ok and p is not None and p >= self.r.reid_long_p and gap <= self.r.reid_long_s \
+                    and d <= (self.r.stitch_dist + self.r.reid_max_speed * gap) * h:
+                ok = True                                    # e.g. lost at the shelf, reappears at the register
+            if ok and p is not None and p < self.r.reid_reject:
+                self.log.append(f"{self.t:.1f}s track {po.track_id} not stitched to person {ps.pid}: "
+                                f"looks different (p={p:.2f})")
+                continue
             if ok:
-                n_ok += 1
-                if d < best_d:
-                    best, best_d = ps, d
-        if n_ok > 1 and self.r.stitch_ambiguous_skip:
-            return None                                      # two lost people could be this one: don't guess
-        if best is not None:
-            self.alias[po.track_id] = best.pid
-            self.log.append(f"{self.t:.1f}s track {po.track_id} stitched to person {best.pid} "
-                            f"({self.t - best.t_last:.1f}s, {best_d:.0f}px after losing them)")
+                cands.append((ps, d, p))
+        if not cands:
+            return None
+        if len(cands) > 1 and self.r.stitch_ambiguous_skip:
+            return None                                      # two lost people could still be this one: don't guess
+        best, best_d, p = min(cands, key=lambda c: c[1])
+        self.alias[po.track_id] = best.pid
+        self.log.append(f"{self.t:.1f}s track {po.track_id} stitched to person {best.pid} "
+                        f"({self.t - best.t_last:.1f}s, {best_d:.0f}px after losing them"
+                        + (f", p={p:.2f})" if p is not None else ")"))
         return best
 
     def _close_register(self, ps: PersonState) -> list[Event]:
@@ -268,6 +294,11 @@ class EventEngine:
 
     def _check_gone(self, seen: set[int]) -> list[Event]:
         events = []
+        if self.r.reid:   # forget appearance as soon as it can no longer be used (DECISIONS: re-ID privacy)
+            horizon = max(self.r.stitch_s, self.r.stitch_long_s, self.r.reid_long_s)
+            for ps in self.people.values():
+                if ps.gallery and ps.done and (ps.exited or self.t - ps.t_last > horizon):
+                    ps.gallery.clear()
         for ps in self.people.values():
             if ps.done or ps.pid in seen:
                 continue

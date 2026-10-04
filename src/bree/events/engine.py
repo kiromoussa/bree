@@ -174,6 +174,7 @@ class EventEngine:
         self.frame = 0
         self.t0: float | None = None             # time of the first frame (closed-world warm-up)
         self.cw_stats: Counter = Counter()       # closed world: births by kind, assignments, uncertain marks, timeouts
+        self._unplaced: dict[int, float] = {}    # closed world: track id -> first seen, for a second box on someone visible
         self._floor = store.floor_homography() if self.r.closed_world and store.floor_points else None
 
     # ------------------------------------------------------------------ main
@@ -213,7 +214,9 @@ class EventEngine:
     def _update_person(self, po: PersonObs) -> list[Event]:
         events = []
         ps = self.people.get(self.alias.get(po.track_id, po.track_id))
-        if ps is None and not self.r.closed_world:           # closed world: _closed_world() already placed every track
+        if ps is None and self.r.closed_world:               # _closed_world() left it unplaced (second box on someone)
+            return events
+        if ps is None:
             ps = self._stitch(po)
         if ps is None:
             ps = PersonState(po.track_id, self.t, self.t, po)
@@ -343,7 +346,8 @@ class EventEngine:
 
     def occupancy(self) -> int:
         """People inside right now: identities created minus exits and timeouts (visible or lost)."""
-        return sum(1 for ps in self.people.values() if ps.pid in self._present or self._in_pool(ps))
+        return sum(1 for ps in self.people.values()
+                   if not ps.exited and not ps.timed_out and (ps.pid in self._present or self._in_pool(ps)))
 
     def _cw_score(self, po: PersonObs, ps: PersonState) -> tuple[float, float | None]:
         """(score in [0, 1], appearance match probability or None) for `po` being the lost person `ps`."""
@@ -422,8 +426,23 @@ class EventEngine:
                     self._mark_uncertain(why, *([ps, other] if other else [ps]))
                     self.log.append(f"{self.t:.1f}s identity uncertain: {why}")
         for i, po in enumerate(inside):
-            if i not in taken:               # more new tracks than people unaccounted for
-                events.append(self._born(po, "missed_entry" if has_door else "no_door"))
+            if i in taken:
+                continue
+            # More new tracks than people unaccounted for. A box that starts on top of someone visible is far more
+            # often a second detection of them than a person nobody saw come in: leave it unplaced (no person, no
+            # events) and look again next frame. It takes over the identity if the other track ends, and becomes a
+            # person after all once it steps away or has lasted min_store_time_s.
+            fx, fy = po.foot_point(self.r.foot_point)
+            since = self._unplaced.setdefault(po.track_id, self.t)
+            if self.t - since < self.r.min_store_time_s and any(
+                    q.pid in self._present and q.last is not po and
+                    math.dist((fx, fy), q.last.foot_point(self.r.foot_point))
+                    <= self.r.stitch_dist * max(q.last.bbox[3] - q.last.bbox[1], 1.0) for q in self.people.values()):
+                self.cw_stats["second_box_frames_ignored"] += 1
+                continue
+            events.append(self._born(po, "missed_entry" if has_door else "no_door"))
+        waiting = {po.track_id for po in inside} - set(self.alias) - set(self.people)
+        self._unplaced = {tid: t for tid, t in self._unplaced.items() if tid in waiting}
         return events
 
     def _close_register(self, ps: PersonState) -> list[Event]:

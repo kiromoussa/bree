@@ -17,8 +17,10 @@ One logistic score fuses them (`match_prob`, weights fitted by scripts/reid_benc
 on MOT16). Position and time are NOT in the score: callers gate on them (stitch distance / walking speed).
 
 Privacy: features exist only in memory (PersonObs.reid, per-track and per-person galleries) and are dropped
-when the visit ends or after `max_age_s` (default 2 h). Nothing here writes to disk or the network, and
-nothing links one visit to another. See DECISIONS.md, "Re-identification without the face".
+when the visit ends or after `max_age_s` (default 2 h). With closed-world identity a lost shopper's gallery is
+kept until they exit or have not been seen for `closed_world_timeout_s` (default 60 min), then cleared.
+Nothing here writes to disk or the network, and nothing links one visit to another. See DECISIONS.md,
+"Re-identification without the face" and "Closed-world identity".
 """
 from __future__ import annotations
 

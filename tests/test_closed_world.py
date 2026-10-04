@@ -166,6 +166,16 @@ def test_a_flicker_that_never_came_through_the_door_is_not_a_person_to_come_back
     assert w.engine.alias == {} and w.engine.cw_stats["births_missed_entry"] == 2
 
 
+def test_second_box_on_a_visible_person_is_not_a_new_person():
+    near = (A[0] + 30, A[1], RED, BLUE)
+    w = walk_in(world(), {1: A}).step({1: A, 2: near}, n=10)       # nobody is lost, a second box sits on person 1
+    assert born(w) == {1: "entrance"} and w.engine.alias == {} and w.engine.occupancy() == 1
+    w.step({2: near}, n=5)                                         # the first track ends: the box carries the identity on
+    assert w.engine.alias == {2: 1} and born(w) == {1: "entrance"}
+    w = walk_in(world(), {1: A}).step({1: A, 2: near}, n=int(2.5 * FPS))
+    assert born(w)[2] == "missed_entry"                            # it stayed: a real person whose entry was missed
+
+
 # ------------------------------------------------------------------ deaths, memory
 
 

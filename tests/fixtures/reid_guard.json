@@ -20,14 +20,14 @@
    "clean_visit_rate": 0.2486
   },
   "closed_world": {
-   "splits": 72,
-   "false_merges": 66,
+   "splits": 71,
+   "false_merges": 68,
    "false_merges_silent": 4,
    "clean_visit_rate": 0.5763
   },
   "closed_world_reid": {
-   "splits": 30,
-   "false_merges": 24,
+   "splits": 29,
+   "false_merges": 26,
    "false_merges_silent": 0,
    "clean_visit_rate": 0.8192
   }

@@ -11,7 +11,7 @@ setup:            ## create venv, install pinned deps (CPU torch unless CUDA is 
 hw:               ## print detected hardware + chosen model sizes
 	$(PY) -m bree.hw
 
-test:             ## unit tests (ledger, events, sim, re-ID) + vision smoke tests + re-ID regression guard on MOT16
+test:             ## unit tests (ledger, events, sim, re-ID, closed-world identity) + vision smoke tests + re-ID regression guard on MOT16
 	$(PY) -m pytest
 
 test-fast:        ## unit tests only, no model weights needed
@@ -23,7 +23,7 @@ demo:             ## toy clips end to end: render -> detect -> track -> events -
 bench: reid-bench ## full benchmark: re-ID bench, then event-level sim + toy video + real-footage FPS; writes results/bench.json
 	$(PY) -m bree.cli bench
 
-reid-bench:       ## body re-ID: rank-1 / mAP, IDF1, ID switches, false merges, before vs after -> results/reid_bench.json
+reid-bench:       ## identity: re-ID rank-1 / mAP; off / re-ID / closed world / both on MOT16 (sanity), MERL, toy, scripted store -> results/reid_bench.json
 	$(PY) -m bree.eval.reid_bench
 
 sim:              ## event-level simulator only

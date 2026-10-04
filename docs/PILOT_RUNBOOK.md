@@ -73,7 +73,8 @@ alerts per hour; we need far fewer before anything is shown to staff).
   "alert only with concealment seen", everything else to a manager review queue.
 - **Missed thefts:** ask the operator for known shrink incidents in the period and check whether BREE flagged them.
 - **Per-camera tracking:** how often one shopper becomes several visits (`engine_log.txt`: "stitched" and "track lost
-  inside store" lines).
+  inside store" lines; with `closed_world: true` also "is person ... (closed world", "identity uncertain" and
+  "missed entry" lines, and the `identity` counts in `summary.json`).
 
 ## 5. Privacy and data
 - No face storage, no identity, no re-identification across visits. Evidence clips are written only for flagged

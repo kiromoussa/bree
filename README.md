@@ -44,7 +44,7 @@ Store layout: `--store configs/your_store.yaml` (zones are polygons in camera pi
 ### Drawing zones (install day)
 `scripts/draw_zones.py` grabs one frame (still image, video file or RTSP URL), opens it in an OpenCV
 window, and writes the store YAML: click a polygon, Enter, type its name and kind (shelf, cooler,
-register, exit); `f` toggles floor-point mode (click 4+ floor marks, type their x y in metres, for
+register, exit = the door, entrance = a one-way way in); `f` toggles floor-point mode (click 4+ floor marks, type their x y in metres, for
 multi-camera stores); `q` saves. Catalog, terminals, product classes, rules and ledger settings are
 kept from the template (`--out` if it exists, else the example config). The result is loaded back
 with the pipeline's own loader before the script says it is done.
@@ -80,6 +80,29 @@ the visit only (at most `reid_max_age_s`, default 2 h), are never written to dis
 there is no identity across visits. Some laws may still treat body or gait measurements as biometric
 data: read DECISIONS.md "Re-identification without the face" and get legal advice before a pilot.
 The first run exports `models/dinov2_vits14_reid.onnx` (downloads the DINOv2 weights once).
+
+### Closed-world identity (a store is a room with a door)
+`rules: {closed_world: true}` in the store YAML (off by default, see REPORT.md "Closed-world identity"
+for the numbers and why). A shopper who has been seen stays the same shopper until they leave through
+the door or have not been seen for `closed_world_timeout_s` (default 3600 s = 60 minutes). No new person
+is created in the middle of the store:
+- **Births only at the door**: a track that first appears in an `exit` or `entrance` zone, or within
+  `entry_border_px` of the frame edge (set it for a camera whose frame edge is the way in; 0 = off).
+  In the first `closed_world_warmup_s` (5 s) after start, people already inside may appear anywhere.
+- **Any other new track is one of the people already inside and not visible right now.** Which one is
+  solved as one assignment over all new tracks and all lost people (Hungarian), scored by appearance
+  (the re-ID match, only when `reid` is on), walkability from where they were last seen (floor metres
+  when the camera has `floor_points`, else body heights) and time since lost.
+- **Deaths only at the exit zone or the timeout.** A lost shopper keeps their basket and ledger state.
+- **Too close to call**: the track still gets exactly one identity, but both candidates are marked
+  `identity_uncertain` (for `closed_world_uncertain_s`, default the whole visit), and the ledger caps
+  any theft alert on them at the review tier, with the reason in `ledger_log.txt`.
+- **Occupancy**: if a track appears inside while nobody is unaccounted for, it becomes a person flagged
+  `missed_entry` (counted in `summary.json` under `identity`, logged in `engine_log.txt`). A second box
+  on top of someone visible is ignored for up to 2 s instead.
+Single camera only for now: with several cameras of one store it switches itself off (logged) and the
+floor-plan handoff stays in charge. Works with or without `reid`; with `reid` on, appearance features of
+a lost shopper stay in memory until they exit or time out, then are cleared (never on disk).
 
 ### Payments (POS / cooler taps)
 One JSON object per payment, e.g.
@@ -158,10 +181,12 @@ cp configs/shadow_example.yaml configs/shadow_store1.yaml   # camera RTSP URLs, 
 
 ```bash
 make demo       # 8 rendered TOY clips end to end (pixels -> tracker -> events -> ledger -> alerts) + scorecard
-make test       # unit tests: ledger, event engine, simulator, payments, re-ID; + vision smoke tests
+make test       # unit tests: ledger, event engine, simulator, payments, re-ID, closed-world identity
+                # (incl. a scripted multi-shopper store guard); + vision smoke tests
                 # + the re-ID regression guard (two MOT16 sequences; fails if IDF1 drops or false merges rise)
 make sim        # event-level simulator: ledger accuracy under perfect / baseline / 2x vision noise
-make reid-bench # re-ID: rank-1 / mAP, IDF1, ID switches, false merges, before vs after -> results/reid_bench.json
+make reid-bench # identity: re-ID rank-1 / mAP; off / re-ID / closed world / both on MOT16 (sanity), MERL,
+                # toy clips and a scripted store (false merges, splits, uncertain) -> results/reid_bench.json
 make bench      # reid-bench, then everything else -> results/bench.json + results/bench.md
 make dashboard  # local web page with live alerts + baskets (http://127.0.0.1:8080)
 make export     # YOLO -> ONNX for edge devices

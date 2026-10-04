@@ -1,6 +1,55 @@
 # BREE vision: report
 
-Four parts: **Re-ID without the face (2026-10-03)** first, then **Overnight (2026-10-01)**, then **Phase 2 (2026-09-30, real data)**, then the **Phase 1 report** unchanged. Every number names the file it came from; real-data results and simulated results are kept apart.
+Five parts: **Closed-world identity (2026-10-04)** first, then **Re-ID without the face (2026-10-03)**, then **Overnight (2026-10-01)**, then **Phase 2 (2026-09-30, real data)**, then the **Phase 1 report** unchanged. Every number names the file it came from; real-data results and simulated results are kept apart.
+
+# Closed-world identity (2026-10-04)
+
+**Bottom line.** Kiro's idea is built behind `rules: {closed_world: true}`: a store is a closed room with a door, people are only created at the door, a track that starts anywhere else is one of the shoppers already inside, and identities end at the exit or after 60 minutes unseen. On real footage (MERL) it cuts visits per shopper from 2.43 to 1.36, with or without re-ID, and removes the damage re-ID did there (4.64). **It is not the default yet.** The rule was "clearly better on store data without more false merges". MERL has one shopper per video and cannot show a false merge; the only multi-shopper store test here is scripted, and there closed world without appearance makes more than twice as many wrong joins as today (1,238 vs 554), because position cannot tell two people apart who were lost at the same time. 92% of those are marked uncertain and capped at review, so wrong joins that could silently reach an alert fall from 554 to 105, but the raw count goes up and 62% of visits end up review-only. Closed world plus re-ID beats today on every count, but re-ID is still waiting on legal advice. Everything below is from `results/reid_bench.json` (`make reid-bench`, run 2026-10-03/04); design in DECISIONS.md "Closed-world identity".
+
+**The four settings.** current = position/time stitching + ambiguity guard (the default). re-ID only = `reid: true`. A false merge is a track joined to another shopper's identity; "silent" means it was not marked uncertain, so an alert could rest on it. A split is one extra identity for one shopper.
+
+**MERL Shopping test subjects (real footage, 28 videos, overhead, one shopper per video: every extra visit is a split, no false merge is possible).**
+| | current | re-ID only | closed world | closed world + re-ID |
+|---|---|---|---|---|
+| visits per shopper | 2.43 | 4.64 | **1.36** | **1.36** |
+| videos with a split | 68% | 100% | 36% | 36% |
+| uncertain marks (28 videos) | n/a | n/a | 62 | 141 |
+The lab has no door in view, so this ran on the no-door fallback. The remaining 10 extra visits over 28 videos (out of 43 `no_door` and 39 warm-up births, most gone within 2 s) are tracks that appear while the shopper is still visible and stay or stand apart: a false detection or a second box that lasts. Closed world has no lost person to give those to. The uncertain marks come from the same ghost identities sitting in the lost pool as a second candidate; with re-ID on, more are added because the shopper seen from above often looks different from their own earlier crop (the same effect that broke re-ID only), which now costs a review-tier cap instead of a new person.
+
+**Scripted store (SYNTHETIC tracks, not footage: 1,000 episodes, 3,018 shoppers, 7,046 tracks, 4,028 reappearances after an occlusion; door zone of the example store; half the occlusions hide two shoppers at once and half of those trade places unseen; 5% of entries missed; 25% of extra shoppers dressed like someone else; appearance drawn at side-view quality).**
+| | current | re-ID only | closed world | closed world + re-ID |
+|---|---|---|---|---|
+| correct joins | 802 | 2,895 | 2,729 | 3,652 |
+| false merges | 554 | 17 | 1,238 | 314 |
+| of those, silent | 554 | 17 | 105 | 26 |
+| splits | 3,209 | 1,130 | 1,214 | 329 |
+| visits with one clean identity | 23% | 73% | 58% | 87% |
+| visits marked uncertain (alerts capped at review) | n/a | n/a | 62% | 17% |
+| missed-entry people created | n/a | n/a | 156 | 156 |
+This is a stress script (a tracker-id break every 4 to 10 s) written by the same hand as the code, and its appearance model is kinder than an overhead camera. It shows the shape of the trade, not rates to expect in a store: without appearance, closed world swaps splits for wrong joins it knows it is unsure about; with appearance it wins on both. A "split" under closed world is usually two shoppers swapped, not a new person.
+
+**Toy clips (full pipeline, 8 clips, 10 people, 2 thieves).** Same scorecard in all four settings: 2 alerts on thieves, 0 alerts and 0 reviews on honest shoppers. Tracks never break in these clips (10 births at the door, 0 assignments), so they only show the flag does no harm. Pipeline FPS in this run (14.7 / 7.7 / 8.3 / 5.0) was taken on a machine that slept and ran other jobs; not a cost measurement.
+
+**Simulator.** The event-level simulator (`make sim`, `results/bench.json`) does not go through the event engine, so the flag cannot change it. The simulator fixture (`make sim-fixture`) is three cameras, where closed world switches itself off (see limits), so it was not re-scored.
+
+**MOT16 train: sanity check only, excluded from the decision.** Street footage is open world: people walk in and out of every frame edge and most never come back, so the lost pool fills with people who are gone and each new pedestrian is forced onto one of them.
+| | current | re-ID only | closed world | closed world + re-ID |
+|---|---|---|---|---|
+| IDF1 | 0.441 | 0.443 | 0.290 | 0.294 |
+| ID switches | 441 | 434 | 354 | 357 |
+| joins | 29 | 31 | 554 | 555 |
+| false merges | 13 | 7 | 308 | 315 |
+As expected it is wrong there, and it knows it: 303 of the 308 wrong joins were marked uncertain. The flags-off rows are identical to the previous run, and the MOT16 regression guard in `make test` now asserts that.
+
+**Decision.** `closed_world` stays off in `EngineRules` and in `configs/store_gas_station_small.yaml`. What is in the way, exactly:
+1. Raw false merges rise without re-ID on the only multi-shopper store test (554 to 1,238), even though silent ones fall (554 to 105). If Kiro reads "false merges" as the silent ones, the rule is met and the switch is one line in the store YAML.
+2. No real store footage with several shoppers and identity labels. One labelled hour from the pilot camera would replace the scripted table.
+3. Re-ID is the setting that makes closed world win outright, and it is waiting on counsel (DECISIONS "Re-identification without the face"). With closed world on, re-ID no longer hurts MERL (1.36 either way).
+4. Single camera only: a multi-camera store falls back to the floor-plan handoff.
+
+**Tests.** `tests/test_closed_world.py`: 25 tests, including two shoppers lost at once and reappearing swapped (appearance sorts them out; without it both are marked uncertain), same clothes (one identity each, both uncertain), joint vs greedy assignment, missed entry, no-door fallback, frame border, timeout, features cleared at exit and timeout, basket kept through a loss, alert downgraded to review with the reason in the ledger log, and a seeded scripted-store guard against `tests/fixtures/reid_guard.json`.
+
+**Limits.** The uncertain period defaults to the whole visit; a finer rule (only items picked before the uncertain moment) is not built. The ledger drops a track silent for 1 h on its own, so the engine timeout should not be set above 3600 s. Score weights (0.5 / 0.35 / 0.15) and the 0.1 margin were set once and not fitted. The second-box rule was added after seeing first MERL numbers on train and test; its thresholds are existing ones.
 
 # Re-ID without the face (2026-10-03)
 

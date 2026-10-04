@@ -217,13 +217,150 @@
     "MOT16-11": 0.6358,
     "MOT16-13": 0.3898
    }
+  },
+  "closed_world": {
+   "mota": 0.32744300633112033,
+   "idf1": 0.290442692310132,
+   "num_switches": 354.0,
+   "num_fragmentations": 1373.0,
+   "recall": 0.37926943038032007,
+   "precision": 0.8863722958384488,
+   "stitches": 554,
+   "correct_merges": 79,
+   "false_merges": 308,
+   "unscored_stitches": 167,
+   "false_merge_rate": 0.7959,
+   "per_sequence_idf1": {
+    "MOT16-02": 0.2172,
+    "MOT16-04": 0.2947,
+    "MOT16-05": 0.2295,
+    "MOT16-09": 0.4007,
+    "MOT16-10": 0.3342,
+    "MOT16-11": 0.4206,
+    "MOT16-13": 0.1689
+   },
+   "closed_world": {
+    "births_warmup": 212,
+    "assigned": 554,
+    "uncertain_marks": 679,
+    "second_box_frames_ignored": 76,
+    "births_no_door": 1,
+    "false_merges_marked_uncertain": 303
+   }
+  },
+  "closed_world_reid": {
+   "mota": 0.3274158341409512,
+   "idf1": 0.2944642845815704,
+   "num_switches": 357.0,
+   "num_fragmentations": 1371.0,
+   "recall": 0.37926943038032007,
+   "precision": 0.8863722958384488,
+   "stitches": 555,
+   "correct_merges": 74,
+   "false_merges": 315,
+   "unscored_stitches": 166,
+   "false_merge_rate": 0.8098,
+   "per_sequence_idf1": {
+    "MOT16-02": 0.2388,
+    "MOT16-04": 0.295,
+    "MOT16-05": 0.2389,
+    "MOT16-09": 0.4001,
+    "MOT16-10": 0.3471,
+    "MOT16-11": 0.407,
+    "MOT16-13": 0.1676
+   },
+   "closed_world": {
+    "births_warmup": 212,
+    "assigned": 555,
+    "uncertain_marks": 776,
+    "second_box_frames_ignored": 106,
+    "births_no_door": 2,
+    "false_merges_marked_uncertain": 313
+   }
   }
  },
  "speed": {
-  "embedding_ms_per_crop_cpu_1_thread": 76.92,
-  "embedding_ms_per_crop_cpu_4_thread": 23.08,
-  "colors_shape_ms_per_crop": 0.564,
-  "in_pipeline_ms_per_crop_all_cues": 22.6
+  "embedding_ms_per_crop_cpu_1_thread": 73.77,
+  "embedding_ms_per_crop_cpu_4_thread": 23.18,
+  "colors_shape_ms_per_crop": 0.563,
+  "in_pipeline_ms_per_crop_all_cues": 20.58
+ },
+ "synthetic_store": {
+  "what": "SYNTHETIC scripted tracks (no footage): identity logic only",
+  "episodes": 1000,
+  "seed": 0,
+  "p_missed_entry": 0.05,
+  "p_lookalike": 0.25,
+  "rows": {
+   "off": {
+    "shoppers": 3018,
+    "tracks": 7046,
+    "reappearances": 4028,
+    "correct_joins": 802,
+    "false_merges": 554,
+    "false_merges_silent": 554,
+    "splits": 3209,
+    "clean_visits": 698,
+    "visits_uncertain": 0,
+    "tracks_never_placed": 0,
+    "clean_visit_rate": 0.2313,
+    "closed_world": {}
+   },
+   "reid": {
+    "shoppers": 3018,
+    "tracks": 7046,
+    "reappearances": 4028,
+    "correct_joins": 2895,
+    "false_merges": 17,
+    "false_merges_silent": 17,
+    "splits": 1130,
+    "clean_visits": 2207,
+    "visits_uncertain": 0,
+    "tracks_never_placed": 0,
+    "clean_visit_rate": 0.7313,
+    "closed_world": {}
+   },
+   "closed_world": {
+    "shoppers": 3018,
+    "tracks": 7046,
+    "reappearances": 4028,
+    "correct_joins": 2729,
+    "false_merges": 1238,
+    "false_merges_silent": 105,
+    "splits": 1214,
+    "clean_visits": 1763,
+    "visits_uncertain": 1882,
+    "tracks_never_placed": 1,
+    "clean_visit_rate": 0.5842,
+    "closed_world": {
+     "births_entrance": 2922,
+     "assigned": 3967,
+     "uncertain_marks": 3633,
+     "births_missed_entry": 156,
+     "second_box_frames_ignored": 729
+    }
+   },
+   "closed_world_reid": {
+    "shoppers": 3018,
+    "tracks": 7046,
+    "reappearances": 4028,
+    "correct_joins": 3652,
+    "false_merges": 314,
+    "false_merges_silent": 26,
+    "splits": 329,
+    "clean_visits": 2613,
+    "visits_uncertain": 523,
+    "tracks_never_placed": 2,
+    "clean_visit_rate": 0.8658,
+    "closed_world": {
+     "births_entrance": 2922,
+     "assigned": 3966,
+     "uncertain_marks": 742,
+     "births_missed_entry": 156,
+     "second_box_frames_ignored": 711
+    }
+   }
+  }
  },
  "toy": {
   "reid_off": {
@@ -234,7 +371,7 @@
    "alerts_on_honest": 0,
    "reviews_on_honest": 0,
    "reviews_on_thieves": 0,
-   "pipeline_fps": 15.4
+   "pipeline_fps": 14.7
   },
   "reid_on": {
    "people": 10,
@@ -244,7 +381,33 @@
    "alerts_on_honest": 0,
    "reviews_on_honest": 0,
    "reviews_on_thieves": 0,
-   "pipeline_fps": 15.0
+   "pipeline_fps": 7.7
+  },
+  "closed_world": {
+   "people": 10,
+   "thieves": 2,
+   "alerts_on_thieves": 2,
+   "missed_thieves": 0,
+   "alerts_on_honest": 0,
+   "reviews_on_honest": 0,
+   "reviews_on_thieves": 0,
+   "pipeline_fps": 8.3,
+   "closed_world": {
+    "births_entrance": 10
+   }
+  },
+  "closed_world_reid": {
+   "people": 10,
+   "thieves": 2,
+   "alerts_on_thieves": 2,
+   "missed_thieves": 0,
+   "alerts_on_honest": 0,
+   "reviews_on_honest": 0,
+   "reviews_on_thieves": 0,
+   "pipeline_fps": 5.0,
+   "closed_world": {
+    "births_entrance": 10
+   }
   }
  },
  "merl_test": {
@@ -262,6 +425,30 @@
    "videos": 28,
    "visits_per_video": 4.643,
    "videos_split": 1.0
+  },
+  "closed_world": {
+   "videos": 28,
+   "visits_per_video": 1.357,
+   "videos_split": 0.357,
+   "closed_world": {
+    "births_warmup": 39,
+    "assigned": 174,
+    "births_no_door": 43,
+    "uncertain_marks": 62,
+    "second_box_frames_ignored": 121
+   }
+  },
+  "closed_world_reid": {
+   "videos": 28,
+   "visits_per_video": 1.357,
+   "videos_split": 0.357,
+   "closed_world": {
+    "births_warmup": 39,
+    "assigned": 174,
+    "uncertain_marks": 141,
+    "births_no_door": 43,
+    "second_box_frames_ignored": 121
+   }
   }
  }
 }

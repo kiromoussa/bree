@@ -457,19 +457,22 @@ def synthetic_store_rows(episodes: int = 1000, seed: int = 0, fps: float = 10.0,
                         tot["false_merges_silent"] += (not ok) and eng.people[pid].uncertain_until < t
                     last_tid[pid] = tid
             eng.flush()
-            ident = {tid: eng.alias.get(tid, tid) for tid in gt}
+            # A track the engine never placed (a box next to someone, gone within 2 s) has no identity.
+            ident = {tid: pid for tid in gt if (pid := eng.alias.get(tid, tid)) in eng.people}
+            tot["tracks_never_placed"] += len(gt) - len(ident)
             owners = defaultdict(set)
             for tid, pid in ident.items():
                 owners[pid].add(gt[tid])
             for who in set(gt.values()):
-                mine = {ident[tid] for tid in gt if gt[tid] == who}
+                mine = {ident[tid] for tid in ident if gt[tid] == who}
                 tot["shoppers"] += 1
-                tot["splits"] += len(mine) - 1
+                tot["splits"] += max(len(mine) - 1, 0)
                 tot["clean_visits"] += len(mine) == 1 and owners[next(iter(mine))] == {who}
                 tot["visits_uncertain"] += any(eng.people[pid].uncertain_until >= eng.people[pid].t_last for pid in mine)
             tot.update({f"cw_{k}": v for k, v in eng.cw_stats.items()})
         out[name] = {k: tot[k] for k in ("shoppers", "tracks", "reappearances", "correct_joins", "false_merges",
-                                         "false_merges_silent", "splits", "clean_visits", "visits_uncertain")}
+                                         "false_merges_silent", "splits", "clean_visits", "visits_uncertain",
+                                         "tracks_never_placed")}
         out[name]["clean_visit_rate"] = round(tot["clean_visits"] / tot["shoppers"], 4)
         out[name]["closed_world"] = {k[3:]: v for k, v in tot.items() if k.startswith("cw_")}
         print(f"[reid-bench] synthetic store {name}: {out[name]}", flush=True)

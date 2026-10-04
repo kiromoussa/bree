@@ -161,7 +161,8 @@ def test_more_new_tracks_than_lost_people_extra_one_is_a_missed_entry():
 
 
 def test_a_flicker_that_never_came_through_the_door_is_not_a_person_to_come_back_to():
-    w = world().step({}, n=WARM).step({1: A}, n=3).step({}, n=30)  # 0.2 s false detection, then nothing
+    w = world(reid=True).step({}, n=WARM).step({1: A}, n=3).step({}, n=30)  # 0.2 s false detection, then nothing
+    assert w.engine.people[1].gallery == []                        # nothing to match it to later: forgotten at once
     w.step({2: B}, n=3)
     assert w.engine.alias == {} and w.engine.cw_stats["births_missed_entry"] == 2
 

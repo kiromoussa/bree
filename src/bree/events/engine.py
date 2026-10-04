@@ -472,7 +472,8 @@ class EventEngine:
             if self.r.closed_world:   # a lost person stays a candidate until they exit or time out
                 horizon = self.r.closed_world_timeout_s
             for ps in self.people.values():
-                if ps.gallery and ps.done and (ps.exited or self.t - ps.t_last > horizon):
+                flicker = self.r.closed_world and ps.born != "entrance" and ps.t_last - ps.t_first < self.r.min_store_time_s
+                if ps.gallery and ps.done and (ps.exited or flicker or self.t - ps.t_last > horizon):
                     ps.gallery.clear()
         for ps in self.people.values():
             if ps.done or ps.pid in seen:

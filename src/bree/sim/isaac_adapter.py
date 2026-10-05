@@ -66,6 +66,9 @@ def camera_params_from_layout(cam, near: float = 0.03, far: float = 60.0) -> dic
     fx = (w / 2) / math.tan(math.radians(cam["hfov"]) / 2)
     cy, sy, cp, sp = math.cos(cam["yaw"]), math.sin(cam["yaw"]), math.cos(cam["pitch"]), math.sin(cam["pitch"])
     r_three = np.array([[cy, 0, sy], [0, 1, 0], [-sy, 0, cy]]) @ np.array([[1, 0, 0], [0, cp, -sp], [0, sp, cp]])
+    if cam.get("roll"):       # benchmark clips carry the mounting roll (three.js rotation order YXZ)
+        cr, sr = math.cos(cam["roll"]), math.sin(cam["roll"])
+        r_three = r_three @ np.array([[cr, -sr, 0], [sr, cr, 0], [0, 0, 1]])
     r_usd = np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]]) @ r_three          # camera axes in the USD world
     view = np.eye(4)
     view[:3, :3] = r_usd.T
@@ -188,6 +191,12 @@ def find_cameras(sim_out: Path, layout) -> dict[str, dict]:
         c["frames"].sort(key=lambda p: int(re.findall(r"\d+", p.stem)[-1]))
         pfile = next(iter(sorted(c["dir"].rglob("camera_params_*.json"))), None)
         c["params"] = json.loads(pfile.read_text()) if pfile else None
+    clip = sim_out / "clip.json"      # a benchmark clip (scripts/bench/render_clip.mjs): one H.264 file per camera, used as it is
+    if clip.exists():
+        n = json.loads(clip.read_text())["frames"]
+        for cid in set(names.values()) - set(cams):
+            if (sim_out / f"{cid}.mp4").exists():
+                cams[cid] = {"frames": [None] * n, "dir": sim_out, "params": None, "video": sim_out / f"{cid}.mp4"}
     return cams
 
 
@@ -226,9 +235,11 @@ def adapt(sim_out, layout_path, work, fps: float | None = None, zone_owner: str 
     events = load_events(sim_out)
     found = find_cameras(sim_out, layout)
     if not found:
-        raise SystemExit(f"no rgb_*.png under a folder named like a layout camera in {sim_out}")
+        raise SystemExit(f"no rgb_*.png under a folder named like a layout camera, and no <camera>.mp4 beside a clip.json, in {sim_out}")
     by_id = {c["id"]: c for c in layout["cameras"]}
     fps_note = "given"
+    if fps is None and (sim_out / "clip.json").exists():
+        fps, fps_note = float(json.loads((sim_out / "clip.json").read_text())["fps"]), "from clip.json"
     if fps is None:
         fps, fps_note = infer_fps(sim_out, events, max(len(c["frames"]) for c in found.values()))
     zones3d = zones_3d(layout)
@@ -238,7 +249,7 @@ def adapt(sim_out, layout_path, work, fps: float | None = None, zone_owner: str 
         view, proj, w, h, note = load_camera(params, by_id[cid])
         if c["params"] is None:
             note += "; no camera_params file, matrices rebuilt from the layout"
-        cams[cid] = {"view": view, "proj": proj, "w": w, "h": h, "note": note, "frames": c["frames"], "zones": []}
+        cams[cid] = {"view": view, "proj": proj, "w": w, "h": h, "note": note, "frames": c["frames"], "zones": [], "video": c.get("video")}
         for z in zones3d:
             hit = project_zone(z["points"], view, proj, w, h)
             if hit:
@@ -256,16 +267,17 @@ def adapt(sim_out, layout_path, work, fps: float | None = None, zone_owner: str 
     out = {"fps": fps, "fps_note": fps_note, "cameras": [], "zone_owner": zone_owner,
            "zones_unseen": sorted(set(kinds) - set(seen))}
     for k, (cid, c) in enumerate(cams.items()):
-        if say:             # the slow part of the adapter (4MP PNGs to video): one line per camera
+        video = c["video"] or work / f"{cid}.mp4"
+        if say and not c["video"]:             # the slow part of the adapter (4MP PNGs to video): one line per camera
             say(f"camera {k + 1} of {len(cams)}: {cid}, {len(c['frames'])} frames to video")
-        video = work / f"{cid}.mp4"
-        vw = _video_writer(video, fps, c["w"], c["h"])
-        for png in c["frames"]:
+        vw = None if c["video"] else _video_writer(video, fps, c["w"], c["h"])
+        for png in c["frames"] if vw else []:
             img = cv2.imread(str(png), cv2.IMREAD_COLOR)
             if img is None or img.shape[:2] != (c["h"], c["w"]):
                 img = np.zeros((c["h"], c["w"], 3), np.uint8) if img is None else cv2.resize(img, (c["w"], c["h"]))
             vw.write(img)
-        vw.release()
+        if vw:
+            vw.release()
         names = {z["name"] for z in c["zones"]}
         reg = next((z["name"] for z in c["zones"] if z["kind"] == "register"), None)
         store = {"store": {"name": f"Isaac Sim layout ({cid})"},

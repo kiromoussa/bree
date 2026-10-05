@@ -130,16 +130,18 @@ def score(truth: list[dict], alerts: list[dict], layout: dict, duration_s: float
     }
 
 
-def sim_handoff(layout: dict, closed_world: bool = False, slots: bool = False) -> dict | None:
+def sim_handoff(layout: dict, closed_world: bool = False, slots: bool = False, calibration: dict | None = None) -> dict | None:
     """run_store `handoff` for a simulator run: store-wide closed-world identity, and / or the 3D slot of each
     pick from the layout's own camera poses (the design pose: a simulator camera hangs exactly where the
-    layout says, so this is calibration without error)."""
+    layout says, so this is calibration without error). `calibration`: {camera id: bree.calib.camera.Camera}
+    replaces the layout pose for those cameras (a benchmark clip's calibration.json: the pose with the
+    mounting error and roll the clip was rendered with)."""
     h: dict = {}
     if closed_world:
         h["closed_world"] = True
     if slots:
         from bree.calib.camera import from_layout
-        h.update(calibration={c["id"]: from_layout(c) for c in layout["cameras"]}, slots=layout)
+        h.update(calibration={c["id"]: from_layout(c) for c in layout["cameras"]} | (calibration or {}), slots=layout)
     return h or None
 
 

@@ -33,7 +33,6 @@ import json
 import os
 import shutil
 import sys
-import threading
 import time
 from pathlib import Path
 
@@ -42,61 +41,13 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from bree.edge.hub import BurstSource, Hub  # noqa: E402
-from bree.edge.node import build, load_node_config  # noqa: E402
 from bree.review.__main__ import ingest  # noqa: E402
 from bree.review.metrics import metrics, owner_markdown, owner_report  # noqa: E402
 from bree.review.store import ReviewStore  # noqa: E402
 from bree.sim import sim_eval  # noqa: E402
-from bree.sim.isaac_adapter import adapt  # noqa: E402
+from bree.sim.bench import edge_stage  # noqa: E402  (the node and hub stage, shared with the benchmark runner)
 
 NOTE = "SIMULATED (browser store simulator copy, scripts/train/render_synth.mjs --clip). Not real footage."
-
-
-def edge_stage(sim_out: Path, layout: Path, out: Path, max_frames: int | None) -> tuple[dict, dict]:
-    """Play each merch camera through a node into a hub. Returns ({camera: BurstSource}, stats)."""
-    ad = adapt(sim_out, layout, out / "node_inputs", zone_owner="all")     # a node triggers on every shelf it sees
-    hub = Hub(out / "hub", token="e2e")
-    httpd = hub.serve("127.0.0.1", 0)
-    url = f"http://127.0.0.1:{httpd.server_address[1]}"
-    sources, rows = {}, {}
-    for c in ad["cameras"]:
-        raw = yaml.safe_load(Path(c["store"]).read_text())
-        merch = [z for z in raw["zones"] if z["kind"] in ("shelf", "cooler")]
-        if c["kind"] not in ("shelf", "cooler") or not merch:      # the hardware plan: item cameras are the Pi nodes
-            rows[c["id"]] = {"kind": c["kind"], "frames": c["frames"],
-                             "path": "continuous stream" + ("" if c["kind"] not in ("shelf", "cooler") else " (no shelf or cooler zone in view)")}
-            continue
-        raw["node"] = {"source": c["video"], "fps": ad["fps"], "hub_url": url, "token": "e2e", "spool_dir": str(out / "spool" / c["id"])}
-        cfg_path = out / "node_inputs" / f"{c['id']}.node.yaml"
-        cfg_path.write_text(yaml.safe_dump(raw, sort_keys=False, default_flow_style=None))
-        node = build(load_node_config(cfg_path))
-        if max_frames:
-            node.source._src.max_frames = max_frames
-        stop = threading.Event()
-        th = threading.Thread(target=node.uplink.run, args=(stop,), daemon=True)
-        th.start()
-        node.run()
-        drained = node.uplink.drain(300)
-        stop.set()
-        th.join(5)
-        src = BurstSource(out / "hub" / c["id"])
-        sources[c["id"]] = src
-        sent = len(src)
-        rows[c["id"]] = {"kind": c["kind"], "path": "node -> hub", "frames": node.frames, "trigger_zones": len(merch),
-                         "triggers": node.triggers, "bursts": node.bursts, "frames_at_hub": sent,
-                         "share_of_frames_sent": round(sent / node.frames, 3) if node.frames else None,
-                         "burst_bytes": node.burst_bytes, "spool_drained": drained, "node_errors": len(node.errors),
-                         "trigger_ms_per_frame": round(1000 * node.trigger_s / max(node.frames, 1), 3),
-                         # every frame at the mean size of the frames that were sent (an estimate, not a second encode)
-                         "full_stream_bytes_estimate": round(node.burst_bytes / sent * node.frames) if sent else None}
-    hub.q.join()
-    httpd.shutdown()
-    nodes = [r for r in rows.values() if r["path"] == "node -> hub"]
-    total, sent = sum(r["frames"] for r in nodes), sum(r["frames_at_hub"] for r in nodes)
-    return sources, {"cameras": rows, "node_cameras": len(nodes), "node_frames": total, "node_frames_sent": sent,
-                     "share_of_node_frames_sent": round(sent / total, 3) if total else None,
-                     "hub_errors": hub.error_count}
 
 
 def funnel(sim_out: Path, run_dir: Path) -> dict | None:

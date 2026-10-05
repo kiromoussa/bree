@@ -1,0 +1,12 @@
+{
+ "what": "Fixed benchmark of SIMULATED store clips (browser simulator copy, scripts/bench/render_clip.mjs). Splits are by scenario seed and never overlap.",
+ "layout": "recommended-3d-45.json",
+ "root": "data/synth/bench",
+ "fps": 10,
+ "splits": {
+  "train": {"seeds": "1000:5000", "use": "training data only. 1000:1240 are the scenes the sim_sku detector was trained and validated on (make sku-data). Render any seed in this range with render_clip.mjs or scripts/train/render_synth.mjs."},
+  "scratch": {"seeds": "5000:6000", "use": "not part of the benchmark. 5001 is the clip of the first end to end run (make sku-clip-door); it was looked at while building the pipeline."},
+  "dev": {"seeds": [7001, 7002, 7003, 7004, 7005, 7006], "use": "tuning and diagnosis: make bench-dev"},
+  "test": {"seeds": [9001, 9002, 9003, 9004, 9005, 9006], "use": "final numbers only: make bench-test. Do not tune on it and do not look at its frames."}
+ }
+}

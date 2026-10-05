@@ -23,8 +23,12 @@ Python 3.11+, [uv](https://github.com/astral-sh/uv).
 ```bash
 make setup      # .venv with pinned deps (CPU torch if no NVIDIA GPU), downloads YOLO26 weights into models/
 make hw         # what hardware was detected and which model sizes that picks
-make data       # public data reachable from here (see data/README.md for the manual ones)
+make data       # public data reachable from here (see data/README.md for the manual ones); MOT16 is 1.95 GB
 ```
+
+The research repo (browser simulator, camera layouts) is expected at `~/bree`. The simulator renders, `make sku-*`
+and `make e2e-sim` read it from there; elsewhere, pass `SKU_LAYOUT=<layout.json>` to make and `--sim-src <dir>` to
+`scripts/train/render_synth.mjs`. Nothing else in this repo needs it.
 
 ## Run on a video file / webcam / RTSP camera
 
@@ -213,7 +217,7 @@ How the slot is found, best source first:
 
 The second camera does not need the shelf zone. Give each shelf zone to one camera (the one that raises the PICK); any other calibrated camera that sees the shopper's hand adds the second view. If two cameras both carry the same shelf zone, both raise a PICK and the basket counts the item twice.
 
-The error model has the same definition as the browser simulator's two-camera 3D metric (`TRI` in `~/bree/software/sim-prototype/js/cameras.js`): per camera, a 1 sigma miss across the line of sight of `sqrt((pixel error / pixels per metre)^2 + (range x pointing error)^2)`. `NoiseModel.pixel_px` is the simulator's `pxSigma`, `cam_rot_deg` is its `calibDeg`, and `cam_pos_m` (where the camera hangs) is a third term the simulator does not have. `tests/test_calib.py::test_error_model_is_the_simulators` checks the two-ray error against the simulator's formula. The defaults differ on purpose: the simulator scores a shelf point known to the nearest pixel (0.29 px, 0.1 degree), the pipeline locates a pose keypoint on a hand (`NoiseModel()` = 5 px, 2 cm, 0.2 degree; `NoiseModel.sim()` gives the simulator's). Set them with `multicam: {noise: {pixel_px: 5, cam_pos_m: 0.02, cam_rot_deg: 0.2}}`. The simulator run at the pipeline's values is in `~/bree/research/camera-layouts-3d.md` (addendum).
+The error model has the same definition as the browser simulator's two-camera 3D metric (`TRI` in `~/bree/software/sim-prototype/js/cameras.js`): per camera, a 1 sigma miss across the line of sight of `sqrt((pixel error / pixels per metre)^2 + (range x pointing error)^2)`. `NoiseModel.pixel_px` is the simulator's `pxSigma`, `cam_rot_deg` is its `calibDeg`, and `cam_pos_m` (where the camera hangs) is a third term the simulator does not have. `tests/test_calib.py::test_error_model_is_the_simulators` checks the two-ray error against the simulator's formula at the image centre. Against the simulator's real output the two agree within about 10% and the simulator is the more cautious one (pipeline error 0.891 to 0.999 of the simulator's on the 45 camera layout, audit 2026-10-05): it adds a lens edge loss and uses range where this code uses depth. The predicted error itself is first order and about 4% low, up to about 12% off axis (audit Monte Carlo). The defaults differ on purpose: the simulator scores a shelf point known to the nearest pixel (0.29 px, 0.1 degree), the pipeline locates a pose keypoint on a hand (`NoiseModel()` = 5 px, 2 cm, 0.2 degree; `NoiseModel.sim()` gives the simulator's). Set them with `multicam: {noise: {pixel_px: 5, cam_pos_m: 0.02, cam_rot_deg: 0.2}}`. The simulator run at the pipeline's values is in `~/bree/research/camera-layouts-3d.md` (addendum).
 
 The ledger still reconciles by category and does not read `meta["slot"]`. `make sim-eval SIM_ARGS=--slots` scores it against the simulator's slot.
 
@@ -247,6 +251,17 @@ hub:      POST /v1/burst ─► <out>/<camera>/burst/<boot>_<seq>/frame_0000.jpg
 Every frame in `burst.json` has the camera id, the node's monotonic time, the hub's wall time for it,
 the zone ids that were active, and whether it is `pre`, `during` or `post`.
 
+**What the hub keeps, and for how long.** A stored burst is raw full-resolution JPEGs. Heads are NOT pixelated
+in them (pixelation happens in what the pipeline writes: annotated video, alert clips). The hub deletes every
+burst folder, with its `burst.mp4` and `pipeline/` output, 24 hours after it was received:
+`--retain-hours 24` on `bree.edge.hub` (`Hub(retain_s=...)`), swept at start and every 10 minutes;
+`--retain-hours 0` keeps everything and is for recorded test runs only. `/v1/health` reports `retain_s` and
+`bursts_deleted_by_retention`. The review store's 30 days do not apply to these folders.
+
+**Pre-roll** is a time span (`pre_roll_s`), with `fps x pre_roll_s` frames as the upper bound because the
+frames sit raw in RAM. If the camera delivers faster than the configured `fps` the pre-roll is shorter
+(2 s configured at 10 fps is 1 s at a real 20 fps), so set `fps` to what the camera really delivers.
+
 Code: `src/bree/edge/trigger.py` (the detector), `capture.py` (camera sources, ring buffer, bursts),
 `uplink.py` (wire format, spool, retries, heartbeat; the reasons for HTTP are at the top),
 `node.py` (the loop and config), `hub.py` (receiver). Numbers: REPORT.md "Camera node first pass".
@@ -254,7 +269,7 @@ Code: `src/bree/edge/trigger.py` (the detector), `capture.py` (camera sources, r
 ### Try it on this machine (no Pi, no camera)
 
 ```bash
-make edge-test                                    # 29 tests, synthetic frames, real HTTP on localhost
+make edge-test                                    # 32 tests, synthetic frames, real HTTP on localhost
 # a hub, then a node that plays a toy clip as its camera (make demo renders the toy clips once):
 .venv/bin/python -m bree.edge.hub --out out/hub --host 127.0.0.1 --port 8787 --token demo \
     --store cam_main=configs/store_gas_station_small.yaml --backend toy &
@@ -327,7 +342,11 @@ run_store(cams, backend, "out/store", handoff={"closed_world": True})
 ```
 
 Each frame keeps the time the hub gave it, so floor-plan handoff, store-wide closed-world identity and the 3D slot
-of a pick (which need the same moment from two cameras) work across node cameras. It reads the bursts on disk when
+of a pick (which need the same moment from two cameras) work across node cameras. With real nodes (hub time) give
+every `BurstSource` the same `t0=` (for example the store's opening time as a Unix time); `run_store` refuses two
+hub-time sources without one, because each would start its clock at its own first frame. Frames that have no hub
+time (spooled before a node reboot, delivered after a hub restart) are dropped and counted in
+`dropped_no_hub_time`. It reads the bursts on disk when
 it starts (recorded bursts); following a live hub is not built. `make e2e-sim` runs this path on SIMULATED views.
 
 ## Shadow mode (pilot)
@@ -367,8 +386,9 @@ Code: `src/bree/review/`. Everything runs on the box. Nothing is sent anywhere.
 
 ```bash
 # 1. put alerts in the store (a pipeline run, or shadow mode's would_be_alerts.jsonl)
-.venv/bin/python -m bree.review --store out/review ingest out/demo/alerts.jsonl --camera cam1 \
-    --frames-log out/demo/frames.jsonl          # optional: pose windows for pick / conceal labels
+#    make demo writes one folder per clip: out/demo/<clip>/alerts.jsonl and frames.jsonl
+.venv/bin/python -m bree.review --store out/review ingest out/demo/walkout/alerts.jsonl --camera cam1 \
+    --frames-log out/demo/walkout/frames.jsonl  # optional: pose windows for pick / conceal labels
 .venv/bin/python -m bree.review --store out/review ingest out/shadow/would_be_alerts.jsonl
 
 # 2. review: http://127.0.0.1:8090/  (keys 1 to 4 decide and load the next alert;
@@ -492,8 +512,15 @@ make calib-bench   # SYNTHETIC: calibration error, 3D slot of a pick, store-wide
 make edge-test     # camera node and hub tests;  make edge-measure -> results/edge_measure_*.json
 make review-demo   # SYNTHETIC run of the review loop;  make review / make review-report on a real store
 make sku-data sku-train sku-eval   # SIMULATED: render, train and score the SKU detector -> results/sku_detector.*
-make e2e-sim       # SIMULATED end to end chain -> results/e2e_sim_chain.md
+make sku-clip-door && make e2e-sim   # SIMULATED end to end chain -> data/synth/clip_5001_door/e2e/e2e.md (E2E_RESULTS=e2e_sim_chain: results/)
+make gc            # drop unreachable git objects; run when nothing else is using the repo
 ```
+
+`make test` runs everything: 313 tests, about 11 minutes on this Mac (most of it the MOT16 guard and the vision smoke
+tests). `make test-fast` needs no model weights and takes about a minute (300 passed, 1 skipped, 12 deselected). The one
+skipped test drives the reviewer page in headless Chrome: set `BREE_PLAYWRIGHT=<path to node_modules/playwright>` (and have
+node and Chrome installed) to run it, then the fast suite is 301 passed and `make test` is 313 passed. Tests that need
+data or weights that are not there (MOT16, the sim-trained detector, `~/bree`) skip and say why.
 
 ## Simulator scoring (`make sim-eval`)
 
@@ -513,6 +540,10 @@ ground truth. The loop:
    #          SIM_ARGS="--closed-world --slots"   store-wide closed-world identity, 3D slot of each pick (scored against the sim's slot)
    make sim-fixture      # the same chain on a generated TOY fixture, no GPU needed (about a minute)
    ```
+   A real clip takes minutes, most of it before the pipeline starts: the adapter first turns each camera's PNGs
+   into a video. One run on this Mac (M1 Max, other jobs running), 6 cameras x 530 frames of 4MP with
+   `SIM_BACKEND=sim_sku`: 10 min 35 s, of which 8 min 42 s was the adapter and 1 min 52 s the pipeline. It prints
+   a line per stage, per camera and per 100 frames, so silence for more than a few minutes is a hang.
 4. **Scorecard** in `<SIM_OUT>/sim_eval/`: `scorecard.json`, `scorecard.md`, `inputs/` (what the adapter
    made), `pipeline/` (the usual `events.jsonl`, `alerts.jsonl`, `ledger_log.txt`). Change cameras or
    pipeline code, re-run, compare.
@@ -576,6 +607,7 @@ labelled frames. Numbers and limits: REPORT.md "SKU detector trained on simulate
 ```bash
 export BREE_PLAYWRIGHT=<path to node_modules/playwright>     # rendering needs Chrome, node 18+, network for three.js
 make sku-data       # render 240 randomised scenes from a private copy of the simulator, cut 640 px tiles, split by scene seed
+make sku-data SKU_SEEDS=1000:1004 SYNTH=out/synth_smoke      # smoke run: 4 scenes, all three splits present
 make sku-train      # YOLO26 nano, 6 epochs -> data/synth/weights/sim_sku.pt (+ .json record of what was trained)
 make sku-eval       # held-out scenes: mAP per SKU, pixels against accuracy, variant confusion, speed -> results/sku_detector.*
 make sku-clip       # one scenario as video frames in the folder shape sim-eval reads (add --cams to choose cameras)
@@ -593,7 +625,9 @@ make sku-finetune REAL_DATA=data/real_sku/data.yaml          # real labelled fra
   15 to 20 px, so the default holds and nothing supports raising it. By the item's own box the floor is about 15 px on the
   short side (92.4% at 15 to 20 px, 81.7% at 10 to 15 px). Simulated evidence; real frames replace it.
 - The simulator copy lives in `out/sim-copy` (made on first use; the original in `~/bree` is never run or edited). The one file
-  kept in this repo is the overlay `scripts/train/sim/synth.js`. Datasets, weights and clips are under `data/synth/` (gitignored;
+  kept in this repo is the overlay `scripts/train/sim/synth.js`. The copy is NOT refreshed when the simulator changes: which
+  version it is stands in `out/sim-copy/COPIED_FROM.json` and is written into every `clip.json` and dataset `meta.json`. Delete
+  `out/sim-copy` to render from the current simulator. Datasets, weights and clips are under `data/synth/` (gitignored;
   here 3.2 GB of frames, 2.9 GB of tiles and 8.1 GB for a 6 camera clip of 53 seconds).
 
 ## End to end on simulated data (`make e2e-sim`)
@@ -604,12 +638,17 @@ the review store with decisions taken from the simulator's ground truth, the wee
 scorecard. It also counts, on the simulator's ground-truth boxes of items in a hand, at which stage a pick is lost.
 
 ```bash
-make sku-clip && make e2e-sim                                 # -> results/e2e_sim_chain.md and .json
+make sku-clip-door && make e2e-sim       # the recorded run's clip (8 cameras, door camera included) -> data/synth/clip_5001_door/e2e/e2e.md
+make e2e-sim E2E_RESULTS=e2e_sim_chain   # the same, and replace the tracked results/e2e_sim_chain.md and .json
 .venv/bin/python scripts/e2e_sim_chain.py --sim-out data/synth/clip_5001_door [--no-edge] [--no-closed-world] [--no-slots]
+.venv/bin/python scripts/e2e_sim_chain.py --sim-out data/synth/clip_5001_door --refunnel      # recount the pick funnel of a finished run
 ```
 
+`make e2e-sim` does not touch `results/` unless `E2E_RESULTS` is set. `make sku-clip` (no `-door`) renders a different clip:
+the script picks the cameras and leaves the door camera out; it is what `make sim-eval-sku` reads.
+
 The recorded run (REPORT.md "End to end on simulated data") caught 0 of 2 simulated thefts with 0 alerts: no pick became a PICK
-event, because the item cameras rarely give a person box and the overhead cameras cannot see the items. The chain runs; the
+event, because the item cameras rarely give a tracked person and the overhead cameras cannot see the items. The chain runs; the
 recommended layout needs a pick decided across cameras, which is not built.
 
 ## Layout

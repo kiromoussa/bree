@@ -55,7 +55,7 @@ def test_take_then_put_back_is_read_from_the_shelf_alone():
     assert 1.9 <= evs[0]["t_start"] <= 2.1 and evs[0]["point_3d"] == [0.4, 1.0, 0.0]      # when the shelf was last as before
     assert play(sd, missing, 20) == []                               # reported once
     back = play(sd, full, 10)
-    assert [(e["kind"], e["slot_id"]) for e in back] == [("put", "S2")]
+    assert [(e["kind"], e["slot_id"]) for e in back] == [("put", "S2")] and back[0]["undoes"] == evs[0]["eids"]      # the put names the take it undoes
 
 
 def test_a_person_standing_still_is_not_a_shelf_event():

@@ -149,3 +149,24 @@ def test_evidence_crops_are_written_when_a_folder_is_given(tmp_path):
     full, missing = shelf_picture(CAM, [True] * 5), shelf_picture(CAM, [True, True, False, True, True])
     evs = [e for im in [full] * 10 + [missing] * 50 for e in sc.update(im)] + sc.finish()
     assert len(evs) == 1 and all((tmp_path / evs[0]["evidence"][k].split("/")[-1]).exists() for k in ("before", "after"))
+
+
+def test_a_take_is_timed_by_the_item_in_the_hand_when_the_slot_was_hidden_for_long():
+    """Somebody stands in front of a slot for six seconds before an item leaves it: the take is when the item is first
+    seen in a hand (less the usual lead), not when the slot was first hidden."""
+    from types import SimpleNamespace
+    sc = ShelfCamera("cam", CAM, LAYOUT, 10.0)
+    s = LAYOUT["slots"][0]
+    b = sc.diff.boxes[0] / sc.cfg.diff.scale
+    u, v = float(b[0] + b[2]) / 2, float(b[1] + b[3]) / 2
+    sc.cue = SimpleNamespace(tracks=[{"sku": s["skuId"], "obs": [(64, u, v, 0.8), (66, u + 5, v, 0.8)]}], hands=[])
+    ev = lambda t0, t1: {"camera_id": "cam", "t": t0, "t_start": t0, "t_end": t1, "kind": "take", "slot_id": s["id"], "sku_id": s["skuId"],      # noqa: E731
+                         "sku_conf": 0.9, "count": 1, "source": "shelf_diff", "point_3d": s["face"], "evidence": {"before": None, "after": None, "frames": []}}
+    assert sc._confirm(ev(0.5, 6.5))["t"] == pytest.approx(6.1)        # hidden from 0.5 s, item in the hand at 6.4 s
+    sc.cue.tracks[0].pop("used")
+    assert sc._confirm(ev(6.0, 6.2))["t"] == 6.0                       # seen after the window: the window's start stands
+    # a put: the item's track ends at the slot coming from further away (it went in), or starts there and leaves
+    sc.cue.tracks = [{"sku": s["skuId"], "obs": [(60, u + 60, v, 0.8), (64, u + 2, v, 0.8)]}]
+    assert sc._confirm({**ev(6.2, 6.6), "kind": "put"})["item_in"] is True
+    sc.cue.tracks = [{"sku": s["skuId"], "obs": [(60, u + 2, v, 0.8), (64, u + 60, v, 0.8)]}]
+    assert sc._confirm({**ev(6.2, 6.6), "kind": "put"})["item_in"] is False

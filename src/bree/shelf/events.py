@@ -13,6 +13,11 @@ the SKU is confirmed, the slot is the candidate with that SKU, and the time is t
 last (put) seen in the hand. A held item that appears at a slot of its SKU with no readable shelf change is reported
 as source "hand_item".
 
+Beyond the shared contract, for the join (bree.events.shelf.confirm_puts): a take carries "eids" (names of the
+readings it is made of), a put of the pixel comparison carries "undoes" (the names of the take whose place that camera
+saw go back to the picture from before), and a put with the item seen in a hand carries "item_in" (the item's track
+ends at the slot, coming from further away: it went in, it did not come out).
+
 Reads pixels, calibration and layout.json (the planogram). Never truth/.
 """
 from __future__ import annotations
@@ -50,6 +55,11 @@ class ShelfConfig:
     same_slot_m: float = 0.2           # one camera, two cues: slots this close are the same act
     repeat_s: float = 4.0              # one camera, a second take (or put) of the same or the neighbouring facing this soon,
     repeat_m: float = 0.1              # with no opposite event in between, is the same act read twice: dropped
+    put_in: tuple[float, float] = (0.25, 0.6)   # a put with the item seen going in: its track ends within this share of the
+                                       # search radius of the slot, at no more than this share of where it began (TRAIN-seed
+                                       # clips: 19 of 27 real put-backs with an item track pass, 9 of 38 other puts do)
+    item_lead_s: float = 0.3           # a taken item is first seen in the hand about this long after it left the slot
+                                       # (TRAIN-seed clips, 84 takes: median 0.17 s, 9 in 10 under 0.46 s)
 
 
 def skus_of(layout: dict) -> dict:
@@ -99,12 +109,14 @@ class ShelfCamera:
                 self.pending.remove(took)
                 self.dropped.append((took, e))
             elif twin is None and (again := self._repeat(e)) is not None:
+                self._absorb(again, e)
                 self.dropped.append((again, e))
             elif twin is not None and any(twin is p for p in self.pending):
                 cues = [*(twin.get("cues") or [twin.get("cue")]), e.get("cue")]
                 self._merge(twin, e)
                 twin["cues"] = cues
             elif twin is not None:
+                self._absorb(twin, e)
                 self.dropped.append((twin, e))     # already reported by the other cue
             else:
                 self.pending.append(e)
@@ -120,8 +132,20 @@ class ShelfCamera:
     def _out(self, ready: list[dict], t: float) -> list[dict]:
         if self.cue is not None:
             ready = [self._confirm(e) for e in ready] + self._hand_only(t)
+        for e in ready:        # every take has a name, so that a put can say which reading it undoes
+            if e["kind"] == "take" and not e.get("eids"):
+                e["eids"] = [f"{self.id}:{e['t_end']}:{e['slot_id']}:{e.get('cue')}"]
         self.emitted += ready
         return ready
+
+    @staticmethod
+    def _absorb(kept: dict, e: dict) -> None:
+        """`e` is dropped as a second reading of `kept`: its names stay with `kept`, so a later put that undoes `e`
+        is still understood. ponytail: `kept` may already have been handed out; a camera node that streams events
+        sends this as an amendment, the clip runner here writes its events at the end."""
+        for k in ("eids", "undoes"):
+            if e.get(k):
+                kept[k] = sorted({*(kept.get(k) or []), *e[k]})
 
     def _same_act(self, a: dict, b: dict) -> bool:
         """Two cues reporting one act (never two events of the same cue)."""
@@ -161,6 +185,9 @@ class ShelfCamera:
             base = {**base, "count": row["count"], "row": row["row"]}
         ev = {**base["evidence"], **{k: v for k, v in other["evidence"].items() if v and k != "frames"},
               "frames": sorted({*base["evidence"]["frames"], *other["evidence"]["frames"]})}
+        for k in ("eids", "undoes"):
+            if kept.get(k) or e.get(k):
+                base = {**base, k: sorted({*(kept.get(k) or []), *(e.get(k) or [])})}
         kept.update({**base, "t_end": kept["t_end"], "t": t, "t_start": min(base["t_start"], other["t_start"], kept["t_end"]), "source": "both", "cue": "both_cues", "evidence": ev,
                      "slots": list(base.get("slots") or []) + [x for x in other.get("slots") or [] if x[0] != base["slot_id"]]})
 
@@ -192,6 +219,13 @@ class ShelfCamera:
         if tr["sku"] != e["sku_id"] and e.get("cue") is None:       # the detector saw the SKU of a neighbouring candidate slot: that slot it is
             s = self.slots[sidx[cand_sku[tr["sku"]]]]
             e.update(slot_id=s["id"], sku_id=s.get("skuId"), point_3d=[round(float(x), 3) for x in s["face"]], slot_changed_by_detector=True)
+        if e["kind"] == "put":
+            d0, d1 = (float(np.hypot(o[1] - centre[0], o[2] - centre[1])) / reach for o in (tr["obs"][0], tr["obs"][-1]))
+            e["item_in"] = bool(d1 <= c.put_in[0] and d1 <= c.put_in[1] * d0)
+        if e["kind"] == "take" and e["t_start"] <= f / self.fps <= e["t_end"]:
+            # the slot was hidden from t_start (somebody stood in front of it) and the item is first seen in a hand
+            # inside that span: it left the shelf just before that sighting, not when the slot was first hidden
+            e["t"] = round(max(e["t"], f / self.fps - c.item_lead_s), 3)
         e.update(source="both", t_item=round(f / self.fps, 3), hand_px=[round(u, 1), round(v, 1)],
                  sku_conf=round(float(max(e["sku_conf"], np.mean([o[3] for o in obs]))), 3), detector_frames=len(obs))
         e["evidence"]["frames"] = sorted({*e["evidence"]["frames"], f})
@@ -300,6 +334,13 @@ def fuse_views(events: list[dict], layout: dict, cfg: ShelfConfig | None = None)
         else:
             out.append({**e, "cameras": [e["camera_id"]], "views": [e]})
     for g in out:
+        for k in ("eids", "undoes"):       # the readings this act is made of, and the readings it undoes
+            if any(v.get(k) for v in g["views"]):
+                g[k] = sorted({x for v in g["views"] for x in v.get(k) or []})
+        if g.get("eids"):                  # what each reading said, for when a put undoes some of them
+            g["read_as"] = {x: [v["slot_id"], v["sku_id"], v["source"] == "both", v.get("detector_frames") or 0] for v in g["views"] for x in v.get("eids") or []}
+        if g["kind"] == "put":
+            g["item_in"] = any(v.get("item_in") for v in g["views"])
         if len(g["views"]) < 2:
             continue
         votes: dict[str, float] = {}

@@ -307,7 +307,9 @@ class ShelfDiff:
             d = img[ay:ey, ax:ex].astype(np.int16) - before[ay - by:ey - by, ax - bx:ex - bx].astype(np.int16)
             if np.abs(d).max(axis=2).mean() < c.put_match:
                 del self.taken[j]
-                return self._event("put", j, take["sku_conf"], take["slots"], t0, cent, int(m.sum()))
+                # the put names the take it undoes: this camera saw this place go back to the picture from before that
+                # take, whether an item was returned or an arm that had covered the slot went away
+                return {**self._event("put", j, take["sku_conf"], take["slots"], t0, cent, int(m.sum())), "undoes": list(take["eids"])}
         if iou[best] < c.min_slot_iou:
             return None
         second = float(iou[order[1]]) if len(order) > 1 else 0.0
@@ -316,6 +318,7 @@ class ShelfDiff:
         # ponytail: units from patch area over one item's visible area, capped by the slot's facings. Reads 1 for a
         # single-facing slot always; a depth-aware count (how far back the new front item sits) is the upgrade.
         ev["count"] = int(np.clip(round(float(core.sum()) / max(int(self.area[best]), 1)), 1, max(int(self.slots[best].get("facings", 1)), 1)))
+        ev["eids"] = [f"{self.id}:{self.f}:{ev['slot_id']}"]      # a name for this reading, see "undoes" above
         self.taken[best] = (box, self.ref[y:y + h, x:x + w].copy(), ev)
         return ev
 

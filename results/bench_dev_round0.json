@@ -7,9 +7,9 @@
   "edge": true,
   "max_frames": null
  },
- "scored_at": "2026-10-05 14:52",
- "commit": "4dd290e",
- "wall_s": 3.4,
+ "scored_at": "2026-10-05 14:13",
+ "commit": "14655eb plus uncommitted changes in src",
+ "wall_s": 577.4,
  "scorecard": {
   "clips": 6,
   "sim_seconds": 421,
@@ -20,20 +20,20 @@
   "stolen_items": 20,
   "theft_recall_alert": 0.0,
   "thefts_alerted": 0,
-  "theft_recall_alert_or_review": 0.85,
-  "thefts_alerted_or_reviewed": 17,
+  "theft_recall_alert_or_review": 0.8,
+  "thefts_alerted_or_reviewed": 16,
   "thefts_alerted_with_the_right_sku": 0,
   "alerts": 0,
   "true_alerts": 0,
   "alert_precision": null,
   "false_alerts_on_honest_shoppers": 0,
   "false_alerts_on_nobody": 0,
-  "reviews": 16,
+  "reviews": 15,
   "reviews_on_honest_shoppers": 4,
   "false_alerts_per_hour": 0.0,
-  "pipeline_picks": 79,
+  "pipeline_picks": 90,
   "pick_recall": 0.957,
-  "pick_precision": 0.848,
+  "pick_precision": 0.744,
   "right_sku_of_paired_picks": 0.91,
   "right_sku_of_all_true_picks": 0.871,
   "right_slot_of_paired_picks": 0.851,
@@ -48,7 +48,7 @@
  },
  "funnel": {
   "picks": 70,
-  "through_every_stage": 25,
+  "through_every_stage": 18,
   "stages": [
    {
     "stage": "in_view",
@@ -100,20 +100,20 @@
    },
    {
     "stage": "conceal_or_pay_classified",
-    "passed_on_its_own": 50,
+    "passed_on_its_own": 49,
     "reached": 52,
-    "lost_here": 17
+    "lost_here": 18
    },
    {
     "stage": "ledger_basket",
-    "passed_on_its_own": 62,
-    "reached": 35,
-    "lost_here": 2
+    "passed_on_its_own": 56,
+    "reached": 34,
+    "lost_here": 8
    },
    {
     "stage": "alert",
-    "passed_on_its_own": 35,
-    "reached": 33,
+    "passed_on_its_own": 31,
+    "reached": 26,
     "lost_here": 8
    }
   ]
@@ -179,7 +179,7 @@
     },
     {
      "stage": "ledger_basket",
-     "passed_on_its_own": 17,
+     "passed_on_its_own": 18,
      "reached": 0,
      "lost_here": 0
     },
@@ -193,7 +193,7 @@
   },
   "paid": {
    "picks": 41,
-   "through_every_stage": 20,
+   "through_every_stage": 16,
    "stages": [
     {
      "stage": "in_view",
@@ -251,21 +251,21 @@
     },
     {
      "stage": "ledger_basket",
-     "passed_on_its_own": 38,
+     "passed_on_its_own": 31,
      "reached": 29,
-     "lost_here": 2
+     "lost_here": 8
     },
     {
      "stage": "alert",
-     "passed_on_its_own": 29,
-     "reached": 27,
-     "lost_here": 7
+     "passed_on_its_own": 26,
+     "reached": 21,
+     "lost_here": 5
     }
    ]
   },
   "put_back": {
    "picks": 9,
-   "through_every_stage": 5,
+   "through_every_stage": 2,
    "stages": [
     {
      "stage": "in_view",
@@ -317,21 +317,21 @@
     },
     {
      "stage": "conceal_or_pay_classified",
-     "passed_on_its_own": 9,
+     "passed_on_its_own": 8,
      "reached": 6,
-     "lost_here": 0
+     "lost_here": 1
     },
     {
      "stage": "ledger_basket",
      "passed_on_its_own": 7,
-     "reached": 6,
+     "reached": 5,
      "lost_here": 0
     },
     {
      "stage": "alert",
-     "passed_on_its_own": 6,
-     "reached": 6,
-     "lost_here": 1
+     "passed_on_its_own": 5,
+     "reached": 5,
+     "lost_here": 3
     }
    ]
   }
@@ -339,7 +339,7 @@
  "funnel_by_zone": {
   "checkout": {
    "picks": 9,
-   "through_every_stage": 6,
+   "through_every_stage": 4,
    "stages": [
     {
      "stage": "in_view",
@@ -397,21 +397,21 @@
     },
     {
      "stage": "ledger_basket",
-     "passed_on_its_own": 8,
+     "passed_on_its_own": 7,
      "reached": 6,
-     "lost_here": 0
+     "lost_here": 1
     },
     {
      "stage": "alert",
-     "passed_on_its_own": 7,
-     "reached": 6,
-     "lost_here": 0
+     "passed_on_its_own": 6,
+     "reached": 5,
+     "lost_here": 1
     }
    ]
   },
   "cooler": {
    "picks": 15,
-   "through_every_stage": 6,
+   "through_every_stage": 3,
    "stages": [
     {
      "stage": "in_view",
@@ -463,27 +463,27 @@
     },
     {
      "stage": "conceal_or_pay_classified",
-     "passed_on_its_own": 13,
+     "passed_on_its_own": 12,
      "reached": 8,
-     "lost_here": 1
+     "lost_here": 2
     },
     {
      "stage": "ledger_basket",
-     "passed_on_its_own": 13,
-     "reached": 7,
-     "lost_here": 1
+     "passed_on_its_own": 10,
+     "reached": 6,
+     "lost_here": 2
     },
     {
      "stage": "alert",
      "passed_on_its_own": 10,
-     "reached": 6,
-     "lost_here": 0
+     "reached": 4,
+     "lost_here": 1
     }
    ]
   },
   "gondola": {
    "picks": 46,
-   "through_every_stage": 13,
+   "through_every_stage": 11,
    "stages": [
     {
      "stage": "in_view",
@@ -541,15 +541,15 @@
     },
     {
      "stage": "ledger_basket",
-     "passed_on_its_own": 41,
+     "passed_on_its_own": 39,
      "reached": 22,
-     "lost_here": 1
+     "lost_here": 5
     },
     {
      "stage": "alert",
-     "passed_on_its_own": 18,
-     "reached": 21,
-     "lost_here": 8
+     "passed_on_its_own": 15,
+     "reached": 17,
+     "lost_here": 6
     }
    ]
   }
@@ -715,7 +715,7 @@
       "associated_to_a_shopper": true,
       "right_shopper": true,
       "conceal_or_pay_classified": false,
-      "ledger_basket": false,
+      "ledger_basket": true,
       "alert": false
      },
      "lost_at": "conceal_or_pay_classified",
@@ -840,11 +840,11 @@
       "right_sku": true,
       "associated_to_a_shopper": true,
       "right_shopper": true,
-      "conceal_or_pay_classified": true,
-      "ledger_basket": true,
-      "alert": true
+      "conceal_or_pay_classified": false,
+      "ledger_basket": false,
+      "alert": false
      },
-     "lost_at": null,
+     "lost_at": "conceal_or_pay_classified",
      "detail": {
       "item_frames": 23,
       "hand_frames": 20,
@@ -1051,10 +1051,10 @@
       "associated_to_a_shopper": true,
       "right_shopper": true,
       "conceal_or_pay_classified": true,
-      "ledger_basket": true,
+      "ledger_basket": false,
       "alert": false
      },
-     "lost_at": "alert",
+     "lost_at": "ledger_basket",
      "detail": {
       "item_frames": 31,
       "hand_frames": 72,
@@ -1094,7 +1094,7 @@
       "right_shopper": false,
       "conceal_or_pay_classified": true,
       "ledger_basket": false,
-      "alert": true
+      "alert": false
      },
      "lost_at": "right_slot",
      "detail": {
@@ -1136,7 +1136,7 @@
       "right_shopper": false,
       "conceal_or_pay_classified": true,
       "ledger_basket": true,
-      "alert": true
+      "alert": false
      },
      "lost_at": "hand_or_item_detected",
      "detail": {
@@ -1190,13 +1190,13 @@
      "clip": 7001,
      "alert_id": "A00001",
      "tier": "review",
-     "person_id": 2,
-     "shopper": "P007",
-     "true_theft": false,
-     "t_emitted": 57.3,
+     "person_id": 4,
+     "shopper": "P003",
+     "true_theft": true,
+     "t_emitted": 59.9,
      "skus": [
       "peanut_pilot",
-      "ridgeline_original"
+      "peanut_pilot"
      ],
      "confidence": 0.55
     },
@@ -1204,17 +1204,34 @@
      "clip": 7001,
      "alert_id": "A00002",
      "tier": "review",
-     "person_id": 4,
-     "shopper": "P003",
-     "true_theft": true,
-     "t_emitted": 64.9,
+     "person_id": 2,
+     "shopper": "P007",
+     "true_theft": false,
+     "t_emitted": 59.9,
      "skus": [
-      "peanut_pilot"
+      "peanut_pilot",
+      "caramel_crest",
+      "oatfield_cookies",
+      "caramel_crest",
+      "ridgeline_original"
+     ],
+     "confidence": 0.4
+    },
+    {
+     "clip": 7001,
+     "alert_id": "A00003",
+     "tier": "review",
+     "person_id": 7,
+     "shopper": "P005",
+     "true_theft": false,
+     "t_emitted": 61.9,
+     "skus": [
+      "lumen_citrus"
      ],
      "confidence": 0.5
     }
    ],
-   "pipeline_picks": 12,
+   "pipeline_picks": 14,
    "pipeline_picks_paired": 12,
    "identity": {
     "store_wide_ids": 9,
@@ -1233,8 +1250,8 @@
    },
    "pipeline_events": {
     "enter": 8,
-    "pick": 12,
-    "put_back": 4,
+    "pick": 14,
+    "put_back": 6,
     "exit": 7,
     "pay": 12
    },
@@ -1244,9 +1261,9 @@
     "max_frames": null,
     "fps": 10.0,
     "wall_s": {
-     "shelf": 0.0,
-     "people": 0.1,
-     "pipeline": 0.7
+     "shelf": 129.9,
+     "people": 172.0,
+     "pipeline": 172.7
     },
     "unreliable_camera_spans": 12,
     "shelf_events": 30,
@@ -1254,17 +1271,17 @@
     "unassigned_shelf_events": 4,
     "people": 8,
     "uncertain_people": 5,
-    "alerts": 2,
+    "alerts": 3,
     "review_store": {
-     "records": 2,
-     "new": 2
+     "records": 3,
+     "new": 3
     },
     "pipeline_events": {
      "enter": 8,
      "exit": 7,
      "pay": 12,
-     "pick": 12,
-     "put_back": 4
+     "pick": 14,
+     "put_back": 6
     }
    }
   },
@@ -1403,10 +1420,10 @@
       "associated_to_a_shopper": true,
       "right_shopper": true,
       "conceal_or_pay_classified": true,
-      "ledger_basket": true,
+      "ledger_basket": false,
       "alert": false
      },
-     "lost_at": "alert",
+     "lost_at": "ledger_basket",
      "detail": {
       "item_frames": 61,
       "hand_frames": 40,
@@ -1688,7 +1705,7 @@
      "t_pick": 23.6,
      "t_conceal": 29.47,
      "alert": false,
-     "alert_or_review": true,
+     "alert_or_review": false,
      "sku_in_alert": false,
      "time_to_alert_s": null
     },
@@ -1746,19 +1763,6 @@
      "clip": 7002,
      "alert_id": "A00001",
      "tier": "review",
-     "person_id": 4,
-     "shopper": "P003",
-     "true_theft": true,
-     "t_emitted": 45.4,
-     "skus": [
-      "relieva_aceta"
-     ],
-     "confidence": 0.65
-    },
-    {
-     "clip": 7002,
-     "alert_id": "A00002",
-     "tier": "review",
      "person_id": 6,
      "shopper": "P005",
      "true_theft": true,
@@ -1771,20 +1775,23 @@
     },
     {
      "clip": 7002,
-     "alert_id": "A00003",
+     "alert_id": "A00002",
      "tier": "review",
-     "person_id": 5,
+     "person_id": 4,
      "shopper": "P004",
      "true_theft": true,
-     "t_emitted": 77.9,
+     "t_emitted": 72.9,
      "skus": [
+      "relieva_aceta",
+      "sierra_ranch",
+      "voltlink_micro",
       "arcwave_tropical",
       "voltlink_usbc"
      ],
-     "confidence": 0.55
+     "confidence": 0.6
     }
    ],
-   "pipeline_picks": 9,
+   "pipeline_picks": 11,
    "pipeline_picks_paired": 9,
    "identity": {
     "store_wide_ids": 6,
@@ -1801,7 +1808,7 @@
    },
    "pipeline_events": {
     "enter": 5,
-    "pick": 9,
+    "pick": 11,
     "put_back": 1,
     "pay": 6,
     "exit": 5
@@ -1812,9 +1819,9 @@
     "max_frames": null,
     "fps": 10.0,
     "wall_s": {
-     "shelf": 0.0,
-     "people": 0.1,
-     "pipeline": 0.6
+     "shelf": 134.0,
+     "people": 176.6,
+     "pipeline": 177.2
     },
     "unreliable_camera_spans": 21,
     "shelf_events": 17,
@@ -1822,16 +1829,16 @@
     "unassigned_shelf_events": 0,
     "people": 5,
     "uncertain_people": 0,
-    "alerts": 3,
+    "alerts": 2,
     "review_store": {
-     "records": 3,
-     "new": 3
+     "records": 2,
+     "new": 2
     },
     "pipeline_events": {
      "enter": 5,
      "exit": 5,
      "pay": 6,
-     "pick": 9,
+     "pick": 11,
      "put_back": 1
     }
    }
@@ -2055,8 +2062,8 @@
       "associated_to_a_shopper": true,
       "right_shopper": true,
       "conceal_or_pay_classified": true,
-      "ledger_basket": false,
-      "alert": false
+      "ledger_basket": true,
+      "alert": true
      },
      "lost_at": "right_slot",
      "detail": {
@@ -2182,7 +2189,7 @@
       "right_shopper": true,
       "conceal_or_pay_classified": true,
       "ledger_basket": true,
-      "alert": false
+      "alert": true
      },
      "lost_at": "hand_or_item_detected",
      "detail": {
@@ -2323,11 +2330,11 @@
      "person_id": 3,
      "shopper": "P002",
      "true_theft": true,
-     "t_emitted": 33.7,
+     "t_emitted": 36.0,
      "skus": [
       "peanut_pilot"
      ],
-     "confidence": 0.65
+     "confidence": 0.5
     },
     {
      "clip": 7003,
@@ -2338,25 +2345,14 @@
      "true_theft": true,
      "t_emitted": 45.9,
      "skus": [
-      "torqueline_5w30"
+      "torqueline_5w30",
+      "sierra_ranch",
+      "sierra_ranch"
      ],
-     "confidence": 0.65
-    },
-    {
-     "clip": 7003,
-     "alert_id": "A00003",
-     "tier": "review",
-     "person_id": 5,
-     "shopper": "P004",
-     "true_theft": false,
-     "t_emitted": 61.2,
-     "skus": [
-      "crunchly_classic"
-     ],
-     "confidence": 0.5
+     "confidence": 0.75
     }
    ],
-   "pipeline_picks": 10,
+   "pipeline_picks": 12,
    "pipeline_picks_paired": 10,
    "identity": {
     "store_wide_ids": 8,
@@ -2375,8 +2371,8 @@
    "pipeline_events": {
     "enter": 7,
     "pay": 10,
-    "pick": 10,
-    "put_back": 2,
+    "pick": 12,
+    "put_back": 5,
     "exit": 7
    },
    "run": {
@@ -2385,9 +2381,9 @@
     "max_frames": null,
     "fps": 10.0,
     "wall_s": {
-     "shelf": 0.0,
-     "people": 0.1,
-     "pipeline": 0.5
+     "shelf": 101.0,
+     "people": 164.5,
+     "pipeline": 165.0
     },
     "unreliable_camera_spans": 17,
     "shelf_events": 23,
@@ -2395,17 +2391,17 @@
     "unassigned_shelf_events": 0,
     "people": 7,
     "uncertain_people": 0,
-    "alerts": 3,
+    "alerts": 2,
     "review_store": {
-     "records": 3,
-     "new": 3
+     "records": 2,
+     "new": 2
     },
     "pipeline_events": {
      "enter": 7,
      "exit": 7,
      "pay": 10,
-     "pick": 10,
-     "put_back": 2
+     "pick": 12,
+     "put_back": 5
     }
    }
   },
@@ -2462,9 +2458,9 @@
       "right_shopper": true,
       "conceal_or_pay_classified": true,
       "ledger_basket": true,
-      "alert": true
+      "alert": false
      },
-     "lost_at": null,
+     "lost_at": "alert",
      "detail": {
       "item_frames": 32,
       "hand_frames": 36,
@@ -2546,9 +2542,9 @@
       "right_shopper": true,
       "conceal_or_pay_classified": true,
       "ledger_basket": true,
-      "alert": true
+      "alert": false
      },
-     "lost_at": null,
+     "lost_at": "alert",
      "detail": {
       "item_frames": 82,
       "hand_frames": 63,
@@ -2629,8 +2625,8 @@
       "associated_to_a_shopper": true,
       "right_shopper": true,
       "conceal_or_pay_classified": true,
-      "ledger_basket": true,
-      "alert": true
+      "ledger_basket": false,
+      "alert": false
      },
      "lost_at": "right_slot",
      "detail": {
@@ -2756,9 +2752,9 @@
       "right_shopper": true,
       "conceal_or_pay_classified": true,
       "ledger_basket": true,
-      "alert": true
+      "alert": false
      },
-     "lost_at": null,
+     "lost_at": "alert",
      "detail": {
       "item_frames": 38,
       "hand_frames": 42,
@@ -2852,10 +2848,25 @@
      "clip": 7004,
      "alert_id": "A00001",
      "tier": "review",
+     "person_id": 2,
+     "shopper": "P001",
+     "true_theft": false,
+     "t_emitted": 53.7,
+     "skus": [
+      "sierra_ranch",
+      "pacer_punch",
+      "pacer_punch"
+     ],
+     "confidence": 0.6
+    },
+    {
+     "clip": 7004,
+     "alert_id": "A00002",
+     "tier": "review",
      "person_id": 5,
      "shopper": "P004",
      "true_theft": true,
-     "t_emitted": 83.7,
+     "t_emitted": 78.7,
      "skus": [
       "relieva_aceta",
       "caramel_crest"
@@ -2863,7 +2874,7 @@
      "confidence": 0.55
     }
    ],
-   "pipeline_picks": 10,
+   "pipeline_picks": 12,
    "pipeline_picks_paired": 9,
    "identity": {
     "store_wide_ids": 5,
@@ -2879,8 +2890,8 @@
    },
    "pipeline_events": {
     "enter": 4,
-    "pick": 10,
-    "put_back": 2,
+    "pick": 12,
+    "put_back": 4,
     "pay": 8,
     "exit": 4
    },
@@ -2890,27 +2901,27 @@
     "max_frames": null,
     "fps": 10.0,
     "wall_s": {
-     "shelf": 0.0,
-     "people": 0.1,
-     "pipeline": 0.6
+     "shelf": 124.6,
+     "people": 203.5,
+     "pipeline": 204.2
     },
     "unreliable_camera_spans": 9,
     "shelf_events": 27,
-    "store_shelf_events": 17,
+    "store_shelf_events": 18,
     "unassigned_shelf_events": 2,
     "people": 4,
     "uncertain_people": 2,
-    "alerts": 1,
+    "alerts": 2,
     "review_store": {
-     "records": 1,
-     "new": 1
+     "records": 2,
+     "new": 2
     },
     "pipeline_events": {
      "enter": 4,
      "exit": 4,
      "pay": 8,
-     "pick": 10,
-     "put_back": 2
+     "pick": 12,
+     "put_back": 4
     }
    }
   },
@@ -2966,7 +2977,7 @@
       "associated_to_a_shopper": true,
       "right_shopper": true,
       "conceal_or_pay_classified": false,
-      "ledger_basket": false,
+      "ledger_basket": true,
       "alert": false
      },
      "lost_at": "conceal_or_pay_classified",
@@ -3008,10 +3019,10 @@
       "associated_to_a_shopper": true,
       "right_shopper": true,
       "conceal_or_pay_classified": true,
-      "ledger_basket": true,
+      "ledger_basket": false,
       "alert": true
      },
-     "lost_at": null,
+     "lost_at": "ledger_basket",
      "detail": {
       "item_frames": 59,
       "hand_frames": 70,
@@ -3386,10 +3397,10 @@
       "associated_to_a_shopper": true,
       "right_shopper": true,
       "conceal_or_pay_classified": true,
-      "ledger_basket": true,
+      "ledger_basket": false,
       "alert": true
      },
-     "lost_at": null,
+     "lost_at": "ledger_basket",
      "detail": {
       "item_frames": 38,
       "hand_frames": 41,
@@ -3429,7 +3440,7 @@
       "right_shopper": true,
       "conceal_or_pay_classified": true,
       "ledger_basket": false,
-      "alert": false
+      "alert": true
      },
      "lost_at": "right_slot",
      "detail": {
@@ -3441,7 +3452,7 @@
       "right_sku_detected": false,
       "person_detected": false,
       "hand_detected": true,
-      "event_t": 36.0,
+      "event_t": 36.4,
       "event_zone": "CD05",
       "event_sku": "lumen_citrus",
       "event_slot": "D5-S3-5",
@@ -3483,7 +3494,7 @@
       "right_sku_detected": false,
       "person_detected": false,
       "hand_detected": true,
-      "event_t": 36.3,
+      "event_t": 36.6,
       "event_zone": "G3",
       "event_sku": "torqueline_10w30",
       "event_slot": "G3R-S4-1",
@@ -3513,9 +3524,9 @@
       "right_shopper": true,
       "conceal_or_pay_classified": true,
       "ledger_basket": true,
-      "alert": false
+      "alert": true
      },
-     "lost_at": "alert",
+     "lost_at": null,
      "detail": {
       "item_frames": 30,
       "hand_frames": 39,
@@ -3545,7 +3556,7 @@
      "t_pick": 8.57,
      "t_conceal": 20.23,
      "alert": false,
-     "alert_or_review": false,
+     "alert_or_review": true,
      "sku_in_alert": false,
      "time_to_alert_s": null
     },
@@ -3615,10 +3626,26 @@
      "clip": 7005,
      "alert_id": "A00001",
      "tier": "review",
+     "person_id": 2,
+     "shopper": "P001",
+     "true_theft": true,
+     "t_emitted": 45.2,
+     "skus": [
+      "peanut_pilot",
+      "voltlink_micro",
+      "orchard_peach",
+      "cocoa_crest"
+     ],
+     "confidence": 0.6
+    },
+    {
+     "clip": 7005,
+     "alert_id": "A00002",
+     "tier": "review",
      "person_id": 4,
      "shopper": "P003",
      "true_theft": true,
-     "t_emitted": 39.6,
+     "t_emitted": 45.6,
      "skus": [
       "clearwell_water"
      ],
@@ -3626,30 +3653,19 @@
     },
     {
      "clip": 7005,
-     "alert_id": "A00002",
+     "alert_id": "A00003",
      "tier": "review",
      "person_id": 7,
      "shopper": "P006",
      "true_theft": true,
-     "t_emitted": 61.9,
+     "t_emitted": 64.5,
      "skus": [
       "voltlink_micro",
-      "torqueline_10w30"
-     ],
-     "confidence": 0.55
-    },
-    {
-     "clip": 7005,
-     "alert_id": "A00003",
-     "tier": "review",
-     "person_id": 8,
-     "shopper": "P008",
-     "true_theft": false,
-     "t_emitted": 69.5,
-     "skus": [
+      "torqueline_10w30",
+      "pacer_orange",
       "lumen_citrus"
      ],
-     "confidence": 0.5
+     "confidence": 0.6
     },
     {
      "clip": 7005,
@@ -3658,16 +3674,15 @@
      "person_id": 6,
      "shopper": "P005",
      "true_theft": true,
-     "t_emitted": 69.5,
+     "t_emitted": 64.5,
      "skus": [
       "ridgeline_original",
-      "relieva_aceta",
-      "cocoa_crest"
+      "relieva_aceta"
      ],
-     "confidence": 0.6
+     "confidence": 0.55
     }
    ],
-   "pipeline_picks": 19,
+   "pipeline_picks": 21,
    "pipeline_picks_paired": 12,
    "identity": {
     "store_wide_ids": 10,
@@ -3688,8 +3703,8 @@
    "pipeline_events": {
     "enter": 9,
     "pay": 12,
-    "pick": 19,
-    "put_back": 9,
+    "pick": 21,
+    "put_back": 15,
     "exit": 9
    },
    "run": {
@@ -3698,13 +3713,13 @@
     "max_frames": null,
     "fps": 10.0,
     "wall_s": {
-     "shelf": 0.0,
-     "people": 0.1,
-     "pipeline": 0.8
+     "shelf": 117.9,
+     "people": 194.4,
+     "pipeline": 195.1
     },
     "unreliable_camera_spans": 13,
     "shelf_events": 61,
-    "store_shelf_events": 33,
+    "store_shelf_events": 35,
     "unassigned_shelf_events": 0,
     "people": 9,
     "uncertain_people": 6,
@@ -3717,8 +3732,8 @@
      "enter": 9,
      "exit": 9,
      "pay": 12,
-     "pick": 19,
-     "put_back": 9
+     "pick": 21,
+     "put_back": 15
     }
    }
   },
@@ -3860,10 +3875,10 @@
       "associated_to_a_shopper": true,
       "right_shopper": true,
       "conceal_or_pay_classified": true,
-      "ledger_basket": true,
-      "alert": false
+      "ledger_basket": false,
+      "alert": true
      },
-     "lost_at": "alert",
+     "lost_at": "ledger_basket",
      "detail": {
       "item_frames": 44,
       "hand_frames": 30,
@@ -3945,9 +3960,9 @@
       "right_shopper": true,
       "conceal_or_pay_classified": true,
       "ledger_basket": true,
-      "alert": true
+      "alert": false
      },
-     "lost_at": null,
+     "lost_at": "alert",
      "detail": {
       "item_frames": 52,
       "hand_frames": 45,
@@ -4071,7 +4086,7 @@
       "right_shopper": true,
       "conceal_or_pay_classified": true,
       "ledger_basket": false,
-      "alert": false
+      "alert": true
      },
      "lost_at": "ledger_basket",
      "detail": {
@@ -4113,9 +4128,9 @@
       "right_shopper": true,
       "conceal_or_pay_classified": true,
       "ledger_basket": true,
-      "alert": false
+      "alert": true
      },
-     "lost_at": "alert",
+     "lost_at": null,
      "detail": {
       "item_frames": 30,
       "hand_frames": 28,
@@ -4155,7 +4170,7 @@
       "right_shopper": true,
       "conceal_or_pay_classified": true,
       "ledger_basket": true,
-      "alert": true
+      "alert": false
      },
      "lost_at": "right_slot",
      "detail": {
@@ -4238,7 +4253,7 @@
       "associated_to_a_shopper": true,
       "right_shopper": true,
       "conceal_or_pay_classified": false,
-      "ledger_basket": true,
+      "ledger_basket": false,
       "alert": false
      },
      "lost_at": "conceal_or_pay_classified",
@@ -4322,10 +4337,10 @@
       "associated_to_a_shopper": true,
       "right_shopper": true,
       "conceal_or_pay_classified": true,
-      "ledger_basket": true,
-      "alert": true
+      "ledger_basket": false,
+      "alert": false
      },
-     "lost_at": null,
+     "lost_at": "ledger_basket",
      "detail": {
       "item_frames": 4,
       "hand_frames": 42,
@@ -4365,9 +4380,9 @@
       "right_shopper": true,
       "conceal_or_pay_classified": true,
       "ledger_basket": true,
-      "alert": true
+      "alert": false
      },
-     "lost_at": null,
+     "lost_at": "alert",
      "detail": {
       "item_frames": 57,
       "hand_frames": 62,
@@ -4409,7 +4424,7 @@
      "t_pick": 37.57,
      "t_conceal": 49.67,
      "alert": false,
-     "alert_or_review": true,
+     "alert_or_review": false,
      "sku_in_alert": false,
      "time_to_alert_s": null
     },
@@ -4431,45 +4446,34 @@
      "clip": 7006,
      "alert_id": "A00001",
      "tier": "review",
-     "person_id": 5,
-     "shopper": "P001",
-     "true_theft": false,
-     "t_emitted": 52.2,
-     "skus": [
-      "caramel_crest",
-      "pacer_orange"
-     ],
-     "confidence": 0.55
-    },
-    {
-     "clip": 7006,
-     "alert_id": "A00002",
-     "tier": "review",
      "person_id": 3,
      "shopper": "P002",
      "true_theft": true,
      "t_emitted": 70.6,
      "skus": [
       "torqueline_5w30",
-      "peanut_pilot"
+      "peanut_pilot",
+      "peanut_pilot",
+      "caramel_crest",
+      "pacer_orange"
      ],
-     "confidence": 0.55
+     "confidence": 0.6
     },
     {
      "clip": 7006,
-     "alert_id": "A00003",
+     "alert_id": "A00002",
      "tier": "review",
-     "person_id": 7,
-     "shopper": "P006",
-     "true_theft": true,
-     "t_emitted": 72.1,
+     "person_id": 6,
+     "shopper": "P004",
+     "true_theft": false,
+     "t_emitted": 78.3,
      "skus": [
-      "peanut_pilot"
+      "caramel_crest"
      ],
      "confidence": 0.5
     }
    ],
-   "pipeline_picks": 19,
+   "pipeline_picks": 20,
    "pipeline_picks_paired": 15,
    "identity": {
     "store_wide_ids": 9,
@@ -4488,8 +4492,8 @@
    },
    "pipeline_events": {
     "enter": 8,
-    "pick": 19,
-    "put_back": 9,
+    "pick": 20,
+    "put_back": 15,
     "pay": 18,
     "exit": 8
    },
@@ -4499,27 +4503,27 @@
     "max_frames": null,
     "fps": 10.0,
     "wall_s": {
-     "shelf": 0.0,
-     "people": 0.1,
-     "pipeline": 0.9
+     "shelf": 137.9,
+     "people": 191.6,
+     "pipeline": 192.5
     },
     "unreliable_camera_spans": 8,
     "shelf_events": 76,
-    "store_shelf_events": 31,
+    "store_shelf_events": 33,
     "unassigned_shelf_events": 0,
     "people": 8,
     "uncertain_people": 6,
-    "alerts": 3,
+    "alerts": 2,
     "review_store": {
-     "records": 3,
-     "new": 3
+     "records": 2,
+     "new": 2
     },
     "pipeline_events": {
      "enter": 8,
      "exit": 8,
      "pay": 18,
-     "pick": 19,
-     "put_back": 9
+     "pick": 20,
+     "put_back": 15
     }
    }
   }

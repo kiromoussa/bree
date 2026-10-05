@@ -97,6 +97,109 @@ Clothing colour alone does not move theft recall (11 against 12), it moves ident
 - **Not measured:** the shelf rules were tuned with the old weights and `make shelf-eval` was not repeated with
   `sim_sku_hands_v3`; the old weights were not run through the DEV benchmark; nothing was run on TEST.
 
+## 2026-10-05: improvement round 1 on DEV (SIMULATED): receipts, puts, parties
+
+All numbers are from the six simulated DEV clips (20 stolen items, 22 honest shoppers). TEST was not touched. The
+shelf events and person boxes of the round 0 run were reused (`make bench-dev BENCH_ARGS=--keep`): nothing before
+tracking changed. Round 0 is kept in `results/bench_dev_round0.md`.
+
+| | round 0 | round 1 |
+|---|---|---|
+| theft recall, alert or review | 0.80 (16/20) | 0.85 (17/20) |
+| theft recall, alert tier | 0/20 | 0/20 |
+| reviews on honest shoppers | 4 of 22 | 4 of 22 |
+| pick recall | 0.957 | 0.957 |
+| pick precision | 0.744 (90 PICK events) | 0.848 (79) |
+| right SKU of paired picks | 0.910 | 0.910 |
+| identities per shopper | 1.27 | 1.27 |
+| receipts credited to the true payer | 17 of 29 | 28 of 29 |
+
+The goal is not met: 4 honest shoppers in 22 get a review (the bar is 1 in 10). They are review tier, there is no
+alert tier at all.
+
+**Stage picked.** The funnel's largest loss is "conceal or pay classified" (17 stolen items): no camera reports a
+concealment. That stage does not decide the review tier, though. With the true concealment times fed in
+(`results/assoc_dev_oracle_conceal.json`) theft recall at alert or review stays 0.80. What decided the misses and the
+honest reviews was the ledger getting wrong inputs, so that is where the cases were read.
+
+**Root cause, one sentence.** The register feed stamps a receipt 1.5 to 4.5 s after the payment, when the payer has
+left the counter and the next shopper stands there, and the ledger gave the receipt to whoever stood at the counter
+at the stamp (or to whoever held the same product), so 12 of 29 receipts went to the wrong shopper; the join then
+passed every shelf event to the ledger although most puts and all slot-watch-only takes are false.
+
+What was changed (each is a rule, no clip is named anywhere):
+
+1. **Receipts go to who was served** (`LedgerConfig.pos_lag_s`, set to 1.5 to 4.5 s in `bree.shelf.store`, the
+   delay written in `scripts/bench/render_clip.mjs`). Candidates are the people at the counter between stamp minus
+   4.5 s and stamp minus 1.5 s; time is ranked before basket content; a receipt cannot match an item taken after its
+   stamp. Receipts on the true payer: 17 to 26 of 29, thefts 16 to 17.
+2. **Which shelf events reach the ledger** (`bree.events.shelf.confirm_puts`). A take from the slot watch alone is
+   dropped (0 of 6 such events matched an act on the TRAIN-seed clips of `make shelf-eval`, all 6 on DEV were
+   unpaired). A put counts only when the item was seen in the hand going in or it lands within 0.25 m of where that
+   person took something still out (4 of 23 one-cue puts were true on the TRAIN-seed clips). A put that fits two
+   people about equally goes to the one who took from that place. A put at the place of a take returns that item
+   even when the two readings name different products. A count above 1 is one unit (0 of 5 right on DEV, the shelf
+   stream had asked for this).
+3. **One reach, measured along the floor** (`one_act_per_reach`): two readings of one reach at two shelf heights of
+   one bay or cooler door were 1.1 m apart in 3D and stayed two takes. The merge is repeated until nothing changes,
+   because two readings of one reach can first go to two people.
+4. **A paid item nobody saw taken explains one unpaid pick** (`LedgerConfig.misread_factor` 0.5): vision named the
+   product wrong. Concealed items are never discounted.
+5. **A party walks together** (`bree.events.shelf.parties`, ENTER meta `party`): entering within 4 s is no longer
+   enough, the two must stay within 1.5 m for half of their time on the floor. No DEV shopper pair does. Before,
+   strangers were pooled and the scorer credited a pooled review to whichever of them had more boxes.
+
+What-ifs on the stored shelf events and person boxes, in the order built ("pooled": strangers who enter within 4 s
+are one party, as in round 0):
+
+| step | thefts flagged, pooled | honest reviewed, pooled | thefts, not pooled | honest, not pooled | pick precision |
+|---|---|---|---|---|---|
+| round 0 | 16 | 4 | 15 (measured in round 0) | 7 (measured in round 0) | 0.744 |
+| 1 receipts | 17 | 4 | not run | not run | 0.744 |
+| + 2 puts and count (before the slot watch rule) | 16 | 3 | 17 | 5 | 0.761 |
+| + 2 slot watch alone dropped | 16 | 3 | 17 | 4 | 0.817 |
+| + 3 reach along the floor | 16 | 3 | 17 | 4 | 0.838 |
+| + 4 misread factor | 15 | 2 | 17 | 3 | 0.838 |
+| + 5 parties, merge repeated: the final setting | | | 17 | 4 | 0.848 |
+
+The last step went from 3 to 4 honest reviews: the "not pooled" rows above still pooled people with the same
+entry time, and one honest shopper (7005) had been inside such a pool.
+
+Checked on the final setting: `misread_factor` 1.0 gives 17 thefts and 5 honest reviews. `pos_lag_s` (0, 0) gives 16
+thefts and 2 honest reviews, which would read as meeting the bar. It was not taken: in that setting receipts go to
+the wrong shopper (18 of 29 right in the same what-if one step earlier) and unclaimed receipts of other shoppers
+pay for the false items of honest ones. Lag windows of 1 to 5 s and 2 to 4 s gave the same 17 thefts and 3 honest reviews as 1.5 to 4.5 (run one step
+earlier, before the party rule).
+
+Tried and reverted (each made DEV worse or was right too rarely):
+
+- A person walking in at the door never takes over an identity lost further inside: fixed the 7001 case, but
+  identities covering two shoppers went from 6 to 9 and thefts from 17 to 16.
+- "Where they took it" measured along the floor, 0.25 to 1 m: thefts fell to 13 and then 11 (false puts erased
+  stolen items).
+- A both-cue put that names nothing in the basket returns the nearest item taken within 1 m: 16 thefts and 2 honest
+  reviews, but only 2 of its 6 uses were real put-backs and 3 stolen items were erased. Not kept.
+- Pick confidence 0.6 or 0.7 for one-cue takes, association groups of 3 or 4 s, reach window of 5 to 8 s: no change
+  in flags (the longer reach window lowers pick recall to 0.943).
+
+### What is left (DEV, round 1)
+
+- **3 missed thefts.** 7005 P007: the pick was never seen by any camera's cues (lost at "hand or item detected").
+  7001 P001: the identity that took the item was handed to the next shopper who came in 7 s later, so the item sits
+  on an honest shopper. 7005 P001: a counter item seen by the pixel comparison alone, a 4 s stop at the counter with
+  no receipt, scored 0.27 after the "register visit without receipt" discount.
+- **4 honest shoppers reviewed**, each from a different vision error: the 7001 identity hand-over above; a take
+  read 0.7 m from its true slot with the wrong product, so its correct put-back did not match (7003); a put-back
+  read at the neighbouring cooler door (7005); a take read twice 4.2 s apart plus a take 5 m from a shopper who was
+  out of view (7006).
+- **Put-backs are the weakest input.** 10 of 43 put events on DEV matched an act (0.385 on the TRAIN-seed clips).
+  Two of the four honest reviews are a real put-back the pipeline could not use. This is in `bree.shelf` (per
+  camera), not in the join.
+- **No alert tier.** Still no concealment cue.
+- **Tests:** the full suite ran on the final code: 407 passed, 1 skipped, none failed (counted from the progress
+  lines of `out/bench/round1/tests_full.log`; the log has no closing summary line). 9 tests are new
+  (`tests/test_ledger.py`, `tests/test_association.py`).
+
 ## 2026-10-05: fixed benchmark and baseline (SIMULATED)
 
 Everything here is simulated: 12 clips from the browser store simulator copy on the recommended-3d-45 layout.

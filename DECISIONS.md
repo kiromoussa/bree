@@ -356,6 +356,39 @@ An independent audit re-ran the commands behind the reports and probed the code.
 - **`motmetrics` is a declared dependency** (`dev` extra) and MOT16 is fetched by `make data`.
 - **Not changed:** the first-order triangulation error is left as it is (audit Monte Carlo: about 4% low, up to about 12% off axis); the docstring says so. Four edge slots the simulator calls localisable project 2.4 to 3.0 px outside the frame in `from_layout` (audit); noted, no action.
 
+## Improvement round 1 on DEV (2026-10-05)
+
+- **The POS lag is a setting of the store, 1.5 to 4.5 s for the simulated register feed.** `LedgerConfig.pos_lag_s`
+  defaults to (0, 0) (receipt stamped while the payer stands there, the old behaviour). `bree.shelf.store.POS_LAG_S`
+  sets it from the delay written in `scripts/bench/render_clip.mjs`. It is a property of the feed, the same for
+  every clip and split, not a value fitted to DEV; 1 to 5 s and 2 to 4 s give the same DEV result. A real store
+  measures its register clock against the camera clock once.
+- **Time before content when crediting a receipt.** The old order (basket match first) let a thief's unpaid item
+  pull in the receipt of the next customer who bought the same product. The 56 existing ledger and payment tests
+  pass unchanged.
+- **Correct receipts kept although the wrong ones scored better on one count.** With the lag off DEV shows 2 honest
+  reviews instead of 4 (and 16 thefts instead of 17), because unclaimed receipts of other shoppers pay for false
+  items. That is an accident of which products are popular, so it was not used to meet the bar.
+- **Puts must be confirmed, slot-watch-only takes are dropped, a count above 1 is one unit.** The evidence is from
+  TRAIN-seed clips (`out/shelf/eval_all9.json` joined with the stored events: slot watch alone 0 of 6 takes true,
+  one-cue puts 4 of 23 true) and agrees with DEV. Cost: a real put-back seen by one cue at a slot more than 0.25 m
+  from the read take is ignored; two units taken in one reach are one.
+- **"Same place" for a put is 0.25 m in 3D, not a reach.** Wider (or along the floor) lets false puts erase stolen
+  items: DEV thefts fell from 17 to 13 and 11.
+- **One reach is measured along the floor.** Cost: two takes from two shelf heights of one bay within 4 s by one
+  shopper are one take.
+- **`misread_factor` 0.5**, the same size as `ambiguous_factor`: one unmatched paid item halves one open unpaid
+  pick, the weakest first. A thief who pays for an item whose pick was missed and openly carries one other item out
+  is no longer reviewed on that item alone; a concealed item is never discounted.
+- **Parties come from the floor tracks** (ENTER meta `party`); the 4 s entry window stays as the fallback for
+  callers that give no party information (the single-camera engine). First values, not swept: 1.5 m, half the
+  common time, at least 5 s together. No simulated clip has a real party, so only a unit test covers the positive
+  case.
+- **Pick confidence of one-cue takes stays 0.9.** 0.6 would match the TRAIN-seed precision (18 of 32 one-cue takes true) but changed
+  nothing on DEV, so it was left alone.
+- **The DEV result of this round reuses the stored shelf events and person boxes** (`--keep`), since no code before
+  tracking changed.
+
 ## Integration of the shelf, association, hand detector, benchmark and plates streams (2026-10-05)
 
 - **One runner.** `bree.shelf.store:run` is the multi-camera path and the default of `make bench-dev`. The

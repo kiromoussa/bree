@@ -660,8 +660,8 @@ the planogram, `register.jsonl`):
 |---|---|---|---|
 | shelf events | shelf rail, cooler, counter | `bree.shelf.events` with the `sim_sku_hands_v3` weights | takes and puts per slot, no person box needed |
 | people | overhead, entrance | `bree.track.people`, `bree.track.floor` | one floor track per shopper, with clothing colour to keep two people apart who pass each other |
-| who took it | | `bree.track.associate`, `bree.shelf.store.one_act_per_reach`, `bree.events.shelf` | PICK / PUT_BACK per shopper, one per reach, plus ENTER, PAY (register visit), EXIT |
-| theft at exit | | `bree.ledger` with the register feed | alerts and reviews in `alerts.jsonl`, ingested into a review store (`<out>/review`) |
+| who took it | | `bree.track.associate`, `bree.shelf.store.one_act_per_reach`, `bree.events.shelf` | PICK / PUT_BACK per shopper, one per reach, plus ENTER (with who they walk with), PAY (register visit), EXIT. Slot-watch-only takes and unconfirmed puts are not passed on (`confirm_puts`) |
+| theft at exit | | `bree.ledger` with the register feed (`pos_lag_s`: how long after the payment the receipt is stamped, 1.5 to 4.5 s for the simulated feed, set per store) | alerts and reviews in `alerts.jsonl`, ingested into a review store (`<out>/review`) |
 
 ```
 .venv/bin/python -m bree.shelf.store <clip folder> <out folder>            # everything

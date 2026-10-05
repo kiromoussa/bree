@@ -1,0 +1,87 @@
+{
+ "clip": 5001,
+ "cameras": [
+  "TRACK-2",
+  "TRACK-3"
+ ],
+ "shoppers": 4,
+ "people_made": 5,
+ "staff_ids": [
+  4
+ ],
+ "shopper_ids": 4,
+ "ids_per_shopper": 1.0,
+ "ids_by_item_in_hand": {
+  "P001": [
+   1
+  ],
+  "P002": [
+   2
+  ],
+  "P003": [
+   5
+  ],
+  "P004": [
+   3
+  ]
+ },
+ "ids_holding_two_shoppers_items": 1,
+ "exits_seen": 4,
+ "uncertain_ids": 3,
+ "counts": {
+  "not_placed": 146,
+  "births_door": 4,
+  "births_inside": 1,
+  "encounter_marks": 1,
+  "second_box_frames": 2,
+  "hand_backs": 6,
+  "uncertain_marks": 1
+ },
+ "tracks": [
+  {
+   "id": 1,
+   "from_s": 3.2,
+   "to_s": 24.6,
+   "state": "exited",
+   "staff": false,
+   "born": "door",
+   "uncertain": null
+  },
+  {
+   "id": 4,
+   "from_s": 10.0,
+   "to_s": 52.9,
+   "state": "live",
+   "staff": true,
+   "born": "inside",
+   "uncertain": "first seen inside the store with nobody unaccounted for (entry not seen)"
+  },
+  {
+   "id": 2,
+   "from_s": 4.0,
+   "to_s": 38.8,
+   "state": "exited",
+   "staff": false,
+   "born": "door",
+   "uncertain": "ids 2 and 3 were within 0.2 m of each other at 13.0s and may have been swapped"
+  },
+  {
+   "id": 5,
+   "from_s": 12.1,
+   "to_s": 43.6,
+   "state": "exited",
+   "staff": false,
+   "born": "door",
+   "uncertain": null
+  },
+  {
+   "id": 3,
+   "from_s": 8.0,
+   "to_s": 51.9,
+   "state": "exited",
+   "staff": false,
+   "born": "door",
+   "uncertain": "ids 2 and 3 were within 0.2 m of each other at 13.0s and may have been swapped"
+  }
+ ]
+}

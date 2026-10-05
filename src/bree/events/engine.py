@@ -89,6 +89,10 @@ class EngineRules:
     reid_max_speed: float = 1.5     # ...if they could have walked there (body heights per second)
     reid_max_age_s: float = 7200.0  # features older than this are forgotten (one store visit at most)
     # Closed-world identity (module docstring; DECISIONS "Closed-world identity"). Replaces the stitching above.
+    # Item cameras whose picks come from shelf events (bree.events.shelf: shelf diff / item in hand, then the
+    # store-wide association): this engine's own single-view PICK and PUT_BACK are not emitted. A rail camera sees
+    # the shelf and the item but rarely a whole person, so the single-view rule found 0 of 7 picks there.
+    picks_from_shelf_events: bool = False
     closed_world: bool = False
     closed_world_timeout_s: float = 3600.0   # unseen this long without an exit = gone (identity and features dropped)
     closed_world_warmup_s: float = 5.0       # after start, people already inside may appear anywhere
@@ -195,12 +199,17 @@ class EventEngine:
         events += self._check_releases()
         events += self._check_conceals()
         events += self._check_gone(seen)
-        return events
+        return self._without_picks(events)
+
+    def _without_picks(self, events: list[Event]) -> list[Event]:
+        if not self.r.picks_from_shelf_events:
+            return events
+        return [e for e in events if e.type not in (EventType.PICK, EventType.PUT_BACK)]
 
     def flush(self) -> list[Event]:
         """End of stream: everyone still visible is treated as gone now."""
         self.t += max(self.r.person_lost_s, self.r.exit_confirm_s, self.r.conceal_confirm_s) + 1e-3
-        return self._check_releases() + self._check_conceals() + self._check_gone(set())
+        return self._without_picks(self._check_releases() + self._check_conceals() + self._check_gone(set()))
 
     # --------------------------------------------------------------- persons
 

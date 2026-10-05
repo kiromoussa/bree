@@ -1,0 +1,161 @@
+{
+ "label": "SYNTHETIC scripted scenes (geometry only, no images)",
+ "scripted_tracks": {
+  "scenes": 200,
+  "all": {
+   "events": 462,
+   "right_shopper": 450,
+   "right_shopper_rate": 0.974,
+   "right_and_sure": 348,
+   "wrong_and_sure": 0,
+   "marked_uncertain": 114,
+   "wrong_and_uncertain": 12,
+   "unassigned": 0
+  },
+  "clear_cases": {
+   "events": 375,
+   "right_shopper": 371,
+   "right_shopper_rate": 0.989,
+   "right_and_sure": 341,
+   "wrong_and_sure": 0,
+   "marked_uncertain": 34,
+   "wrong_and_uncertain": 4,
+   "unassigned": 0
+  },
+  "by_case": {
+   "alone": {
+    "events": 85,
+    "right_shopper": 84,
+    "right_shopper_rate": 0.988,
+    "right_and_sure": 83,
+    "wrong_and_sure": 0,
+    "marked_uncertain": 2,
+    "wrong_and_uncertain": 1,
+    "unassigned": 0
+   },
+   "same_shelf": {
+    "events": 112,
+    "right_shopper": 110,
+    "right_shopper_rate": 0.982,
+    "right_and_sure": 90,
+    "wrong_and_sure": 0,
+    "marked_uncertain": 22,
+    "wrong_and_uncertain": 2,
+    "unassigned": 0
+   },
+   "other_side": {
+    "events": 81,
+    "right_shopper": 81,
+    "right_shopper_rate": 1.0,
+    "right_and_sure": 80,
+    "wrong_and_sure": 0,
+    "marked_uncertain": 1,
+    "wrong_and_uncertain": 0,
+    "unassigned": 0
+   },
+   "passer_by": {
+    "events": 97,
+    "right_shopper": 96,
+    "right_shopper_rate": 0.99,
+    "right_and_sure": 88,
+    "wrong_and_sure": 0,
+    "marked_uncertain": 9,
+    "wrong_and_uncertain": 1,
+    "unassigned": 0
+   },
+   "shoulder": {
+    "events": 87,
+    "right_shopper": 79,
+    "right_shopper_rate": 0.908,
+    "right_and_sure": 7,
+    "wrong_and_sure": 0,
+    "marked_uncertain": 80,
+    "wrong_and_uncertain": 8,
+    "unassigned": 0
+   }
+  }
+ },
+ "floor_tracker": {
+  "scenes": 200,
+  "all": {
+   "events": 462,
+   "right_shopper": 446,
+   "right_shopper_rate": 0.965,
+   "right_and_sure": 233,
+   "wrong_and_sure": 0,
+   "marked_uncertain": 229,
+   "wrong_and_uncertain": 16,
+   "unassigned": 0
+  },
+  "clear_cases": {
+   "events": 375,
+   "right_shopper": 366,
+   "right_shopper_rate": 0.976,
+   "right_and_sure": 228,
+   "wrong_and_sure": 0,
+   "marked_uncertain": 147,
+   "wrong_and_uncertain": 9,
+   "unassigned": 0
+  },
+  "by_case": {
+   "alone": {
+    "events": 85,
+    "right_shopper": 84,
+    "right_shopper_rate": 0.988,
+    "right_and_sure": 58,
+    "wrong_and_sure": 0,
+    "marked_uncertain": 27,
+    "wrong_and_uncertain": 1,
+    "unassigned": 0
+   },
+   "same_shelf": {
+    "events": 112,
+    "right_shopper": 106,
+    "right_shopper_rate": 0.946,
+    "right_and_sure": 64,
+    "wrong_and_sure": 0,
+    "marked_uncertain": 48,
+    "wrong_and_uncertain": 6,
+    "unassigned": 0
+   },
+   "other_side": {
+    "events": 81,
+    "right_shopper": 80,
+    "right_shopper_rate": 0.988,
+    "right_and_sure": 56,
+    "wrong_and_sure": 0,
+    "marked_uncertain": 25,
+    "wrong_and_uncertain": 1,
+    "unassigned": 0
+   },
+   "passer_by": {
+    "events": 97,
+    "right_shopper": 96,
+    "right_shopper_rate": 0.99,
+    "right_and_sure": 50,
+    "wrong_and_sure": 0,
+    "marked_uncertain": 47,
+    "wrong_and_uncertain": 1,
+    "unassigned": 0
+   },
+   "shoulder": {
+    "events": 87,
+    "right_shopper": 80,
+    "right_shopper_rate": 0.92,
+    "right_and_sure": 5,
+    "wrong_and_sure": 0,
+    "marked_uncertain": 82,
+    "wrong_and_uncertain": 7,
+    "unassigned": 0
+   }
+  },
+  "identity": {
+   "shoppers": 753,
+   "ids": 780,
+   "ids_per_shopper": 1.036,
+   "exits_seen": 762,
+   "ids_covering_two_shoppers": 90,
+   "of_those_not_marked_uncertain": 3
+  }
+ }
+}

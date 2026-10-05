@@ -1,0 +1,5416 @@
+{
+ "label": "SIMULATED (browser store simulator copy). Person boxes from out/bench/dev_baseline",
+ "summary": {
+  "clips": [
+   7001,
+   7002,
+   7003,
+   7004,
+   7005,
+   7006
+  ],
+  "shoppers": 37,
+  "ids_per_shopper": 1.081,
+  "shoppers_with_one_id": 34,
+  "shoppers_never_tracked": 0,
+  "ids_covering_two_shoppers": 20,
+  "ids_on_clerk": 7,
+  "ids_on_nobody": 0,
+  "exits_seen": 39,
+  "true_exits": 37,
+  "uncertain_ids": 29,
+  "mixed_ids_not_marked_uncertain": 2,
+  "position_median_m": 0.064,
+  "position_covered": 0.81,
+  "picks": 70,
+  "picks_right_shopper": 66,
+  "picks_right_and_sure": 42,
+  "picks_wrong_and_sure": 0,
+  "picks_marked_uncertain": 28,
+  "picks_uncertain_and_right": 24,
+  "picks_unassigned": 0
+ },
+ "clips": [
+  {
+   "clip": 7001,
+   "cameras": [
+    "ENTRANCE-1",
+    "TRACK-1",
+    "TRACK-2",
+    "TRACK-3",
+    "TRACK-4"
+   ],
+   "shoppers": 7,
+   "identity": {
+    "ids": 9,
+    "ids_on_nobody": 0,
+    "ids_on_clerk": 1,
+    "ids_per_shopper": {
+     "P001": 1,
+     "P002": 1,
+     "P003": 1,
+     "P004": 2,
+     "P005": 1,
+     "P006": 1,
+     "P007": 1
+    },
+    "never_tracked": [],
+    "ids_covering_two_shoppers": 6,
+    "mixed_ids": [
+     5,
+     6,
+     7,
+     8,
+     9,
+     1
+    ]
+   },
+   "people_made": 9,
+   "exits_seen": 7,
+   "true_exits": 7,
+   "uncertain_ids": 7,
+   "mixed_ids_not_marked_uncertain": 1,
+   "counts": {
+    "not_placed": 1210,
+    "births_start": 1,
+    "births_door": 7,
+    "hand_backs": 9,
+    "encounter_marks": 4,
+    "births_inside": 1,
+    "second_box_frames": 6
+   },
+   "position": {
+    "shopper_frames": 2412,
+    "covered": 1995,
+    "median_m": 0.068,
+    "p90_m": 0.397
+   },
+   "association": [
+    {
+     "t": 14.23,
+     "shopper": "P001",
+     "slot": "G1L-S2-17",
+     "person_id": 2,
+     "event_shopper": "P001",
+     "uncertain": false,
+     "candidates": [
+      [
+       2,
+       2.79
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.42 m in front, 0.44 m along, wrist line 0.25 m off"
+    },
+    {
+     "t": 14.83,
+     "shopper": "P002",
+     "slot": "G2R-S4-33",
+     "person_id": 3,
+     "event_shopper": "P002",
+     "uncertain": false,
+     "candidates": [
+      [
+       3,
+       0.02
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.47 m in front, 0.03 m along, wrist line 0.02 m off"
+    },
+    {
+     "t": 18.27,
+     "shopper": "P003",
+     "slot": "G4R-S2-39",
+     "person_id": 4,
+     "event_shopper": "P003",
+     "uncertain": false,
+     "candidates": [
+      [
+       4,
+       7.03
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.18 m in front, 0.09 m along, wrist line 0.64 m off"
+    },
+    {
+     "t": 22.9,
+     "shopper": "P002",
+     "slot": "G4L-S4-30",
+     "person_id": 3,
+     "event_shopper": "P002",
+     "uncertain": false,
+     "candidates": [
+      [
+       3,
+       1.1
+      ],
+      [
+       6,
+       8.8
+      ]
+     ],
+     "right": true,
+     "margin": 7.7,
+     "why": "0.41 m in front, 0.07 m along, wrist line 0.25 m off"
+    },
+    {
+     "t": 26.47,
+     "shopper": "P004",
+     "slot": "D10-S2-5",
+     "person_id": 5,
+     "event_shopper": "P004",
+     "uncertain": false,
+     "candidates": [
+      [
+       5,
+       0.47
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.51 m in front, 0.15 m along, wrist line 0.13 m off"
+    },
+    {
+     "t": 29.07,
+     "shopper": "P005",
+     "slot": "D9-S2-7",
+     "person_id": 5,
+     "event_shopper": "P005",
+     "uncertain": false,
+     "candidates": [
+      [
+       5,
+       7.82
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "1.23 m in front, 0.41 m along, wrist line 0.15 m off"
+    },
+    {
+     "t": 31.27,
+     "shopper": "P007",
+     "slot": "G3R-S1-39",
+     "person_id": 8,
+     "event_shopper": "P007",
+     "uncertain": false,
+     "candidates": [
+      [
+       8,
+       9.15
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.34 m in front, 0.02 m along, wrist line 0.84 m off"
+    },
+    {
+     "t": 32.93,
+     "shopper": "P006",
+     "slot": "D8-S4-3",
+     "person_id": 5,
+     "event_shopper": "P005",
+     "uncertain": true,
+     "candidates": [
+      [
+       5,
+       2.9
+      ],
+      [
+       7,
+       5.29
+      ]
+     ],
+     "right": false,
+     "margin": 2.38,
+     "why": "0.10 m in front, 0.70 m along; person 7 fits almost as well (cost +2.4)"
+    },
+    {
+     "t": 36.23,
+     "shopper": "P003",
+     "slot": "G1L-S2-9",
+     "person_id": 4,
+     "event_shopper": "P003",
+     "uncertain": false,
+     "candidates": [
+      [
+       4,
+       0.33
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.44 m in front, 0.10 m along, wrist line 0.11 m off"
+    },
+    {
+     "t": 36.73,
+     "shopper": "P004",
+     "slot": "CK-6",
+     "person_id": 6,
+     "event_shopper": "P004",
+     "uncertain": true,
+     "candidates": [
+      [
+       6,
+       0.45
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.56 m in front, 0.02 m along, wrist line 0.16 m off; identity uncertain: ids 3 and 6 were within 0.2 m of each other at 23.4s and may have been swapped"
+    },
+    {
+     "t": 37.3,
+     "shopper": "P007",
+     "slot": "G4L-S1-46",
+     "person_id": 8,
+     "event_shopper": "P007",
+     "uncertain": false,
+     "candidates": [
+      [
+       8,
+       0.19
+      ],
+      [
+       5,
+       9.06
+      ]
+     ],
+     "right": true,
+     "margin": 8.87,
+     "why": "0.38 m in front, 0.04 m along, wrist line 0.03 m off"
+    },
+    {
+     "t": 41,
+     "shopper": "P005",
+     "slot": "G3L-S3-9",
+     "person_id": 9,
+     "event_shopper": "P005",
+     "uncertain": true,
+     "candidates": [
+      [
+       9,
+       0.47
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.33 m in front, 0.10 m along, wrist line 0.05 m off; identity uncertain: first seen inside the store with nobody unaccounted for (entry not seen)"
+    },
+    {
+     "t": 46.33,
+     "shopper": "P005",
+     "slot": "G3L-S4-42",
+     "person_id": 9,
+     "event_shopper": "P005",
+     "uncertain": true,
+     "candidates": [
+      [
+       9,
+       0.72
+      ],
+      [
+       5,
+       2.35
+      ]
+     ],
+     "right": true,
+     "margin": 1.63,
+     "why": "0.29 m in front, 0.16 m along, wrist line 0.02 m off; person 5 fits almost as well (cost +1.6); identity uncertain: first seen inside the store with nobody unaccounted for (entry not seen)"
+    }
+   ],
+   "chain": {
+    "clip": 7001,
+    "cameras": [
+     "REGISTER-top",
+     "ENTRANCE-1",
+     "TRACK-1",
+     "TRACK-2",
+     "TRACK-3",
+     "TRACK-4",
+     "G1L-wall-1",
+     "G2R-price-rail-2",
+     "G3R-drop-rod-1",
+     "COOLER-endcap-1",
+     "G3R-price-rail-1",
+     "G1L-drop-rod-1",
+     "BACKBAR-price-rail-1",
+     "G4L-price-rail-1",
+     "G3L-price-rail-2",
+     "G3L-price-rail-3",
+     "G2R-price-rail-1",
+     "G4R-drop-rod-1",
+     "G3R-pole-on-gondola-1",
+     "G1L-wall-2"
+    ],
+    "sim_seconds": 64,
+    "shoppers": 7,
+    "thieves": 2,
+    "honest": [
+     "P002",
+     "P004",
+     "P005",
+     "P006",
+     "P007"
+    ],
+    "picks": [
+     {
+      "clip": 7001,
+      "shopper": "P001",
+      "t": 14.23,
+      "sku": "peanut_pilot",
+      "slot": "G1L-S2-17",
+      "fixture": "G1",
+      "zone": "gondola",
+      "outcome": "concealed",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": false,
+       "ledger_basket": true,
+       "alert": false
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 46,
+       "hand_frames": 19,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 14.23,
+       "event_zone": "G1",
+       "event_sku": "peanut_pilot",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 2,
+       "event_shopper": "P001",
+       "best_item_camera": "G1L-wall-1"
+      }
+     },
+     {
+      "clip": 7001,
+      "shopper": "P002",
+      "t": 14.83,
+      "sku": "cocoa_crest",
+      "slot": "G2R-S4-33",
+      "fixture": "G2",
+      "zone": "gondola",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 23,
+       "hand_frames": 41,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 14.83,
+       "event_zone": "G2",
+       "event_sku": "cocoa_crest",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 3,
+       "event_shopper": "P002",
+       "best_item_camera": "G2R-price-rail-2"
+      }
+     },
+     {
+      "clip": 7001,
+      "shopper": "P003",
+      "t": 18.27,
+      "sku": "peanut_pilot",
+      "slot": "G4R-S2-39",
+      "fixture": "G4",
+      "zone": "gondola",
+      "outcome": "concealed",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": false,
+       "ledger_basket": false,
+       "alert": false
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 51,
+       "hand_frames": 40,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 18.27,
+       "event_zone": "G4",
+       "event_sku": "peanut_pilot",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 4,
+       "event_shopper": "P003",
+       "best_item_camera": "G3R-drop-rod-1"
+      }
+     },
+     {
+      "clip": 7001,
+      "shopper": "P002",
+      "t": 22.9,
+      "sku": "voltlink_micro",
+      "slot": "G4L-S4-30",
+      "fixture": "G4",
+      "zone": "gondola",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 37,
+       "hand_frames": 73,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 22.9,
+       "event_zone": "G4",
+       "event_sku": "voltlink_micro",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 3,
+       "event_shopper": "P002",
+       "best_item_camera": null
+      }
+     },
+     {
+      "clip": 7001,
+      "shopper": "P004",
+      "t": 26.47,
+      "sku": "arcwave_tropical",
+      "slot": "D10-S2-5",
+      "fixture": "CD10",
+      "zone": "cooler",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": false
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 13,
+       "hand_frames": 12,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 26.47,
+       "event_zone": "CD10",
+       "event_sku": "arcwave_tropical",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 5,
+       "event_shopper": "P004",
+       "best_item_camera": "COOLER-endcap-1"
+      }
+     },
+     {
+      "clip": 7001,
+      "shopper": "P005",
+      "t": 29.07,
+      "sku": "lumen_citrus",
+      "slot": "D9-S2-7",
+      "fixture": "CD09",
+      "zone": "cooler",
+      "outcome": "put_back",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": false,
+       "ledger_basket": false,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 23,
+       "hand_frames": 20,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 29.07,
+       "event_zone": "CD09",
+       "event_sku": "lumen_citrus",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 5,
+       "event_shopper": "P005",
+       "best_item_camera": "COOLER-endcap-1"
+      }
+     },
+     {
+      "clip": 7001,
+      "shopper": "P007",
+      "t": 31.27,
+      "sku": "caramel_crest",
+      "slot": "G3R-S1-39",
+      "fixture": "G3",
+      "zone": "gondola",
+      "outcome": "put_back",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 93,
+       "hand_frames": 92,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 31.27,
+       "event_zone": "G3",
+       "event_sku": "caramel_crest",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 8,
+       "event_shopper": "P007",
+       "best_item_camera": "G3R-price-rail-1"
+      }
+     },
+     {
+      "clip": 7001,
+      "shopper": "P006",
+      "t": 32.93,
+      "sku": "lumen_citrus",
+      "slot": "D8-S4-3",
+      "fixture": "CD08",
+      "zone": "cooler",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": false,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": false,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 18,
+       "hand_frames": 21,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 32.93,
+       "event_zone": "CD08",
+       "event_sku": "lumen_citrus",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 5,
+       "event_shopper": "P005",
+       "best_item_camera": "COOLER-endcap-1"
+      }
+     },
+     {
+      "clip": 7001,
+      "shopper": "P003",
+      "t": 36.23,
+      "sku": "peanut_pilot",
+      "slot": "G1L-S2-9",
+      "fixture": "G1",
+      "zone": "gondola",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 51,
+       "hand_frames": 43,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 36.23,
+       "event_zone": "G1",
+       "event_sku": "peanut_pilot",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 4,
+       "event_shopper": "P003",
+       "best_item_camera": "G1L-drop-rod-1"
+      }
+     },
+     {
+      "clip": 7001,
+      "shopper": "P004",
+      "t": 36.73,
+      "sku": "cocoa_crest",
+      "slot": "CK-6",
+      "fixture": "COUNTER",
+      "zone": "checkout",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": false
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 43,
+       "hand_frames": 40,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 36.73,
+       "event_zone": "COUNTER",
+       "event_sku": "cocoa_crest",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 6,
+       "event_shopper": "P004",
+       "best_item_camera": "BACKBAR-price-rail-1"
+      }
+     },
+     {
+      "clip": 7001,
+      "shopper": "P007",
+      "t": 37.3,
+      "sku": "caramel_crest",
+      "slot": "G4L-S1-46",
+      "fixture": "G4",
+      "zone": "gondola",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 31,
+       "hand_frames": 72,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 37.3,
+       "event_zone": "G4",
+       "event_sku": "caramel_crest",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 8,
+       "event_shopper": "P007",
+       "best_item_camera": "G4L-price-rail-1"
+      }
+     },
+     {
+      "clip": 7001,
+      "shopper": "P005",
+      "t": 41,
+      "sku": "crunchly_classic",
+      "slot": "G3L-S3-9",
+      "fixture": "G3",
+      "zone": "gondola",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 36,
+       "hand_frames": 22,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 41.0,
+       "event_zone": "G3",
+       "event_sku": "crunchly_classic",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 9,
+       "event_shopper": "P005",
+       "best_item_camera": "G3L-price-rail-2"
+      }
+     },
+     {
+      "clip": 7001,
+      "shopper": "P005",
+      "t": 46.33,
+      "sku": "peanut_pilot",
+      "slot": "G3L-S4-42",
+      "fixture": "G3",
+      "zone": "gondola",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 15,
+       "hand_frames": 39,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 46.33,
+       "event_zone": "G3",
+       "event_sku": "peanut_pilot",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 9,
+       "event_shopper": "P005",
+       "best_item_camera": "G3L-price-rail-3"
+      }
+     }
+    ],
+    "thefts": [
+     {
+      "clip": 7001,
+      "shopper": "P001",
+      "sku": "peanut_pilot",
+      "slot": "G1L-S2-17",
+      "t_pick": 14.23,
+      "t_conceal": 17.23,
+      "alert": false,
+      "alert_or_review": true,
+      "sku_in_alert": false,
+      "time_to_alert_s": null
+     },
+     {
+      "clip": 7001,
+      "shopper": "P003",
+      "sku": "peanut_pilot",
+      "slot": "G4R-S2-39",
+      "t_pick": 18.27,
+      "t_conceal": 21.27,
+      "alert": false,
+      "alert_or_review": false,
+      "sku_in_alert": false,
+      "time_to_alert_s": null
+     }
+    ],
+    "alerts": [
+     {
+      "clip": 7001,
+      "alert_id": "A00001",
+      "tier": "review",
+      "person_id": 2,
+      "shopper": "P001",
+      "true_theft": true,
+      "t_emitted": 33.9,
+      "skus": [
+       "peanut_pilot"
+      ],
+      "confidence": 0.6
+     },
+     {
+      "clip": 7001,
+      "alert_id": "A00002",
+      "tier": "review",
+      "person_id": 5,
+      "shopper": "P004",
+      "true_theft": false,
+      "t_emitted": 59.9,
+      "skus": [
+       "lumen_citrus",
+       "lumen_citrus"
+      ],
+      "confidence": 0.5
+     }
+    ],
+    "pipeline_picks": 13,
+    "pipeline_picks_paired": 13,
+    "identity": {
+     "store_wide_ids": 9,
+     "ids_per_shopper": {
+      "P001": 1,
+      "P002": 1,
+      "P003": 1,
+      "P004": 2,
+      "P005": 1,
+      "P006": 1,
+      "P007": 1
+     },
+     "shoppers_never_tracked": [],
+     "ids_covering_two_shoppers": 6,
+     "enter_events": 8
+    },
+    "pipeline_events": {
+     "enter": 8,
+     "pick": 13,
+     "exit": 7,
+     "pay": 12,
+     "put_back": 2
+    },
+    "run": {}
+   }
+  },
+  {
+   "clip": 7002,
+   "cameras": [
+    "ENTRANCE-1",
+    "TRACK-1",
+    "TRACK-2",
+    "TRACK-3",
+    "TRACK-4"
+   ],
+   "shoppers": 5,
+   "identity": {
+    "ids": 6,
+    "ids_on_nobody": 0,
+    "ids_on_clerk": 1,
+    "ids_per_shopper": {
+     "P001": 1,
+     "P002": 1,
+     "P003": 1,
+     "P004": 1,
+     "P005": 1
+    },
+    "never_tracked": [],
+    "ids_covering_two_shoppers": 0,
+    "mixed_ids": []
+   },
+   "people_made": 6,
+   "exits_seen": 5,
+   "true_exits": 5,
+   "uncertain_ids": 0,
+   "mixed_ids_not_marked_uncertain": 0,
+   "counts": {
+    "not_placed": 1372,
+    "births_start": 1,
+    "births_door": 5,
+    "hand_backs": 3,
+    "second_box_frames": 22
+   },
+   "position": {
+    "shopper_frames": 1784,
+    "covered": 1616,
+    "median_m": 0.065,
+    "p90_m": 0.266
+   },
+   "association": [
+    {
+     "t": 9.5,
+     "shopper": "P001",
+     "slot": "G2L-S2-34",
+     "person_id": 2,
+     "event_shopper": "P001",
+     "uncertain": false,
+     "candidates": [
+      [
+       2,
+       0.18
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.42 m in front, 0.09 m along, wrist line 0.04 m off"
+    },
+    {
+     "t": 14.13,
+     "shopper": "P002",
+     "slot": "G4L-S3-34",
+     "person_id": 3,
+     "event_shopper": "P002",
+     "uncertain": false,
+     "candidates": [
+      [
+       3,
+       0.16
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.44 m in front, 0.08 m along, wrist line 0.07 m off"
+    },
+    {
+     "t": 23.3,
+     "shopper": "P004",
+     "slot": "G3R-S4-23",
+     "person_id": 5,
+     "event_shopper": "P004",
+     "uncertain": false,
+     "candidates": [
+      [
+       5,
+       0.28
+      ],
+      [
+       4,
+       19.83
+      ]
+     ],
+     "right": true,
+     "margin": 21.56,
+     "why": "0.36 m in front, 0.05 m along, wrist line 0.05 m off"
+    },
+    {
+     "t": 23.6,
+     "shopper": "P003",
+     "slot": "G3R-S4-10",
+     "person_id": 4,
+     "event_shopper": "P003",
+     "uncertain": false,
+     "candidates": [
+      [
+       4,
+       0.2
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.37 m in front, 0.01 m along, wrist line 0.02 m off"
+    },
+    {
+     "t": 24.3,
+     "shopper": "P001",
+     "slot": "D8-S1-9",
+     "person_id": 2,
+     "event_shopper": "P001",
+     "uncertain": false,
+     "candidates": [
+      [
+       2,
+       6.27
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.32 m in front, 0.68 m along"
+    },
+    {
+     "t": 29.53,
+     "shopper": "P005",
+     "slot": "G3L-S4-11",
+     "person_id": 6,
+     "event_shopper": "P005",
+     "uncertain": false,
+     "candidates": [
+      [
+       6,
+       0.13
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.40 m in front, 0.03 m along, wrist line 0.02 m off"
+    },
+    {
+     "t": 30.43,
+     "shopper": "P004",
+     "slot": "D11-S2-8",
+     "person_id": 5,
+     "event_shopper": "P004",
+     "uncertain": false,
+     "candidates": [
+      [
+       5,
+       0.68
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.40 m in front, 0.05 m along, wrist line 0.19 m off"
+    },
+    {
+     "t": 40.17,
+     "shopper": "P005",
+     "slot": "G3R-S1-9",
+     "person_id": 6,
+     "event_shopper": "P005",
+     "uncertain": false,
+     "candidates": [
+      [
+       6,
+       9.04
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.43 m in front, 0.01 m along, wrist line 0.87 m off"
+    },
+    {
+     "t": 45.93,
+     "shopper": "P004",
+     "slot": "G2R-S1-28",
+     "person_id": 5,
+     "event_shopper": "P004",
+     "uncertain": false,
+     "candidates": [
+      [
+       5,
+       1.18
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.43 m in front, 0.02 m along, wrist line 0.26 m off"
+    }
+   ],
+   "chain": {
+    "clip": 7002,
+    "cameras": [
+     "REGISTER-top",
+     "ENTRANCE-1",
+     "TRACK-1",
+     "TRACK-2",
+     "TRACK-3",
+     "TRACK-4",
+     "G2L-pole-on-gondola-1",
+     "G4L-price-rail-1",
+     "G3R-price-rail-2",
+     "COOLER-price-rail-3",
+     "COOLER-endcap-1",
+     "COOLER-price-rail-5",
+     "COOLER-ceiling-2",
+     "G3R-drop-rod-2",
+     "G2R-price-rail-1",
+     "G2L-price-rail-1",
+     "G4L-price-rail-2",
+     "G3L-price-rail-1",
+     "G4R-counter-front-1",
+     "G3L-price-rail-2"
+    ],
+    "sim_seconds": 74,
+    "shoppers": 5,
+    "thieves": 3,
+    "honest": [
+     "P001",
+     "P002"
+    ],
+    "picks": [
+     {
+      "clip": 7002,
+      "shopper": "P001",
+      "t": 9.5,
+      "sku": "torqueline_10w30",
+      "slot": "G2L-S2-34",
+      "fixture": "G2",
+      "zone": "gondola",
+      "outcome": "put_back",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 51,
+       "hand_frames": 31,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 9.5,
+       "event_zone": "G2",
+       "event_sku": "torqueline_10w30",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 2,
+       "event_shopper": "P001",
+       "best_item_camera": "G2L-pole-on-gondola-1"
+      }
+     },
+     {
+      "clip": 7002,
+      "shopper": "P002",
+      "t": 14.13,
+      "sku": "cocoa_crest",
+      "slot": "G4L-S3-34",
+      "fixture": "G4",
+      "zone": "gondola",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 38,
+       "hand_frames": 44,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 14.13,
+       "event_zone": "G4",
+       "event_sku": "cocoa_crest",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 3,
+       "event_shopper": "P002",
+       "best_item_camera": "G4L-price-rail-1"
+      }
+     },
+     {
+      "clip": 7002,
+      "shopper": "P004",
+      "t": 23.3,
+      "sku": "voltlink_micro",
+      "slot": "G3R-S4-23",
+      "fixture": "G3",
+      "zone": "gondola",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": false
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 61,
+       "hand_frames": 40,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 23.3,
+       "event_zone": "G3",
+       "event_sku": "voltlink_micro",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 5,
+       "event_shopper": "P004",
+       "best_item_camera": "G3R-price-rail-2"
+      }
+     },
+     {
+      "clip": 7002,
+      "shopper": "P003",
+      "t": 23.6,
+      "sku": "relieva_aceta",
+      "slot": "G3R-S4-10",
+      "fixture": "G3",
+      "zone": "gondola",
+      "outcome": "concealed",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": false,
+       "ledger_basket": true,
+       "alert": false
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 25,
+       "hand_frames": 63,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 23.6,
+       "event_zone": "G3",
+       "event_sku": "relieva_aceta",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 4,
+       "event_shopper": "P003",
+       "best_item_camera": "COOLER-price-rail-3"
+      }
+     },
+     {
+      "clip": 7002,
+      "shopper": "P001",
+      "t": 24.3,
+      "sku": "fizzo_zero",
+      "slot": "D8-S1-9",
+      "fixture": "CD08",
+      "zone": "cooler",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 10,
+       "hand_frames": 21,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 24.3,
+       "event_zone": "CD08",
+       "event_sku": "fizzo_zero",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 2,
+       "event_shopper": "P001",
+       "best_item_camera": "COOLER-endcap-1"
+      }
+     },
+     {
+      "clip": 7002,
+      "shopper": "P005",
+      "t": 29.53,
+      "sku": "cocoa_crest",
+      "slot": "G3L-S4-11",
+      "fixture": "G3",
+      "zone": "gondola",
+      "outcome": "concealed",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": false,
+       "ledger_basket": true,
+       "alert": false
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 52,
+       "hand_frames": 69,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 29.53,
+       "event_zone": "G3",
+       "event_sku": "cocoa_crest",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 6,
+       "event_shopper": "P005",
+       "best_item_camera": "COOLER-price-rail-5"
+      }
+     },
+     {
+      "clip": 7002,
+      "shopper": "P004",
+      "t": 30.43,
+      "sku": "arcwave_tropical",
+      "slot": "D11-S2-8",
+      "fixture": "CD11",
+      "zone": "cooler",
+      "outcome": "concealed",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": false,
+       "ledger_basket": true,
+       "alert": false
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 11,
+       "hand_frames": 21,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 30.43,
+       "event_zone": "CD11",
+       "event_sku": "arcwave_tropical",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 5,
+       "event_shopper": "P004",
+       "best_item_camera": "COOLER-ceiling-2"
+      }
+     },
+     {
+      "clip": 7002,
+      "shopper": "P005",
+      "t": 40.17,
+      "sku": "caramel_crest",
+      "slot": "G3R-S1-9",
+      "fixture": "G3",
+      "zone": "gondola",
+      "outcome": "concealed",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": false,
+       "ledger_basket": true,
+       "alert": false
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 44,
+       "hand_frames": 62,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 40.17,
+       "event_zone": "G3",
+       "event_sku": "caramel_crest",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 6,
+       "event_shopper": "P005",
+       "best_item_camera": "G3R-drop-rod-2"
+      }
+     },
+     {
+      "clip": 7002,
+      "shopper": "P004",
+      "t": 45.93,
+      "sku": "voltlink_usbc",
+      "slot": "G2R-S1-28",
+      "fixture": "G2",
+      "zone": "gondola",
+      "outcome": "concealed",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": false,
+       "ledger_basket": true,
+       "alert": false
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 37,
+       "hand_frames": 21,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 45.93,
+       "event_zone": "G2",
+       "event_sku": "voltlink_usbc",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 5,
+       "event_shopper": "P004",
+       "best_item_camera": "G2R-price-rail-1"
+      }
+     }
+    ],
+    "thefts": [
+     {
+      "clip": 7002,
+      "shopper": "P003",
+      "sku": "relieva_aceta",
+      "slot": "G3R-S4-10",
+      "t_pick": 23.6,
+      "t_conceal": 29.47,
+      "alert": false,
+      "alert_or_review": false,
+      "sku_in_alert": false,
+      "time_to_alert_s": null
+     },
+     {
+      "clip": 7002,
+      "shopper": "P005",
+      "sku": "cocoa_crest",
+      "slot": "G3L-S4-11",
+      "t_pick": 29.53,
+      "t_conceal": 32.53,
+      "alert": false,
+      "alert_or_review": true,
+      "sku_in_alert": false,
+      "time_to_alert_s": null
+     },
+     {
+      "clip": 7002,
+      "shopper": "P004",
+      "sku": "arcwave_tropical",
+      "slot": "D11-S2-8",
+      "t_pick": 30.43,
+      "t_conceal": 34.67,
+      "alert": false,
+      "alert_or_review": true,
+      "sku_in_alert": false,
+      "time_to_alert_s": null
+     },
+     {
+      "clip": 7002,
+      "shopper": "P005",
+      "sku": "caramel_crest",
+      "slot": "G3R-S1-9",
+      "t_pick": 40.17,
+      "t_conceal": 43.17,
+      "alert": false,
+      "alert_or_review": true,
+      "sku_in_alert": false,
+      "time_to_alert_s": null
+     },
+     {
+      "clip": 7002,
+      "shopper": "P004",
+      "sku": "voltlink_usbc",
+      "slot": "G2R-S1-28",
+      "t_pick": 45.93,
+      "t_conceal": 56.47,
+      "alert": false,
+      "alert_or_review": true,
+      "sku_in_alert": false,
+      "time_to_alert_s": null
+     }
+    ],
+    "alerts": [
+     {
+      "clip": 7002,
+      "alert_id": "A00001",
+      "tier": "review",
+      "person_id": 6,
+      "shopper": "P005",
+      "true_theft": true,
+      "t_emitted": 57.3,
+      "skus": [
+       "cocoa_crest",
+       "caramel_crest"
+      ],
+      "confidence": 0.65
+     },
+     {
+      "clip": 7002,
+      "alert_id": "A00002",
+      "tier": "review",
+      "person_id": 4,
+      "shopper": "P004",
+      "true_theft": true,
+      "t_emitted": 72.9,
+      "skus": [
+       "relieva_aceta",
+       "arcwave_tropical",
+       "voltlink_usbc"
+      ],
+      "confidence": 0.55
+     }
+    ],
+    "pipeline_picks": 9,
+    "pipeline_picks_paired": 9,
+    "identity": {
+     "store_wide_ids": 6,
+     "ids_per_shopper": {
+      "P001": 1,
+      "P002": 1,
+      "P003": 1,
+      "P004": 1,
+      "P005": 1
+     },
+     "shoppers_never_tracked": [],
+     "ids_covering_two_shoppers": 0,
+     "enter_events": 5
+    },
+    "pipeline_events": {
+     "enter": 5,
+     "pick": 9,
+     "put_back": 1,
+     "pay": 6,
+     "exit": 5
+    },
+    "run": {}
+   }
+  },
+  {
+   "clip": 7003,
+   "cameras": [
+    "ENTRANCE-1",
+    "TRACK-1",
+    "TRACK-2",
+    "TRACK-3",
+    "TRACK-4"
+   ],
+   "shoppers": 6,
+   "identity": {
+    "ids": 7,
+    "ids_on_nobody": 0,
+    "ids_on_clerk": 1,
+    "ids_per_shopper": {
+     "P001": 1,
+     "P002": 1,
+     "P003": 1,
+     "P004": 1,
+     "P005": 1,
+     "P006": 1
+    },
+    "never_tracked": [],
+    "ids_covering_two_shoppers": 4,
+    "mixed_ids": [
+     2,
+     5,
+     6,
+     1
+    ]
+   },
+   "people_made": 7,
+   "exits_seen": 6,
+   "true_exits": 6,
+   "uncertain_ids": 4,
+   "mixed_ids_not_marked_uncertain": 1,
+   "counts": {
+    "not_placed": 430,
+    "births_start": 1,
+    "births_door": 6,
+    "hand_backs": 8,
+    "second_box_frames": 65,
+    "encounter_marks": 3
+   },
+   "position": {
+    "shopper_frames": 1855,
+    "covered": 1413,
+    "median_m": 0.054,
+    "p90_m": 0.762
+   },
+   "association": [
+    {
+     "t": 7.7,
+     "shopper": "P001",
+     "slot": "CK-4",
+     "person_id": 2,
+     "event_shopper": "P001",
+     "uncertain": false,
+     "candidates": [
+      [
+       2,
+       0.96
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.75 m in front, 0.04 m along, wrist line 0.13 m off"
+    },
+    {
+     "t": 16.47,
+     "shopper": "P002",
+     "slot": "G3R-S1-11",
+     "person_id": 3,
+     "event_shopper": "P002",
+     "uncertain": false,
+     "candidates": [
+      [
+       3,
+       7.31
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.18 m in front, 0.24 m along, wrist line 0.61 m off"
+    },
+    {
+     "t": 19.43,
+     "shopper": "P001",
+     "slot": "G3R-S4-18",
+     "person_id": 2,
+     "event_shopper": "P001",
+     "uncertain": false,
+     "candidates": [
+      [
+       2,
+       0.23
+      ],
+      [
+       3,
+       4.94
+      ]
+     ],
+     "right": true,
+     "margin": 4.71,
+     "why": "0.37 m in front, 0.05 m along, wrist line 0.03 m off"
+    },
+    {
+     "t": 23.8,
+     "shopper": "P003",
+     "slot": "G2R-S1-3",
+     "person_id": 4,
+     "event_shopper": "P003",
+     "uncertain": false,
+     "candidates": [
+      [
+       4,
+       4.75
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.28 m in front, 0.17 m along, wrist line 0.53 m off"
+    },
+    {
+     "t": 27.07,
+     "shopper": "P004",
+     "slot": "G4L-S3-16",
+     "person_id": 5,
+     "event_shopper": "P004",
+     "uncertain": true,
+     "candidates": [
+      [
+       5,
+       0.39
+      ],
+      [
+       2,
+       3.73
+      ]
+     ],
+     "right": true,
+     "margin": 3.34,
+     "why": "0.49 m in front, 0.05 m along, wrist line 0.15 m off; person 2 fits almost as well (cost +3.3); identity uncertain: ids 3 and 5 were within 0.2 m of each other at 23.3s and may have been swapped"
+    },
+    {
+     "t": 32.07,
+     "shopper": "P005",
+     "slot": "G4L-S2-6",
+     "person_id": 5,
+     "event_shopper": "P005",
+     "uncertain": true,
+     "candidates": [
+      [
+       5,
+       0.15
+      ],
+      [
+       2,
+       3.4
+      ],
+      [
+       4,
+       16.79
+      ]
+     ],
+     "right": true,
+     "margin": 5.25,
+     "why": "0.61 m in front, 0.01 m along, wrist line 0.03 m off; identity uncertain: ids 3 and 5 were within 0.2 m of each other at 23.3s and may have been swapped"
+    },
+    {
+     "t": 36.9,
+     "shopper": "P006",
+     "slot": "G4L-S4-26",
+     "person_id": 7,
+     "event_shopper": "P006",
+     "uncertain": false,
+     "candidates": [
+      [
+       7,
+       0.34
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.42 m in front, 0.00 m along, wrist line 0.13 m off"
+    },
+    {
+     "t": 38.23,
+     "shopper": "P004",
+     "slot": "D13-S2-6",
+     "person_id": 2,
+     "event_shopper": "P004",
+     "uncertain": true,
+     "candidates": [
+      [
+       2,
+       2.65
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.46 m in front, 0.20 m along; identity uncertain: ids 2 and 5 were within 0.2 m of each other at 27.8s and may have been swapped"
+    },
+    {
+     "t": 41.5,
+     "shopper": "P005",
+     "slot": "CK-4",
+     "person_id": 5,
+     "event_shopper": "P005",
+     "uncertain": true,
+     "candidates": [
+      [
+       5,
+       0.31
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.58 m in front, 0.02 m along, wrist line 0.12 m off; identity uncertain: ids 3 and 5 were within 0.2 m of each other at 23.3s and may have been swapped"
+    },
+    {
+     "t": 44.53,
+     "shopper": "P006",
+     "slot": "G3L-S2-56",
+     "person_id": 7,
+     "event_shopper": "P006",
+     "uncertain": false,
+     "candidates": [
+      [
+       7,
+       0.17
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.41 m in front, 0.03 m along, wrist line 0.07 m off"
+    }
+   ],
+   "chain": {
+    "clip": 7003,
+    "cameras": [
+     "REGISTER-top",
+     "ENTRANCE-1",
+     "TRACK-1",
+     "TRACK-2",
+     "TRACK-3",
+     "TRACK-4",
+     "BACKBAR-price-rail-1",
+     "COOLER-price-rail-3",
+     "G2R-ceiling-1",
+     "COOLER-price-rail-4",
+     "G4L-price-rail-3",
+     "COOLER-ceiling-2",
+     "G3L-price-rail-3",
+     "G3R-drop-rod-2",
+     "COOLER-price-rail-2",
+     "G4L-price-rail-1",
+     "COOLER-ceiling-1",
+     "COOLER-ceiling-3"
+    ],
+    "sim_seconds": 62,
+    "shoppers": 6,
+    "thieves": 2,
+    "honest": [
+     "P001",
+     "P004",
+     "P005",
+     "P006"
+    ],
+    "picks": [
+     {
+      "clip": 7003,
+      "shopper": "P001",
+      "t": 7.7,
+      "sku": "peanut_pilot",
+      "slot": "CK-4",
+      "fixture": "COUNTER",
+      "zone": "checkout",
+      "outcome": "put_back",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 52,
+       "hand_frames": 22,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 7.7,
+       "event_zone": "COUNTER",
+       "event_sku": "peanut_pilot",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 2,
+       "event_shopper": "P001",
+       "best_item_camera": "BACKBAR-price-rail-1"
+      }
+     },
+     {
+      "clip": 7003,
+      "shopper": "P002",
+      "t": 16.47,
+      "sku": "peanut_pilot",
+      "slot": "G3R-S1-11",
+      "fixture": "G3",
+      "zone": "gondola",
+      "outcome": "concealed",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": false,
+       "ledger_basket": true,
+       "alert": false
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 47,
+       "hand_frames": 44,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 16.47,
+       "event_zone": "G3",
+       "event_sku": "peanut_pilot",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 3,
+       "event_shopper": "P002",
+       "best_item_camera": "COOLER-price-rail-3"
+      }
+     },
+     {
+      "clip": 7003,
+      "shopper": "P001",
+      "t": 19.43,
+      "sku": "relieva_ibu",
+      "slot": "G3R-S4-18",
+      "fixture": "G3",
+      "zone": "gondola",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 45,
+       "hand_frames": 45,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 19.43,
+       "event_zone": "G3",
+       "event_sku": "relieva_ibu",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 2,
+       "event_shopper": "P001",
+       "best_item_camera": "COOLER-price-rail-3"
+      }
+     },
+     {
+      "clip": 7003,
+      "shopper": "P003",
+      "t": 23.8,
+      "sku": "torqueline_5w30",
+      "slot": "G2R-S1-3",
+      "fixture": "G2",
+      "zone": "gondola",
+      "outcome": "concealed",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": false,
+       "ledger_basket": true,
+       "alert": false
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 37,
+       "hand_frames": 42,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 23.8,
+       "event_zone": "G2",
+       "event_sku": "torqueline_5w30",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 4,
+       "event_shopper": "P003",
+       "best_item_camera": "G2R-ceiling-1"
+      }
+     },
+     {
+      "clip": 7003,
+      "shopper": "P004",
+      "t": 27.07,
+      "sku": "caramel_crest",
+      "slot": "G4L-S3-16",
+      "fixture": "G4",
+      "zone": "gondola",
+      "outcome": "put_back",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 39,
+       "hand_frames": 63,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 27.07,
+       "event_zone": "G4",
+       "event_sku": "caramel_crest",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 5,
+       "event_shopper": "P004",
+       "best_item_camera": "COOLER-price-rail-4"
+      }
+     },
+     {
+      "clip": 7003,
+      "shopper": "P005",
+      "t": 32.07,
+      "sku": "crunchly_classic",
+      "slot": "G4L-S2-6",
+      "fixture": "G4",
+      "zone": "gondola",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 64,
+       "hand_frames": 63,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 32.07,
+       "event_zone": "G4",
+       "event_sku": "crunchly_classic",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 5,
+       "event_shopper": "P005",
+       "best_item_camera": null
+      }
+     },
+     {
+      "clip": 7003,
+      "shopper": "P006",
+      "t": 36.9,
+      "sku": "voltlink_usbc",
+      "slot": "G4L-S4-26",
+      "fixture": "G4",
+      "zone": "gondola",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 46,
+       "hand_frames": 48,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 36.9,
+       "event_zone": "G4",
+       "event_sku": "voltlink_usbc",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 7,
+       "event_shopper": "P006",
+       "best_item_camera": "G4L-price-rail-3"
+      }
+     },
+     {
+      "clip": 7003,
+      "shopper": "P004",
+      "t": 38.23,
+      "sku": "orchard_lemon",
+      "slot": "D13-S2-6",
+      "fixture": "CD13",
+      "zone": "cooler",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 30,
+       "hand_frames": 29,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 38.23,
+       "event_zone": "CD13",
+       "event_sku": "orchard_lemon",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 2,
+       "event_shopper": "P004",
+       "best_item_camera": "COOLER-ceiling-2"
+      }
+     },
+     {
+      "clip": 7003,
+      "shopper": "P005",
+      "t": 41.5,
+      "sku": "peanut_pilot",
+      "slot": "CK-4",
+      "fixture": "COUNTER",
+      "zone": "checkout",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 20,
+       "hand_frames": 42,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 41.5,
+       "event_zone": "COUNTER",
+       "event_sku": "peanut_pilot",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 5,
+       "event_shopper": "P005",
+       "best_item_camera": "BACKBAR-price-rail-1"
+      }
+     },
+     {
+      "clip": 7003,
+      "shopper": "P006",
+      "t": 44.53,
+      "sku": "oatfield_cookies",
+      "slot": "G3L-S2-56",
+      "fixture": "G3",
+      "zone": "gondola",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 17,
+       "hand_frames": 21,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 44.53,
+       "event_zone": "G3",
+       "event_sku": "oatfield_cookies",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 7,
+       "event_shopper": "P006",
+       "best_item_camera": "G3L-price-rail-3"
+      }
+     }
+    ],
+    "thefts": [
+     {
+      "clip": 7003,
+      "shopper": "P002",
+      "sku": "peanut_pilot",
+      "slot": "G3R-S1-11",
+      "t_pick": 16.47,
+      "t_conceal": 20.63,
+      "alert": false,
+      "alert_or_review": true,
+      "sku_in_alert": false,
+      "time_to_alert_s": null
+     },
+     {
+      "clip": 7003,
+      "shopper": "P003",
+      "sku": "torqueline_5w30",
+      "slot": "G2R-S1-3",
+      "t_pick": 23.8,
+      "t_conceal": 29.93,
+      "alert": false,
+      "alert_or_review": true,
+      "sku_in_alert": false,
+      "time_to_alert_s": null
+     }
+    ],
+    "alerts": [
+     {
+      "clip": 7003,
+      "alert_id": "A00001",
+      "tier": "review",
+      "person_id": 4,
+      "shopper": "P003",
+      "true_theft": true,
+      "t_emitted": 45.9,
+      "skus": [
+       "torqueline_5w30"
+      ],
+      "confidence": 0.6
+     },
+     {
+      "clip": 7003,
+      "alert_id": "A00002",
+      "tier": "review",
+      "person_id": 3,
+      "shopper": "P002",
+      "true_theft": true,
+      "t_emitted": 56.2,
+      "skus": [
+       "peanut_pilot"
+      ],
+      "confidence": 0.45
+     }
+    ],
+    "pipeline_picks": 10,
+    "pipeline_picks_paired": 10,
+    "identity": {
+     "store_wide_ids": 7,
+     "ids_per_shopper": {
+      "P001": 1,
+      "P002": 1,
+      "P003": 1,
+      "P004": 1,
+      "P005": 1,
+      "P006": 1
+     },
+     "shoppers_never_tracked": [],
+     "ids_covering_two_shoppers": 4,
+     "enter_events": 6
+    },
+    "pipeline_events": {
+     "enter": 6,
+     "pay": 10,
+     "pick": 10,
+     "put_back": 2,
+     "exit": 6
+    },
+    "run": {}
+   }
+  },
+  {
+   "clip": 7004,
+   "cameras": [
+    "ENTRANCE-1",
+    "TRACK-1",
+    "TRACK-2",
+    "TRACK-3",
+    "TRACK-4"
+   ],
+   "shoppers": 4,
+   "identity": {
+    "ids": 5,
+    "ids_on_nobody": 0,
+    "ids_on_clerk": 1,
+    "ids_per_shopper": {
+     "P001": 1,
+     "P002": 1,
+     "P003": 1,
+     "P004": 1
+    },
+    "never_tracked": [],
+    "ids_covering_two_shoppers": 0,
+    "mixed_ids": []
+   },
+   "people_made": 5,
+   "exits_seen": 4,
+   "true_exits": 4,
+   "uncertain_ids": 2,
+   "mixed_ids_not_marked_uncertain": 0,
+   "counts": {
+    "not_placed": 1365,
+    "births_start": 1,
+    "births_door": 4,
+    "encounter_marks": 1,
+    "hand_backs": 10,
+    "second_box_frames": 32
+   },
+   "position": {
+    "shopper_frames": 1778,
+    "covered": 1372,
+    "median_m": 0.041,
+    "p90_m": 0.163
+   },
+   "association": [
+    {
+     "t": 13,
+     "shopper": "P001",
+     "slot": "G1R-S2-4",
+     "person_id": 2,
+     "event_shopper": "P001",
+     "uncertain": false,
+     "candidates": [
+      [
+       2,
+       0.96
+      ],
+      [
+       3,
+       11.4
+      ]
+     ],
+     "right": true,
+     "margin": 10.44,
+     "why": "0.46 m in front, 0.12 m along, wrist line 0.23 m off"
+    },
+    {
+     "t": 14.73,
+     "shopper": "P002",
+     "slot": "G1R-S4-7",
+     "person_id": 3,
+     "event_shopper": "P002",
+     "uncertain": false,
+     "candidates": [
+      [
+       3,
+       3.24
+      ],
+      [
+       2,
+       17.45
+      ]
+     ],
+     "right": true,
+     "margin": 14.21,
+     "why": "0.48 m in front, 0.02 m along, wrist line 0.45 m off"
+    },
+    {
+     "t": 23.2,
+     "shopper": "P001",
+     "slot": "G2R-S2-23",
+     "person_id": 2,
+     "event_shopper": "P001",
+     "uncertain": false,
+     "candidates": [
+      [
+       2,
+       0.15
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.42 m in front, 0.02 m along, wrist line 0.07 m off"
+    },
+    {
+     "t": 23.43,
+     "shopper": "P003",
+     "slot": "D8-S3-4",
+     "person_id": 4,
+     "event_shopper": "P003",
+     "uncertain": true,
+     "candidates": [
+      [
+       4,
+       8.59
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.32 m in front, 1.01 m along, wrist line 0.16 m off; identity uncertain: ids 4 and 5 were within 0.2 m of each other at 14.1s and may have been swapped"
+    },
+    {
+     "t": 29.5,
+     "shopper": "P001",
+     "slot": "D4-S2-1",
+     "person_id": 2,
+     "event_shopper": "P001",
+     "uncertain": false,
+     "candidates": [
+      [
+       2,
+       3.38
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "1.22 m in front, 0.93 m along"
+    },
+    {
+     "t": 30.77,
+     "shopper": "P004",
+     "slot": "G1L-S1-11",
+     "person_id": 5,
+     "event_shopper": "P004",
+     "uncertain": true,
+     "candidates": [
+      [
+       5,
+       9.15
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.59 m in front, 0.08 m along, wrist line 1.29 m off; identity uncertain: ids 4 and 5 were within 0.2 m of each other at 14.1s and may have been swapped"
+    },
+    {
+     "t": 39,
+     "shopper": "P004",
+     "slot": "G1R-S2-10",
+     "person_id": 5,
+     "event_shopper": "P004",
+     "uncertain": true,
+     "candidates": [
+      [
+       5,
+       3.2
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.59 m in front, 1.94 m along; identity uncertain: ids 4 and 5 were within 0.2 m of each other at 14.1s and may have been swapped"
+    },
+    {
+     "t": 43.47,
+     "shopper": "P001",
+     "slot": "CK-10",
+     "person_id": 2,
+     "event_shopper": "P001",
+     "uncertain": false,
+     "candidates": [
+      [
+       2,
+       0.03
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.52 m in front, 0.01 m along, wrist line 0.04 m off"
+    },
+    {
+     "t": 58.83,
+     "shopper": "P004",
+     "slot": "G3L-S4-19",
+     "person_id": 5,
+     "event_shopper": "P004",
+     "uncertain": true,
+     "candidates": [
+      [
+       5,
+       2.2
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.38 m in front, 0.13 m along, wrist line 0.36 m off; identity uncertain: ids 4 and 5 were within 0.2 m of each other at 14.1s and may have been swapped"
+    }
+   ],
+   "chain": {
+    "clip": 7004,
+    "cameras": [
+     "REGISTER-top",
+     "ENTRANCE-1",
+     "TRACK-1",
+     "TRACK-2",
+     "TRACK-3",
+     "TRACK-4",
+     "G1R-drop-rod-1",
+     "G1R-price-rail-1",
+     "G2R-price-rail-1",
+     "COOLER-endcap-1",
+     "COOLER-ceiling-4",
+     "G1L-wall-2",
+     "BACKBAR-price-rail-1",
+     "G3L-price-rail-2",
+     "G2R-ceiling-1",
+     "COOLER-price-rail-2",
+     "COOLER-ceiling-3",
+     "G1L-wall-1",
+     "G3R-price-rail-2",
+     "COOLER-price-rail-4"
+    ],
+    "sim_seconds": 80,
+    "shoppers": 4,
+    "thieves": 1,
+    "honest": [
+     "P001",
+     "P002",
+     "P003"
+    ],
+    "picks": [
+     {
+      "clip": 7004,
+      "shopper": "P001",
+      "t": 13,
+      "sku": "torqueline_5w30",
+      "slot": "G1R-S2-4",
+      "fixture": "G1",
+      "zone": "gondola",
+      "outcome": "put_back",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 32,
+       "hand_frames": 36,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 13.0,
+       "event_zone": "G1",
+       "event_sku": "torqueline_5w30",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 2,
+       "event_shopper": "P001",
+       "best_item_camera": "G1R-drop-rod-1"
+      }
+     },
+     {
+      "clip": 7004,
+      "shopper": "P002",
+      "t": 14.73,
+      "sku": "sierra_nacho",
+      "slot": "G1R-S4-7",
+      "fixture": "G1",
+      "zone": "gondola",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 68,
+       "hand_frames": 72,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 14.73,
+       "event_zone": "G1",
+       "event_sku": "sierra_nacho",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 3,
+       "event_shopper": "P002",
+       "best_item_camera": "G1R-price-rail-1"
+      }
+     },
+     {
+      "clip": 7004,
+      "shopper": "P001",
+      "t": 23.2,
+      "sku": "voltlink_micro",
+      "slot": "G2R-S2-23",
+      "fixture": "G2",
+      "zone": "gondola",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 82,
+       "hand_frames": 63,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 23.2,
+       "event_zone": "G2",
+       "event_sku": "voltlink_micro",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 2,
+       "event_shopper": "P001",
+       "best_item_camera": "G2R-price-rail-1"
+      }
+     },
+     {
+      "clip": 7004,
+      "shopper": "P003",
+      "t": 23.43,
+      "sku": "fizzo_cherry",
+      "slot": "D8-S3-4",
+      "fixture": "CD08",
+      "zone": "cooler",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 27,
+       "hand_frames": 37,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 23.43,
+       "event_zone": "CD08",
+       "event_sku": "fizzo_cherry",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 4,
+       "event_shopper": "P003",
+       "best_item_camera": "COOLER-endcap-1"
+      }
+     },
+     {
+      "clip": 7004,
+      "shopper": "P001",
+      "t": 29.5,
+      "sku": "pacer_glacier",
+      "slot": "D4-S2-1",
+      "fixture": "CD04",
+      "zone": "cooler",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 57,
+       "hand_frames": 79,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 29.5,
+       "event_zone": "CD04",
+       "event_sku": "pacer_glacier",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 2,
+       "event_shopper": "P001",
+       "best_item_camera": "COOLER-ceiling-4"
+      }
+     },
+     {
+      "clip": 7004,
+      "shopper": "P004",
+      "t": 30.77,
+      "sku": "crunchly_sco",
+      "slot": "G1L-S1-11",
+      "fixture": "G1",
+      "zone": "gondola",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": false
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 59,
+       "hand_frames": 63,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 30.77,
+       "event_zone": "G1",
+       "event_sku": "crunchly_sco",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 5,
+       "event_shopper": "P004",
+       "best_item_camera": "G1L-wall-2"
+      }
+     },
+     {
+      "clip": 7004,
+      "shopper": "P004",
+      "t": 39,
+      "sku": "relieva_aceta",
+      "slot": "G1R-S2-10",
+      "fixture": "G1",
+      "zone": "gondola",
+      "outcome": "concealed",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": false,
+       "ledger_basket": true,
+       "alert": false
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 43,
+       "hand_frames": 79,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 39.0,
+       "event_zone": "G1",
+       "event_sku": "relieva_aceta",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 5,
+       "event_shopper": "P004",
+       "best_item_camera": "G1R-price-rail-1"
+      }
+     },
+     {
+      "clip": 7004,
+      "shopper": "P001",
+      "t": 43.47,
+      "sku": "cocoa_crest",
+      "slot": "CK-10",
+      "fixture": "COUNTER",
+      "zone": "checkout",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 38,
+       "hand_frames": 42,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 43.47,
+       "event_zone": "COUNTER",
+       "event_sku": "cocoa_crest",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 2,
+       "event_shopper": "P001",
+       "best_item_camera": "BACKBAR-price-rail-1"
+      }
+     },
+     {
+      "clip": 7004,
+      "shopper": "P004",
+      "t": 58.83,
+      "sku": "caramel_crest",
+      "slot": "G3L-S4-19",
+      "fixture": "G3",
+      "zone": "gondola",
+      "outcome": "concealed",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": false,
+       "ledger_basket": true,
+       "alert": false
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 20,
+       "hand_frames": 25,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 58.83,
+       "event_zone": "G3",
+       "event_sku": "caramel_crest",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 5,
+       "event_shopper": "P004",
+       "best_item_camera": "G3L-price-rail-2"
+      }
+     }
+    ],
+    "thefts": [
+     {
+      "clip": 7004,
+      "shopper": "P004",
+      "sku": "relieva_aceta",
+      "slot": "G1R-S2-10",
+      "t_pick": 39,
+      "t_conceal": 50.7,
+      "alert": false,
+      "alert_or_review": true,
+      "sku_in_alert": false,
+      "time_to_alert_s": null
+     },
+     {
+      "clip": 7004,
+      "shopper": "P004",
+      "sku": "caramel_crest",
+      "slot": "G3L-S4-19",
+      "t_pick": 58.83,
+      "t_conceal": 61.83,
+      "alert": false,
+      "alert_or_review": true,
+      "sku_in_alert": false,
+      "time_to_alert_s": null
+     }
+    ],
+    "alerts": [
+     {
+      "clip": 7004,
+      "alert_id": "A00001",
+      "tier": "review",
+      "person_id": 5,
+      "shopper": "P004",
+      "true_theft": true,
+      "t_emitted": 78.7,
+      "skus": [
+       "relieva_aceta",
+       "caramel_crest"
+      ],
+      "confidence": 0.5
+     }
+    ],
+    "pipeline_picks": 9,
+    "pipeline_picks_paired": 9,
+    "identity": {
+     "store_wide_ids": 5,
+     "ids_per_shopper": {
+      "P001": 1,
+      "P002": 1,
+      "P003": 1,
+      "P004": 1
+     },
+     "shoppers_never_tracked": [],
+     "ids_covering_two_shoppers": 0,
+     "enter_events": 4
+    },
+    "pipeline_events": {
+     "enter": 4,
+     "pick": 9,
+     "put_back": 1,
+     "pay": 8,
+     "exit": 4
+    },
+    "run": {}
+   }
+  },
+  {
+   "clip": 7005,
+   "cameras": [
+    "ENTRANCE-1",
+    "TRACK-1",
+    "TRACK-2",
+    "TRACK-3",
+    "TRACK-4"
+   ],
+   "shoppers": 8,
+   "identity": {
+    "ids": 10,
+    "ids_on_nobody": 0,
+    "ids_on_clerk": 1,
+    "ids_per_shopper": {
+     "P001": 2,
+     "P002": 1,
+     "P003": 1,
+     "P004": 1,
+     "P005": 1,
+     "P006": 1,
+     "P007": 1,
+     "P008": 1
+    },
+    "never_tracked": [],
+    "ids_covering_two_shoppers": 6,
+    "mixed_ids": [
+     2,
+     3,
+     4,
+     5,
+     8,
+     9
+    ]
+   },
+   "people_made": 10,
+   "exits_seen": 9,
+   "true_exits": 8,
+   "uncertain_ids": 8,
+   "mixed_ids_not_marked_uncertain": 0,
+   "counts": {
+    "not_placed": 421,
+    "births_start": 1,
+    "births_door": 8,
+    "second_box_frames": 26,
+    "hand_backs": 11,
+    "encounter_marks": 5,
+    "births_inside": 1
+   },
+   "position": {
+    "shopper_frames": 2677,
+    "covered": 2106,
+    "median_m": 0.062,
+    "p90_m": 2.344
+   },
+   "association": [
+    {
+     "t": 8.57,
+     "shopper": "P001",
+     "slot": "CK-2",
+     "person_id": 2,
+     "event_shopper": "P001",
+     "uncertain": false,
+     "candidates": [
+      [
+       2,
+       0.15
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.58 m in front, 0.00 m along, wrist line 0.07 m off"
+    },
+    {
+     "t": 17.93,
+     "shopper": "P002",
+     "slot": "D3-S2-8",
+     "person_id": 4,
+     "event_shopper": "P003",
+     "uncertain": true,
+     "candidates": [
+      [
+       4,
+       7.32
+      ],
+      [
+       3,
+       7.72
+      ]
+     ],
+     "right": false,
+     "margin": 0.4,
+     "why": "-0.32 m in front, 0.41 m along, wrist line 0.12 m off; person 3 fits almost as well (cost +0.4)"
+    },
+    {
+     "t": 19.43,
+     "shopper": "P003",
+     "slot": "D2-S2-7",
+     "person_id": 3,
+     "event_shopper": "P003",
+     "uncertain": false,
+     "candidates": [
+      [
+       3,
+       0.41
+      ],
+      [
+       4,
+       4.86
+      ]
+     ],
+     "right": true,
+     "margin": 4.45,
+     "why": "0.35 m in front, 0.05 m along, wrist line 0.09 m off"
+    },
+    {
+     "t": 20.5,
+     "shopper": "P005",
+     "slot": "G1R-S3-49",
+     "person_id": 6,
+     "event_shopper": "P005",
+     "uncertain": false,
+     "candidates": [
+      [
+       6,
+       2.08
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.20 m in front, 0.33 m along, wrist line 0.10 m off"
+    },
+    {
+     "t": 23.17,
+     "shopper": "P004",
+     "slot": "D2-S4-3",
+     "person_id": 5,
+     "event_shopper": "P003",
+     "uncertain": true,
+     "candidates": [
+      [
+       5,
+       10.82
+      ],
+      [
+       3,
+       13.08
+      ]
+     ],
+     "right": false,
+     "margin": 2.27,
+     "why": "-0.03 m in front, 0.64 m along, wrist line 0.50 m off; person 3 fits almost as well (cost +2.3)"
+    },
+    {
+     "t": 25.43,
+     "shopper": "P006",
+     "slot": "G3R-S1-19",
+     "person_id": 7,
+     "event_shopper": "P006",
+     "uncertain": false,
+     "candidates": [
+      [
+       7,
+       8.06
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.18 m in front, 0.05 m along, wrist line 0.67 m off"
+    },
+    {
+     "t": 27.7,
+     "shopper": "P002",
+     "slot": "G4R-S4-3",
+     "person_id": 4,
+     "event_shopper": "P002",
+     "uncertain": false,
+     "candidates": [
+      [
+       4,
+       0.11
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.43 m in front, 0.04 m along, wrist line 0.05 m off"
+    },
+    {
+     "t": 28.87,
+     "shopper": "P007",
+     "slot": "G4L-S4-14",
+     "person_id": 8,
+     "event_shopper": "P007",
+     "uncertain": false,
+     "candidates": [
+      [
+       8,
+       0.96
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.47 m in front, 0.00 m along, wrist line 0.24 m off"
+    },
+    {
+     "t": 29.4,
+     "shopper": "P005",
+     "slot": "G2R-S4-23",
+     "person_id": 6,
+     "event_shopper": "P005",
+     "uncertain": false,
+     "candidates": [
+      [
+       6,
+       0.37
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.43 m in front, 0.00 m along, wrist line 0.14 m off"
+    },
+    {
+     "t": 30.93,
+     "shopper": "P006",
+     "slot": "G3R-S4-29",
+     "person_id": 7,
+     "event_shopper": "P006",
+     "uncertain": false,
+     "candidates": [
+      [
+       7,
+       0.32
+      ],
+      [
+       8,
+       8.89
+      ]
+     ],
+     "right": true,
+     "margin": 8.56,
+     "why": "0.33 m in front, 0.02 m along, wrist line 0.01 m off"
+    },
+    {
+     "t": 35.97,
+     "shopper": "P002",
+     "slot": "CK-9",
+     "person_id": 4,
+     "event_shopper": "P002",
+     "uncertain": false,
+     "candidates": [
+      [
+       4,
+       2.43
+      ],
+      [
+       8,
+       16.71
+      ]
+     ],
+     "right": true,
+     "margin": 14.28,
+     "why": "0.15 m in front, 0.31 m along, wrist line 0.14 m off"
+    },
+    {
+     "t": 36.87,
+     "shopper": "P008",
+     "slot": "D5-S3-4",
+     "person_id": 2,
+     "event_shopper": "P008",
+     "uncertain": true,
+     "candidates": [
+      [
+       2,
+       11.25
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "2.81 m in front, 0.89 m along; identity uncertain: ids 2 and 9 were within 0.2 m of each other at 26.3s and may have been swapped"
+    },
+    {
+     "t": 37.47,
+     "shopper": "P006",
+     "slot": "G3R-S4-1",
+     "person_id": 7,
+     "event_shopper": "P006",
+     "uncertain": false,
+     "candidates": [
+      [
+       7,
+       0.11
+      ],
+      [
+       2,
+       3.91
+      ]
+     ],
+     "right": true,
+     "margin": 12.54,
+     "why": "0.43 m in front, 0.01 m along, wrist line 0.06 m off"
+    },
+    {
+     "t": 49.9,
+     "shopper": "P008",
+     "slot": "G4R-S3-20",
+     "person_id": 10,
+     "event_shopper": "P008",
+     "uncertain": true,
+     "candidates": [
+      [
+       10,
+       3.38
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.25 m in front, 0.01 m along, wrist line 0.41 m off; identity uncertain: first seen inside the store with nobody unaccounted for (entry not seen)"
+    }
+   ],
+   "chain": {
+    "clip": 7005,
+    "cameras": [
+     "REGISTER-top",
+     "ENTRANCE-1",
+     "TRACK-1",
+     "TRACK-2",
+     "TRACK-3",
+     "TRACK-4",
+     "BACKBAR-price-rail-1",
+     "COOLER-ceiling-4",
+     "G1R-price-rail-2",
+     "COOLER-ceiling-3",
+     "COOLER-price-rail-3",
+     "G3R-drop-rod-2",
+     "G4L-price-rail-3",
+     "COOLER-price-rail-2",
+     "G3R-price-rail-2",
+     "G4R-drop-rod-1",
+     "G1L-drop-rod-1",
+     "G2R-ceiling-1",
+     "G3L-price-rail-1",
+     "G2L-pole-on-gondola-1"
+    ],
+    "sim_seconds": 66,
+    "shoppers": 8,
+    "thieves": 5,
+    "honest": [
+     "P002",
+     "P004",
+     "P008"
+    ],
+    "picks": [
+     {
+      "clip": 7005,
+      "shopper": "P001",
+      "t": 8.57,
+      "sku": "peanut_pilot",
+      "slot": "CK-2",
+      "fixture": "COUNTER",
+      "zone": "checkout",
+      "outcome": "concealed",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": false,
+       "ledger_basket": true,
+       "alert": false
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 43,
+       "hand_frames": 22,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 8.57,
+       "event_zone": "COUNTER",
+       "event_sku": "peanut_pilot",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 2,
+       "event_shopper": "P001",
+       "best_item_camera": "BACKBAR-price-rail-1"
+      }
+     },
+     {
+      "clip": 7005,
+      "shopper": "P002",
+      "t": 17.93,
+      "sku": "pacer_orange",
+      "slot": "D3-S2-8",
+      "fixture": "CD03",
+      "zone": "cooler",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": false,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 59,
+       "hand_frames": 70,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 17.93,
+       "event_zone": "CD03",
+       "event_sku": "pacer_orange",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 4,
+       "event_shopper": "P003",
+       "best_item_camera": "COOLER-ceiling-4"
+      }
+     },
+     {
+      "clip": 7005,
+      "shopper": "P003",
+      "t": 19.43,
+      "sku": "clearwell_water",
+      "slot": "D2-S2-7",
+      "fixture": "CD02",
+      "zone": "cooler",
+      "outcome": "concealed",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": false,
+       "ledger_basket": true,
+       "alert": false
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 48,
+       "hand_frames": 58,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 19.43,
+       "event_zone": "CD02",
+       "event_sku": "clearwell_water",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 3,
+       "event_shopper": "P003",
+       "best_item_camera": "COOLER-ceiling-4"
+      }
+     },
+     {
+      "clip": 7005,
+      "shopper": "P005",
+      "t": 20.5,
+      "sku": "peanut_pilot",
+      "slot": "G1R-S3-49",
+      "fixture": "G1",
+      "zone": "gondola",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": false
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 32,
+       "hand_frames": 42,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 20.5,
+       "event_zone": "G1",
+       "event_sku": "peanut_pilot",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 6,
+       "event_shopper": "P005",
+       "best_item_camera": "G1R-price-rail-2"
+      }
+     },
+     {
+      "clip": 7005,
+      "shopper": "P004",
+      "t": 23.17,
+      "sku": "clearwell_water",
+      "slot": "D2-S4-3",
+      "fixture": "CD02",
+      "zone": "cooler",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": false,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 56,
+       "hand_frames": 64,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 23.17,
+       "event_zone": "CD02",
+       "event_sku": "clearwell_water",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 5,
+       "event_shopper": "P003",
+       "best_item_camera": "COOLER-ceiling-3"
+      }
+     },
+     {
+      "clip": 7005,
+      "shopper": "P006",
+      "t": 25.43,
+      "sku": "voltlink_micro",
+      "slot": "G3R-S1-19",
+      "fixture": "G3",
+      "zone": "gondola",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": false
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 52,
+       "hand_frames": 57,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 25.43,
+       "event_zone": "G3",
+       "event_sku": "voltlink_micro",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 7,
+       "event_shopper": "P006",
+       "best_item_camera": "COOLER-price-rail-3"
+      }
+     },
+     {
+      "clip": 7005,
+      "shopper": "P002",
+      "t": 27.7,
+      "sku": "cocoa_crest",
+      "slot": "G4R-S4-3",
+      "fixture": "G4",
+      "zone": "gondola",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 26,
+       "hand_frames": 21,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 27.7,
+       "event_zone": "G4",
+       "event_sku": "cocoa_crest",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 4,
+       "event_shopper": "P002",
+       "best_item_camera": "G3R-drop-rod-2"
+      }
+     },
+     {
+      "clip": 7005,
+      "shopper": "P007",
+      "t": 28.87,
+      "sku": "relieva_ibu",
+      "slot": "G4L-S4-14",
+      "fixture": "G4",
+      "zone": "gondola",
+      "outcome": "concealed",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": false,
+       "ledger_basket": true,
+       "alert": false
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 26,
+       "hand_frames": 53,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 28.87,
+       "event_zone": "G4",
+       "event_sku": "relieva_ibu",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 8,
+       "event_shopper": "P007",
+       "best_item_camera": "G4L-price-rail-3"
+      }
+     },
+     {
+      "clip": 7005,
+      "shopper": "P005",
+      "t": 29.4,
+      "sku": "ridgeline_original",
+      "slot": "G2R-S4-23",
+      "fixture": "G2",
+      "zone": "gondola",
+      "outcome": "concealed",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": false,
+       "ledger_basket": true,
+       "alert": false
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 42,
+       "hand_frames": 32,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 29.4,
+       "event_zone": "G2",
+       "event_sku": "ridgeline_original",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 6,
+       "event_shopper": "P005",
+       "best_item_camera": "COOLER-price-rail-2"
+      }
+     },
+     {
+      "clip": 7005,
+      "shopper": "P006",
+      "t": 30.93,
+      "sku": "voltlink_micro",
+      "slot": "G3R-S4-29",
+      "fixture": "G3",
+      "zone": "gondola",
+      "outcome": "concealed",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": false,
+       "ledger_basket": true,
+       "alert": false
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 47,
+       "hand_frames": 38,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 30.93,
+       "event_zone": "G3",
+       "event_sku": "voltlink_micro",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 7,
+       "event_shopper": "P006",
+       "best_item_camera": "G3R-price-rail-2"
+      }
+     },
+     {
+      "clip": 7005,
+      "shopper": "P002",
+      "t": 35.97,
+      "sku": "cocoa_crest",
+      "slot": "CK-9",
+      "fixture": "COUNTER",
+      "zone": "checkout",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 38,
+       "hand_frames": 41,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 35.97,
+       "event_zone": "COUNTER",
+       "event_sku": "cocoa_crest",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 4,
+       "event_shopper": "P002",
+       "best_item_camera": "BACKBAR-price-rail-1"
+      }
+     },
+     {
+      "clip": 7005,
+      "shopper": "P008",
+      "t": 36.87,
+      "sku": "lumen_citrus",
+      "slot": "D5-S3-4",
+      "fixture": "CD05",
+      "zone": "cooler",
+      "outcome": "put_back",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": false,
+       "ledger_basket": false,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 26,
+       "hand_frames": 21,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 36.87,
+       "event_zone": "CD05",
+       "event_sku": "lumen_citrus",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 2,
+       "event_shopper": "P008",
+       "best_item_camera": "COOLER-ceiling-3"
+      }
+     },
+     {
+      "clip": 7005,
+      "shopper": "P006",
+      "t": 37.47,
+      "sku": "torqueline_10w30",
+      "slot": "G3R-S4-1",
+      "fixture": "G3",
+      "zone": "gondola",
+      "outcome": "concealed",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": false,
+       "ledger_basket": true,
+       "alert": false
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 49,
+       "hand_frames": 42,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 37.47,
+       "event_zone": "G3",
+       "event_sku": "torqueline_10w30",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 7,
+       "event_shopper": "P006",
+       "best_item_camera": "COOLER-price-rail-3"
+      }
+     },
+     {
+      "clip": 7005,
+      "shopper": "P008",
+      "t": 49.9,
+      "sku": "relieva_ibu",
+      "slot": "G4R-S3-20",
+      "fixture": "G4",
+      "zone": "gondola",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 30,
+       "hand_frames": 39,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 49.9,
+       "event_zone": "G4",
+       "event_sku": "relieva_ibu",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 10,
+       "event_shopper": "P008",
+       "best_item_camera": "G4R-drop-rod-1"
+      }
+     }
+    ],
+    "thefts": [
+     {
+      "clip": 7005,
+      "shopper": "P001",
+      "sku": "peanut_pilot",
+      "slot": "CK-2",
+      "t_pick": 8.57,
+      "t_conceal": 20.23,
+      "alert": false,
+      "alert_or_review": false,
+      "sku_in_alert": false,
+      "time_to_alert_s": null
+     },
+     {
+      "clip": 7005,
+      "shopper": "P003",
+      "sku": "clearwell_water",
+      "slot": "D2-S2-7",
+      "t_pick": 19.43,
+      "t_conceal": 22.43,
+      "alert": false,
+      "alert_or_review": true,
+      "sku_in_alert": false,
+      "time_to_alert_s": null
+     },
+     {
+      "clip": 7005,
+      "shopper": "P007",
+      "sku": "relieva_ibu",
+      "slot": "G4L-S4-14",
+      "t_pick": 28.87,
+      "t_conceal": 32.47,
+      "alert": false,
+      "alert_or_review": false,
+      "sku_in_alert": false,
+      "time_to_alert_s": null
+     },
+     {
+      "clip": 7005,
+      "shopper": "P005",
+      "sku": "ridgeline_original",
+      "slot": "G2R-S4-23",
+      "t_pick": 29.4,
+      "t_conceal": 32.4,
+      "alert": false,
+      "alert_or_review": true,
+      "sku_in_alert": false,
+      "time_to_alert_s": null
+     },
+     {
+      "clip": 7005,
+      "shopper": "P006",
+      "sku": "voltlink_micro",
+      "slot": "G3R-S4-29",
+      "t_pick": 30.93,
+      "t_conceal": 33.93,
+      "alert": false,
+      "alert_or_review": true,
+      "sku_in_alert": false,
+      "time_to_alert_s": null
+     },
+     {
+      "clip": 7005,
+      "shopper": "P006",
+      "sku": "torqueline_10w30",
+      "slot": "G3R-S4-1",
+      "t_pick": 37.47,
+      "t_conceal": 40.47,
+      "alert": false,
+      "alert_or_review": true,
+      "sku_in_alert": false,
+      "time_to_alert_s": null
+     }
+    ],
+    "alerts": [
+     {
+      "clip": 7005,
+      "alert_id": "A00001",
+      "tier": "review",
+      "person_id": 3,
+      "shopper": "P003",
+      "true_theft": true,
+      "t_emitted": 45.6,
+      "skus": [
+       "clearwell_water",
+       "peanut_pilot",
+       "lumen_citrus"
+      ],
+      "confidence": 0.55
+     },
+     {
+      "clip": 7005,
+      "alert_id": "A00002",
+      "tier": "review",
+      "person_id": 6,
+      "shopper": "P005",
+      "true_theft": true,
+      "t_emitted": 48.8,
+      "skus": [
+       "ridgeline_original"
+      ],
+      "confidence": 0.45
+     },
+     {
+      "clip": 7005,
+      "alert_id": "A00003",
+      "tier": "review",
+      "person_id": 8,
+      "shopper": "P006",
+      "true_theft": true,
+      "t_emitted": 56.9,
+      "skus": [
+       "relieva_ibu",
+       "voltlink_micro",
+       "torqueline_10w30"
+      ],
+      "confidence": 0.55
+     }
+    ],
+    "pipeline_picks": 14,
+    "pipeline_picks_paired": 14,
+    "identity": {
+     "store_wide_ids": 10,
+     "ids_per_shopper": {
+      "P001": 2,
+      "P002": 1,
+      "P003": 1,
+      "P004": 1,
+      "P005": 1,
+      "P006": 1,
+      "P007": 1,
+      "P008": 1
+     },
+     "shoppers_never_tracked": [],
+     "ids_covering_two_shoppers": 6,
+     "enter_events": 9
+    },
+    "pipeline_events": {
+     "enter": 9,
+     "pay": 12,
+     "pick": 14,
+     "exit": 9
+    },
+    "run": {}
+   }
+  },
+  {
+   "clip": 7006,
+   "cameras": [
+    "ENTRANCE-1",
+    "TRACK-1",
+    "TRACK-2",
+    "TRACK-3",
+    "TRACK-4"
+   ],
+   "shoppers": 7,
+   "identity": {
+    "ids": 10,
+    "ids_on_nobody": 0,
+    "ids_on_clerk": 2,
+    "ids_per_shopper": {
+     "P001": 1,
+     "P002": 1,
+     "P003": 1,
+     "P004": 1,
+     "P005": 2,
+     "P006": 1,
+     "P007": 1
+    },
+    "never_tracked": [],
+    "ids_covering_two_shoppers": 4,
+    "mixed_ids": [
+     2,
+     4,
+     8,
+     1
+    ]
+   },
+   "people_made": 10,
+   "exits_seen": 8,
+   "true_exits": 7,
+   "uncertain_ids": 8,
+   "mixed_ids_not_marked_uncertain": 0,
+   "counts": {
+    "not_placed": 1435,
+    "births_start": 1,
+    "births_door": 6,
+    "second_box_frames": 60,
+    "births_inside": 3,
+    "encounter_marks": 4,
+    "hand_backs": 10,
+    "uncertain_marks": 1
+   },
+   "position": {
+    "shopper_frames": 2928,
+    "covered": 2382,
+    "median_m": 0.065,
+    "p90_m": 0.572
+   },
+   "association": [
+    {
+     "t": 11.6,
+     "shopper": "P002",
+     "slot": "G3R-S3-46",
+     "person_id": 3,
+     "event_shopper": "P003",
+     "uncertain": true,
+     "candidates": [
+      [
+       3,
+       2.49
+      ],
+      [
+       4,
+       4.85
+      ],
+      [
+       2,
+       8.37
+      ]
+     ],
+     "right": false,
+     "margin": 2.36,
+     "why": "0.64 m in front, 0.13 m along, wrist line 0.36 m off; person 4 fits almost as well (cost +2.4)"
+    },
+    {
+     "t": 13.73,
+     "shopper": "P003",
+     "slot": "G3R-S4-42",
+     "person_id": 3,
+     "event_shopper": "P003",
+     "uncertain": true,
+     "candidates": [
+      [
+       3,
+       0.46
+      ],
+      [
+       2,
+       9.04
+      ],
+      [
+       4,
+       12.43
+      ]
+     ],
+     "right": true,
+     "margin": 8.58,
+     "why": "0.36 m in front, 0.03 m along, wrist line 0.12 m off; identity uncertain: ids 3 and 4 were within 0.2 m of each other at 12.0s and may have been swapped"
+    },
+    {
+     "t": 15.1,
+     "shopper": "P001",
+     "slot": "G1L-S2-14",
+     "person_id": 5,
+     "event_shopper": "P001",
+     "uncertain": true,
+     "candidates": [
+      [
+       5,
+       4.06
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.73 m in front, 0.24 m along, wrist line 0.43 m off; identity uncertain: first seen inside the store with nobody unaccounted for (entry not seen)"
+    },
+    {
+     "t": 21.17,
+     "shopper": "P005",
+     "slot": "CK-12",
+     "person_id": 2,
+     "event_shopper": "P005",
+     "uncertain": true,
+     "candidates": [
+      [
+       2,
+       0.62
+      ],
+      [
+       8,
+       1.53
+      ],
+      [
+       3,
+       14.68
+      ]
+     ],
+     "right": true,
+     "margin": 0.91,
+     "why": "0.27 m in front, 0.06 m along, wrist line 0.02 m off; person 8 fits almost as well (cost +0.9)"
+    },
+    {
+     "t": 21.9,
+     "shopper": "P004",
+     "slot": "G2L-S3-30",
+     "person_id": 6,
+     "event_shopper": "P004",
+     "uncertain": false,
+     "candidates": [
+      [
+       6,
+       0.11
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.41 m in front, 0.01 m along, wrist line 0.03 m off"
+    },
+    {
+     "t": 23,
+     "shopper": "P002",
+     "slot": "G1L-S3-39",
+     "person_id": 4,
+     "event_shopper": "P002",
+     "uncertain": true,
+     "candidates": [
+      [
+       4,
+       0.26
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.36 m in front, 0.06 m along, wrist line 0.03 m off; identity uncertain: ids 3 and 4 were within 0.2 m of each other at 12.0s and may have been swapped"
+    },
+    {
+     "t": 23.27,
+     "shopper": "P003",
+     "slot": "CK-1",
+     "person_id": 8,
+     "event_shopper": "P003",
+     "uncertain": true,
+     "candidates": [
+      [
+       8,
+       1.05
+      ],
+      [
+       3,
+       1.08
+      ],
+      [
+       2,
+       12.04
+      ]
+     ],
+     "right": true,
+     "margin": 0.03,
+     "why": "0.26 m in front, 0.21 m along, wrist line 0.05 m off; person 3 fits almost as well (cost +0.0); identity uncertain: first seen inside the store with nobody unaccounted for (entry not seen)"
+    },
+    {
+     "t": 25.93,
+     "shopper": "P001",
+     "slot": "D4-S3-2",
+     "person_id": 5,
+     "event_shopper": "P001",
+     "uncertain": true,
+     "candidates": [
+      [
+       5,
+       2.73
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "1.19 m in front, 0.88 m along; identity uncertain: first seen inside the store with nobody unaccounted for (entry not seen)"
+    },
+    {
+     "t": 27.7,
+     "shopper": "P006",
+     "slot": "G4L-S3-24",
+     "person_id": 7,
+     "event_shopper": "P006",
+     "uncertain": false,
+     "candidates": [
+      [
+       7,
+       0.78
+      ],
+      [
+       5,
+       8.64
+      ],
+      [
+       3,
+       9.03
+      ]
+     ],
+     "right": true,
+     "margin": 8.24,
+     "why": "0.44 m in front, 0.01 m along, wrist line 0.22 m off"
+    },
+    {
+     "t": 34.83,
+     "shopper": "P004",
+     "slot": "G2R-S1-19",
+     "person_id": 6,
+     "event_shopper": "P004",
+     "uncertain": true,
+     "candidates": [
+      [
+       6,
+       0.4
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.35 m in front, 0.06 m along, wrist line 0.08 m off; identity uncertain: ids 9 and 6 were within 0.2 m of each other at 32.6s and may have been swapped"
+    },
+    {
+     "t": 36.07,
+     "shopper": "P007",
+     "slot": "D4-S3-3",
+     "person_id": 9,
+     "event_shopper": "P007",
+     "uncertain": true,
+     "candidates": [
+      [
+       9,
+       3.32
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "-0.01 m in front, 0.49 m along; identity uncertain: ids 9 and 6 were within 0.2 m of each other at 32.6s and may have been swapped"
+    },
+    {
+     "t": 37.57,
+     "shopper": "P006",
+     "slot": "CK-9",
+     "person_id": 7,
+     "event_shopper": "P006",
+     "uncertain": false,
+     "candidates": [
+      [
+       7,
+       0.34
+      ],
+      [
+       5,
+       13.81
+      ]
+     ],
+     "right": true,
+     "margin": 13.47,
+     "why": "0.54 m in front, 0.01 m along, wrist line 0.14 m off"
+    },
+    {
+     "t": 39.83,
+     "shopper": "P002",
+     "slot": "G1L-S4-12",
+     "person_id": 4,
+     "event_shopper": "P002",
+     "uncertain": true,
+     "candidates": [
+      [
+       4,
+       3.05
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.96 m in front, 0.21 m along, wrist line 0.14 m off; identity uncertain: ids 3 and 4 were within 0.2 m of each other at 12.0s and may have been swapped"
+    },
+    {
+     "t": 42.57,
+     "shopper": "P004",
+     "slot": "G3L-S4-47",
+     "person_id": 6,
+     "event_shopper": "P004",
+     "uncertain": true,
+     "candidates": [
+      [
+       6,
+       0.09
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.43 m in front, 0.07 m along, wrist line 0.01 m off; identity uncertain: ids 9 and 6 were within 0.2 m of each other at 32.6s and may have been swapped"
+    },
+    {
+     "t": 51.73,
+     "shopper": "P004",
+     "slot": "D4-S2-1",
+     "person_id": 6,
+     "event_shopper": "P004",
+     "uncertain": true,
+     "candidates": [
+      [
+       6,
+       3.2
+      ]
+     ],
+     "right": true,
+     "margin": Infinity,
+     "why": "0.42 m in front, 0.73 m along; identity uncertain: ids 9 and 6 were within 0.2 m of each other at 32.6s and may have been swapped"
+    }
+   ],
+   "chain": {
+    "clip": 7006,
+    "cameras": [
+     "REGISTER-top",
+     "ENTRANCE-1",
+     "TRACK-1",
+     "TRACK-2",
+     "TRACK-3",
+     "TRACK-4",
+     "G3R-pole-on-gondola-1",
+     "G1L-wall-1",
+     "BACKBAR-price-rail-1",
+     "COOLER-price-rail-1",
+     "G2L-drop-rod-1",
+     "COOLER-ceiling-4",
+     "G4L-price-rail-3",
+     "G2R-price-rail-1",
+     "G1L-drop-rod-1",
+     "G2L-pole-on-gondola-1",
+     "G3R-price-rail-1",
+     "G3R-drop-rod-1",
+     "COOLER-price-rail-5",
+     "COOLER-price-rail-3"
+    ],
+    "sim_seconds": 75,
+    "shoppers": 7,
+    "thieves": 2,
+    "honest": [
+     "P001",
+     "P003",
+     "P004",
+     "P005",
+     "P007"
+    ],
+    "picks": [
+     {
+      "clip": 7006,
+      "shopper": "P002",
+      "t": 11.6,
+      "sku": "peanut_pilot",
+      "slot": "G3R-S3-46",
+      "fixture": "G3",
+      "zone": "gondola",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": false,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": false
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 37,
+       "hand_frames": 33,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 11.6,
+       "event_zone": "G3",
+       "event_sku": "peanut_pilot",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 3,
+       "event_shopper": "P003",
+       "best_item_camera": "G3R-pole-on-gondola-1"
+      }
+     },
+     {
+      "clip": 7006,
+      "shopper": "P003",
+      "t": 13.73,
+      "sku": "ridgeline_original",
+      "slot": "G3R-S4-42",
+      "fixture": "G3",
+      "zone": "gondola",
+      "outcome": "put_back",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 75,
+       "hand_frames": 60,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 13.73,
+       "event_zone": "G3",
+       "event_sku": "ridgeline_original",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 3,
+       "event_shopper": "P003",
+       "best_item_camera": "G3R-pole-on-gondola-1"
+      }
+     },
+     {
+      "clip": 7006,
+      "shopper": "P001",
+      "t": 15.1,
+      "sku": "peanut_pilot",
+      "slot": "G1L-S2-14",
+      "fixture": "G1",
+      "zone": "gondola",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 44,
+       "hand_frames": 30,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 15.1,
+       "event_zone": "G1",
+       "event_sku": "peanut_pilot",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 5,
+       "event_shopper": "P001",
+       "best_item_camera": "G1L-wall-1"
+      }
+     },
+     {
+      "clip": 7006,
+      "shopper": "P005",
+      "t": 21.17,
+      "sku": "cocoa_crest",
+      "slot": "CK-12",
+      "fixture": "COUNTER",
+      "zone": "checkout",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 35,
+       "hand_frames": 42,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 21.17,
+       "event_zone": "COUNTER",
+       "event_sku": "cocoa_crest",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 2,
+       "event_shopper": "P005",
+       "best_item_camera": "BACKBAR-price-rail-1"
+      }
+     },
+     {
+      "clip": 7006,
+      "shopper": "P004",
+      "t": 21.9,
+      "sku": "relieva_ibu",
+      "slot": "G2L-S3-30",
+      "fixture": "G2",
+      "zone": "gondola",
+      "outcome": "put_back",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 52,
+       "hand_frames": 45,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 21.9,
+       "event_zone": "G2",
+       "event_sku": "relieva_ibu",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 6,
+       "event_shopper": "P004",
+       "best_item_camera": "COOLER-price-rail-1"
+      }
+     },
+     {
+      "clip": 7006,
+      "shopper": "P002",
+      "t": 23,
+      "sku": "torqueline_5w30",
+      "slot": "G1L-S3-39",
+      "fixture": "G1",
+      "zone": "gondola",
+      "outcome": "concealed",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": false,
+       "ledger_basket": true,
+       "alert": false
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 23,
+       "hand_frames": 20,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 23.0,
+       "event_zone": "G1",
+       "event_sku": "torqueline_5w30",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 4,
+       "event_shopper": "P002",
+       "best_item_camera": "G2L-drop-rod-1"
+      }
+     },
+     {
+      "clip": 7006,
+      "shopper": "P003",
+      "t": 23.27,
+      "sku": "cocoa_crest",
+      "slot": "CK-1",
+      "fixture": "COUNTER",
+      "zone": "checkout",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": false,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 33,
+       "hand_frames": 42,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 23.27,
+       "event_zone": "COUNTER",
+       "event_sku": "cocoa_crest",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 8,
+       "event_shopper": "P003",
+       "best_item_camera": "BACKBAR-price-rail-1"
+      }
+     },
+     {
+      "clip": 7006,
+      "shopper": "P001",
+      "t": 25.93,
+      "sku": "pacer_orange",
+      "slot": "D4-S3-2",
+      "fixture": "CD04",
+      "zone": "cooler",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 58,
+       "hand_frames": 70,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 25.93,
+       "event_zone": "CD04",
+       "event_sku": "pacer_orange",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 5,
+       "event_shopper": "P001",
+       "best_item_camera": "COOLER-ceiling-4"
+      }
+     },
+     {
+      "clip": 7006,
+      "shopper": "P006",
+      "t": 27.7,
+      "sku": "ridgeline_teriyaki",
+      "slot": "G4L-S3-24",
+      "fixture": "G4",
+      "zone": "gondola",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": false
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 30,
+       "hand_frames": 28,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 27.7,
+       "event_zone": "G4",
+       "event_sku": "ridgeline_teriyaki",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 7,
+       "event_shopper": "P006",
+       "best_item_camera": "G4L-price-rail-3"
+      }
+     },
+     {
+      "clip": 7006,
+      "shopper": "P004",
+      "t": 34.83,
+      "sku": "relieva_ibu",
+      "slot": "G2R-S1-19",
+      "fixture": "G2",
+      "zone": "gondola",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 33,
+       "hand_frames": 29,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 34.83,
+       "event_zone": "G2",
+       "event_sku": "relieva_ibu",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 6,
+       "event_shopper": "P004",
+       "best_item_camera": "G2R-price-rail-1"
+      }
+     },
+     {
+      "clip": 7006,
+      "shopper": "P007",
+      "t": 36.07,
+      "sku": "pacer_orange",
+      "slot": "D4-S3-3",
+      "fixture": "CD04",
+      "zone": "cooler",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 62,
+       "hand_frames": 84,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 36.07,
+       "event_zone": "CD04",
+       "event_sku": "pacer_orange",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 9,
+       "event_shopper": "P007",
+       "best_item_camera": "COOLER-ceiling-4"
+      }
+     },
+     {
+      "clip": 7006,
+      "shopper": "P006",
+      "t": 37.57,
+      "sku": "peanut_pilot",
+      "slot": "CK-9",
+      "fixture": "COUNTER",
+      "zone": "checkout",
+      "outcome": "concealed",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": false,
+       "ledger_basket": true,
+       "alert": false
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 39,
+       "hand_frames": 42,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 37.57,
+       "event_zone": "COUNTER",
+       "event_sku": "peanut_pilot",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 7,
+       "event_shopper": "P006",
+       "best_item_camera": "BACKBAR-price-rail-1"
+      }
+     },
+     {
+      "clip": 7006,
+      "shopper": "P002",
+      "t": 39.83,
+      "sku": "peanut_pilot",
+      "slot": "G1L-S4-12",
+      "fixture": "G1",
+      "zone": "gondola",
+      "outcome": "concealed",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": false,
+       "ledger_basket": true,
+       "alert": false
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 39,
+       "hand_frames": 39,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 39.83,
+       "event_zone": "G1",
+       "event_sku": "peanut_pilot",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 4,
+       "event_shopper": "P002",
+       "best_item_camera": "G1L-drop-rod-1"
+      }
+     },
+     {
+      "clip": 7006,
+      "shopper": "P004",
+      "t": 42.57,
+      "sku": "caramel_crest",
+      "slot": "G3L-S4-47",
+      "fixture": "G3",
+      "zone": "gondola",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 4,
+       "hand_frames": 42,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 42.57,
+       "event_zone": "G3",
+       "event_sku": "caramel_crest",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 6,
+       "event_shopper": "P004",
+       "best_item_camera": "G2L-pole-on-gondola-1"
+      }
+     },
+     {
+      "clip": 7006,
+      "shopper": "P004",
+      "t": 51.73,
+      "sku": "pacer_orange",
+      "slot": "D4-S2-1",
+      "fixture": "CD04",
+      "zone": "cooler",
+      "outcome": "paid",
+      "stages": {
+       "in_view": true,
+       "frame_reached_pipeline": false,
+       "hand_or_item_detected": false,
+       "shelf_event_emitted": true,
+       "right_slot": false,
+       "right_sku": true,
+       "associated_to_a_shopper": true,
+       "right_shopper": true,
+       "conceal_or_pay_classified": true,
+       "ledger_basket": true,
+       "alert": true
+      },
+      "lost_at": "frame_reached_pipeline",
+      "detail": {
+       "item_frames": 57,
+       "hand_frames": 62,
+       "item_frames_reached": 0,
+       "hand_frames_reached": 0,
+       "item_detected": false,
+       "right_sku_detected": false,
+       "person_detected": false,
+       "hand_detected": false,
+       "event_t": 51.73,
+       "event_zone": "CD04",
+       "event_sku": "pacer_orange",
+       "event_slot": null,
+       "right_fixture": true,
+       "event_person": 6,
+       "event_shopper": "P004",
+       "best_item_camera": "COOLER-ceiling-4"
+      }
+     }
+    ],
+    "thefts": [
+     {
+      "clip": 7006,
+      "shopper": "P002",
+      "sku": "torqueline_5w30",
+      "slot": "G1L-S3-39",
+      "t_pick": 23,
+      "t_conceal": 31.97,
+      "alert": false,
+      "alert_or_review": true,
+      "sku_in_alert": false,
+      "time_to_alert_s": null
+     },
+     {
+      "clip": 7006,
+      "shopper": "P006",
+      "sku": "peanut_pilot",
+      "slot": "CK-9",
+      "t_pick": 37.57,
+      "t_conceal": 49.67,
+      "alert": false,
+      "alert_or_review": true,
+      "sku_in_alert": false,
+      "time_to_alert_s": null
+     },
+     {
+      "clip": 7006,
+      "shopper": "P002",
+      "sku": "peanut_pilot",
+      "slot": "G1L-S4-12",
+      "t_pick": 39.83,
+      "t_conceal": 45.83,
+      "alert": false,
+      "alert_or_review": true,
+      "sku_in_alert": false,
+      "time_to_alert_s": null
+     }
+    ],
+    "alerts": [
+     {
+      "clip": 7006,
+      "alert_id": "A00001",
+      "tier": "review",
+      "person_id": 7,
+      "shopper": "P006",
+      "true_theft": true,
+      "t_emitted": 70.6,
+      "skus": [
+       "peanut_pilot",
+       "cocoa_crest"
+      ],
+      "confidence": 0.5
+     },
+     {
+      "clip": 7006,
+      "alert_id": "A00002",
+      "tier": "review",
+      "person_id": 4,
+      "shopper": "P002",
+      "true_theft": true,
+      "t_emitted": 73.3,
+      "skus": [
+       "torqueline_5w30",
+       "peanut_pilot"
+      ],
+      "confidence": 0.5
+     }
+    ],
+    "pipeline_picks": 15,
+    "pipeline_picks_paired": 15,
+    "identity": {
+     "store_wide_ids": 10,
+     "ids_per_shopper": {
+      "P001": 1,
+      "P002": 1,
+      "P003": 1,
+      "P004": 1,
+      "P005": 2,
+      "P006": 1,
+      "P007": 1
+     },
+     "shoppers_never_tracked": [],
+     "ids_covering_two_shoppers": 4,
+     "enter_events": 8
+    },
+    "pipeline_events": {
+     "enter": 8,
+     "pick": 15,
+     "put_back": 2,
+     "pay": 16,
+     "exit": 8
+    },
+    "run": {}
+   }
+  }
+ ],
+ "chain_scorecard": {
+  "clips": 6,
+  "sim_seconds": 421,
+  "shoppers": 37,
+  "thieves": 15,
+  "honest_shoppers": 22,
+  "true_picks": 70,
+  "stolen_items": 20,
+  "theft_recall_alert": 0.0,
+  "thefts_alerted": 0,
+  "theft_recall_alert_or_review": 0.8,
+  "thefts_alerted_or_reviewed": 16,
+  "thefts_alerted_with_the_right_sku": 0,
+  "alerts": 0,
+  "true_alerts": 0,
+  "alert_precision": null,
+  "false_alerts_on_honest_shoppers": 0,
+  "false_alerts_on_nobody": 0,
+  "reviews": 12,
+  "reviews_on_honest_shoppers": 1,
+  "false_alerts_per_hour": 0.0,
+  "pipeline_picks": 70,
+  "pick_recall": 1.0,
+  "pick_precision": 1.0,
+  "right_sku_of_paired_picks": 1.0,
+  "right_sku_of_all_true_picks": 1.0,
+  "right_slot_of_paired_picks": 0.0,
+  "right_shopper_of_paired_picks": 0.943,
+  "time_to_alert_s": null,
+  "store_wide_ids_per_shopper": 1.27,
+  "store_wide_ids": 47,
+  "ids_on_one_shopper_mean": 1.08,
+  "ids_on_one_shopper_max": 2,
+  "shoppers_never_tracked": 0,
+  "ids_covering_two_shoppers": 20
+ }
+}

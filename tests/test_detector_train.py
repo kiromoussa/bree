@@ -182,3 +182,13 @@ def test_review_manifest_feeds_the_finetune_dataset(tmp_path):
     spec.loader.exec_module(ft)
     tiles = ft.tile_yolo_dataset(y, tmp_path / "tiles")
     assert list((tmp_path / "tiles" / "labels" / "train").glob("*.txt")) and yaml.safe_load(tiles.read_text())["names"] == d["names"]
+
+
+def test_build_without_a_train_scene_says_so(tmp_path):
+    """Audit 2026-10-05: SKU_SEEDS=1000:1001 died with KeyError 'can' in visible_share."""
+    seeds = [s for s in range(1000, 1040) if ds.split_of(s) != "train"][:2]
+    _fake_frames(tmp_path / "frames", seeds)
+    with pytest.raises(SystemExit, match="no train scenes"):
+        ds.build(tmp_path / "frames", tmp_path / "out")
+    assert [ds.split_of(s) for s in range(1000, 1004)].count("train") >= 1      # the README's smoke range has a train seed
+    assert {ds.split_of(s) for s in range(1000, 1004)} == {"train", "val", "test"}

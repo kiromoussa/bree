@@ -59,6 +59,22 @@ const S = { arrive: [], k: 0, theft: 0.4, dr: Math.random, params: null };
 const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
 const SKIN = [0xc69c7b, 0x8d5a3b, 0xe0b899, 0x5c3a24, 0xb57f5a, 0xf1d0b5, 0x70452b, 0xd8a47f];
 
+// The clerk behind the counter. main.js builds it once per page load and leaves its sleeve length to
+// Math.random, so two renders of the same seed differed in the clerk's forearm (a few hundred pixels in
+// every frame of a camera that sees the counter from above; found by the audit of 2026-10-05). It is
+// rebuilt per seed from its own generator. The DR stream and the shopper stream are not touched, so every
+// other pixel of a seed is what it was. The constants are main.js's (simulator commit a4f479f).
+const CLERK = { look: { shirt: 0x2b5f8a, pants: 0x1d1f23, skin: 0xb57f5a, hair: 0x1a1410, scale: 0.98 }, pos: new THREE.Vector3(6.2, 0, 3.3), hand: new THREE.Vector3(5.62, 1.02, 3.15) };
+let clerk = scene.children.find(o => o.isGroup && o.position.distanceTo(CLERK.pos) < 1e-6 && Math.abs(o.scale.x - CLERK.look.scale) < 1e-9);
+if (!clerk) throw new Error('synth: clerk figure not found where main.js puts it (the simulator changed)');
+function seedClerk(seed) {
+  const fig = new Figure({ ...CLERK.look, longSleeve: mulberry32(seed * 104729 + CLERK_SALT)() < 0.5 }), i = scene.children.indexOf(clerk);
+  clerk.traverse(o => o.geometry?.dispose());
+  scene.children[i] = fig.root; fig.root.parent = scene; clerk.parent = null; clerk = fig.root; // same place in the scene's child list
+  fig.update({ heading: -Math.PI / 2, pos: CLERK.pos, hands: [CLERK.hand, null] });
+}
+const CLERK_SALT = 5; // any number; 5 makes seed 5001 draw the short sleeve the recorded clip (data/synth/clip_5001_door) happened to get
+
 // One randomised scene. layout: version 1 layout (cameras). Everything here draws from the DR stream;
 // shoppers draw from their own stream (sim.rand), so shopper behaviour for a seed does not depend on DR options.
 function setup(seed, layout, { shoppers = 10, window = 20, theft = 0.4, jitter = true, swap = true } = {}) {
@@ -69,6 +85,7 @@ function setup(seed, layout, { shoppers = 10, window = 20, theft = 0.4, jitter =
   const cams = layout.cameras.map(c => ({ id: c.id, kind: c.kind, resolution: c.resolution, position: c.position.map(v => v + u(-J.pos, J.pos)),
     yaw: c.yaw + u(-J.ang, J.ang), pitch: c.pitch + u(-J.ang, J.ang), hfov: c.hfov * (1 + u(-J.fov, J.fov)) }));
   sim.shoppers.forEach(s => s.dispose()); sim.shoppers.length = 0; sim.events.length = 0; sim.tracks.length = 0; sim.time = 0;
+  seedClerk(seed);
   api.loadLayout({ version: 1, cameras: cams });
   sim.vcams.forEach(vc => { vc.cam.rotation.z = u(-J.roll, J.roll); vc.cam.updateMatrixWorld(true); });
   // lights: brightness, direction, warm or cool cast, exposure

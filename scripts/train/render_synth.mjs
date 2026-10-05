@@ -11,6 +11,7 @@
 //
 // The copy lives in out/sim-copy (made from --sim-src on first use; the original simulator is never run or edited).
 // Needs Chrome, Playwright (BREE_PLAYWRIGHT=/path/to/node_modules/playwright) and network for three.js (CDN).
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -24,7 +25,18 @@ const simDir = path.resolve(a.sim ?? path.join(REPO, 'out/sim-copy'));
 const layoutFile = a.layout ?? path.join(home, 'bree/software/shared/layouts/recommended-47.json');
 if (!a.out || a.help) { console.error('usage: render_synth.mjs --out DIR (--seeds A:B | --clip --seed N) [--layout f.json] [--captures 4] [--hand 3] [--rand 3] [--shoppers 10]\n       clip: [--fps 10] [--cams id,id] [--max-cams 6] [--max-seconds 90] [--no-jitter]'); process.exit(2); }
 
-if (!fs.existsSync(path.join(simDir, 'index.html'))) { fs.cpSync(simSrc, simDir, { recursive: true }); console.error(`copied ${simSrc} -> ${simDir}`); }
+// Which simulator version the copy is: recorded when the copy is made, written into every clip.json and into
+// <out>/sim_copy.json for a dataset (dataset.py puts it in meta.json). The copy is only made on first use, so
+// it can be older than the simulator next door: delete out/sim-copy to render from the current one.
+const prov = path.join(simDir, 'COPIED_FROM.json');
+if (!fs.existsSync(path.join(simDir, 'index.html'))) {
+  fs.cpSync(simSrc, simDir, { recursive: true });
+  const git = (...args) => { try { return execFileSync('git', ['-C', simSrc, ...args], { encoding: 'utf8' }).trim(); } catch { return null; } };
+  fs.writeFileSync(prov, JSON.stringify({ source: simSrc, commit: git('log', '-1', '--format=%h %cI', '--', '.') ?? 'not a git checkout',
+    uncommitted_changes: !!git('status', '--porcelain', '--', '.'), copied_at: new Date().toISOString() }, null, 1));
+  console.error(`copied ${simSrc} -> ${simDir}`);
+}
+const simInfo = fs.existsSync(prov) ? JSON.parse(fs.readFileSync(prov, 'utf8')) : { source: simSrc, commit: 'not recorded (copied before 2026-10-05)' };
 fs.copyFileSync(path.join(HERE, 'sim/synth.js'), path.join(simDir, 'js/synth.js'));
 const { openSim } = await import(path.join(simDir, 'tools/lib.mjs'));
 const layout = JSON.parse(fs.readFileSync(layoutFile, 'utf8'));
@@ -67,12 +79,13 @@ try {
     fs.writeFileSync(path.join(out, 'truth_frames.jsonl'), truth.join(''));
     fs.writeFileSync(path.join(out, 'layout.json'), JSON.stringify(await call(y => y.layout()), null, 1));
     fs.writeFileSync(path.join(out, 'config.yaml'), `# written by render_synth.mjs (browser simulator, SIMULATED)\nisaacsim.replicator.agent:\n  simulation_duration: ${(n / fps).toFixed(3)}\n`);
-    fs.writeFileSync(path.join(out, 'clip.json'), JSON.stringify({ source: 'browser simulator copy (SIMULATED)', seed, fps, frames: n, cameras: cams, params, events: ev.length }, null, 1));
+    fs.writeFileSync(path.join(out, 'clip.json'), JSON.stringify({ source: 'browser simulator copy (SIMULATED)', simulator: simInfo, seed, fps, frames: n, cameras: cams, params, events: ev.length }, null, 1));
     console.error(`clip: ${n} frames x ${cams.length} cameras (${cams.join(', ')}), ${ev.length} picks, ${((Date.now() - t0) / 1000).toFixed(0)} s`);
   } else {
     const [s0, s1] = String(a.seeds ?? '1000:1010').split(':').map(Number);
     const nCap = +(a.captures ?? 4), nHand = +(a.hand ?? 3), nRand = +(a.rand ?? 3), shoppers = +(a.shoppers ?? 10);
     fs.writeFileSync(path.join(out, 'skus.json'), JSON.stringify(await call(y => y.skus), null, 1));
+    fs.writeFileSync(path.join(out, 'sim_copy.json'), JSON.stringify(simInfo, null, 1));
     let frames = 0, anns = 0;
     for (let seed = s0; seed < s1; seed++) {
       const dir = path.join(out, `s${seed}`);

@@ -106,7 +106,13 @@ def build(frames_dir, out_dir, tiles_per_frame: int = 4, background_share: float
                 if a["full"]:
                     x0, y0, x1, y1 = a["full"]
                     ratios.setdefault(a["geo"], []).append(a["vis_px"] / max((x1 - x0) * (y1 - y0), 1.0))
+    if not ratios:      # a short --seeds range can leave the train split empty (the split is by seed)
+        seeds = sorted({m["seed"] for _, m in loaded})
+        raise SystemExit(f"no train scenes among seeds {seeds[0]}..{seeds[-1]} ({len(seeds)} seeds): the visible-share "
+                         "reference comes from train scenes only. Render more seeds; a smoke run that has all three "
+                         "splits is `make sku-data SKU_SEEDS=1000:1004 SYNTH=out/synth_smoke`.")
     ref = {g: float(np.percentile(v, 95)) for g, v in ratios.items()}
+    sim_copy = frames_dir / "sim_copy.json"      # which simulator version rendered the frames (render_synth.mjs)
     for sp in SPLITS:
         (out / "images" / sp).mkdir(parents=True, exist_ok=True)
         (out / "labels" / sp).mkdir(parents=True, exist_ok=True)
@@ -166,6 +172,7 @@ def build(frames_dir, out_dir, tiles_per_frame: int = 4, background_share: float
     seeds = {sp: sorted(stats[sp]["seeds"]) for sp in SPLITS}
     assert not (set(seeds["train"]) & set(seeds["val"]) or set(seeds["train"]) & set(seeds["test"]) or set(seeds["val"]) & set(seeds["test"])), "seed leak between splits"
     meta = {"source": str(frames_dir), "data": "SIMULATED (browser store simulator copy)", "tile": TILE, "overlap": OVERLAP,
+            "simulator": json.loads(sim_copy.read_text()) if sim_copy.exists() else "not recorded (rendered before 2026-10-05)",
             "label_rule": {"min_visible_px": MIN_VIS_PX, "min_side_px": MIN_SIDE, "min_visible_share": MIN_VIS},
             "visible_share_reference": ref, "skus": skus,
             "splits": {sp: {"seeds": seeds[sp], "frames": stats[sp]["frames"], "tiles": stats[sp]["tiles"], "boxes": stats[sp]["boxes"],

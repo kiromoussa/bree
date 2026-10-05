@@ -353,9 +353,10 @@ class EventEngine:
         """(score in [0, 1], appearance match probability or None) for `po` being the lost person `ps`."""
         gap = self.t - ps.t_last
         a, b = po.foot_point(self.r.foot_point), ps.last.foot_point(self.r.foot_point)
-        if self._floor is not None:                          # floor plan: metres, not perspective pixels
-            d = math.dist(to_floor(self._floor, *a), to_floor(self._floor, *b)) / BODY_HEIGHT_M
-        else:
+        fa, fb = (to_floor(self._floor, *a), to_floor(self._floor, *b)) if self._floor is not None else (None, None)
+        if fa is not None and fb is not None:                # floor plan: metres, not perspective pixels
+            d = math.dist(fa, fb) / BODY_HEIGHT_M
+        else:                                                # no floor plan, or a foot pixel above the horizon
             d = math.dist(a, b) / max(ps.last.bbox[3] - ps.last.bbox[1], 1.0)
         reach = self.r.stitch_dist + self.r.reid_max_speed * gap     # body heights they could have covered
         walk = 1.0 / (1.0 + (d / max(reach, 1e-6)) ** 2)             # 1 at the same spot, 0.5 at the edge of reach

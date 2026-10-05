@@ -6,6 +6,7 @@ from __future__ import annotations
 from dataclasses import replace
 
 import numpy as np
+import pytest
 
 from bree.calib.bench import _feat, _look
 from bree.events.observations import FrameObs, PersonObs
@@ -254,3 +255,62 @@ def test_three_cameras_closed_world_walkout_is_one_alert():
     assert list(led.people) == [1] and [e.type for e in events].count(E.EXIT) == 1
     assert len(led.alerts) == 1 and [i.category for i in led.alerts[0].unpaid_items] == ["soda_bottle"]
     assert not any("identity_uncertain" in e.meta for e in events)
+
+
+# ------------------------------------------------------------------ audit 2026-10-05
+
+
+def test_tailgating_at_the_door_is_two_people_and_the_exit_is_delivered():
+    """b walks in 0.2 s (and 0.4 s) after a's track ended in the door zone. b must not get a's identity, and
+    a's EXIT (emitted later, timed at a's last sighting) must not be vetoed because "a" was seen since."""
+    for gap in (0.2, 0.4, 0.6, 1.0):
+        mc = pool()
+        t = enter(mc, a=(1, 0.6)) - 0.5                              # a's last frame, in the door zone
+        ga = gid(mc, "A", 1)
+        for k in range(8):                                           # b appears at the door and walks in
+            see(mc, t + gap + 0.5 * k, A=[(2, 0.5 + 0.4 * k)])
+        assert gid(mc, "A", 2) != ga and mc.people[gid(mc, "A", 2)].born == "entrance", gap
+        assert [e.type for e in mc.remap("A", [Event(E.EXIT, t, 1)])] == [E.EXIT], gap
+        assert mc.people[ga].exited and mc.cw_stats["exits_vetoed"] == 0 and mc.cw_stats["births_entrance"] == 2
+        [pick] = mc.remap("A", [Event(E.PICK, t + 4.0, 2, item="soda_bottle")])
+        assert pick.person_id != ga                                  # b's basket is b's
+
+
+def test_two_door_cameras_on_one_person_are_still_one_identity():
+    """The door rule must not split someone two cameras watch at the door at the same moment."""
+    door = lambda H_: (lambda p: to_floor(H_, *p.foot_point("bottom"))[0] < 5.0)      # noqa: E731
+    mc = MultiCamIdentity(H, closed_world=True, entry={"A": door(H["A"]), "B": door(H["B"])})
+    for k in range(5):
+        see(mc, 0.1 * k, A=[(1, 4.5)], B=[(7, 4.5)])
+    assert gid(mc, "A", 1) == gid(mc, "B", 7) and len(mc.people) == 1
+
+
+def test_a_track_seen_again_after_its_exit_is_placed_again():
+    mc = pool()
+    t = enter(mc, a=(1, 0.6))
+    assert [e.type for e in mc.remap("A", [Event(E.EXIT, t, 1)])] == [E.EXIT]
+    old = gid(mc, "A", 1)
+    see(mc, t + 5.0, A=[(1, 3.0)])                                   # the same local track id, inside the store
+    new = gid(mc, "A", 1)
+    assert new != old and mc.people[old].exited and not mc.people[new].exited
+    assert mc.cw_stats["tracks_seen_after_exit"] == 1 and mc.occupancy() == 0   # counted once it has lasted 2 s
+    see(mc, t + 8.0, A=[(1, 3.0)])
+    assert mc.occupancy() == 1
+    [pick] = mc.remap("A", [Event(E.PICK, t + 8.0, 1, item="soda_bottle")])
+    assert pick.person_id == new
+
+
+def test_to_floor_is_none_above_the_horizon_and_cut_feet_do_not_move_the_person():
+    import math
+
+    from bree.calib.camera import from_layout
+    cam = from_layout({"position": [0, 2.5, 0], "yaw": 0.0, "pitch": math.radians(-10), "hfov": 60, "resolution": [1280, 720]})
+    Hc = cam.floor_homography()                                      # looks down -z, 10 degrees below level
+    px, depth = cam.project([[0.5, 0.0, -5.0]])
+    assert depth[0] > 0 and to_floor(Hc, *px[0]) == pytest.approx((0.5, -5.0), abs=1e-6)
+    assert to_floor(Hc, 640.0, 0.0) is None                          # top of the frame: above the horizon
+    mc = MultiCamIdentity(H, frame_sizes={"A": (1280, 720)})
+    mc.update("A", FrameObs(0, 0.0, [PersonObs(1, (600, 300, 640, 500), 0.9)]))
+    before = mc.people[1].pos
+    mc.update("A", FrameObs(1, 0.1, [PersonObs(1, (600, 400, 640, 720), 0.9)]))     # box cut by the frame bottom
+    assert mc.people[1].pos == before and mc.people[1].t_last == 0.1

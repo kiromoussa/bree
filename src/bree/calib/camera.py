@@ -55,8 +55,8 @@ class Camera:
         """3x3 H with floor (x_m, y_m) ~ H @ (u, v, 1): same contract as StoreConfig.floor_homography."""
         K = np.array([[self.f, 0, self.cx], [0, self.f, self.cy], [0, 0, 1.0]])
         G = K @ np.c_[self.R[:, 0], self.R[:, 2], -self.R @ self.C]      # floor (x, z, 1) -> image
-        H = np.linalg.inv(G)
-        return H / H[2, 2]
+        H = np.linalg.inv(G)          # H @ (u, v, 1) = (x, z, 1) / depth: w > 0 exactly for floor points in front
+        return H / np.linalg.norm(H)
 
     @property
     def hfov_deg(self) -> float:

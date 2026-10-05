@@ -33,6 +33,11 @@ dev = [
     "pytest==9.1.1",
     "motmetrics==1.4.0",      # make reid-bench, make bench, the MOT16 guard in make test (bree/eval/reid_bench.py)
 ]
+plates = [                        # fuel drive-off: make plates-bench, pytest -m vision in tests/test_plates.py
+    "fast-plate-ocr==1.1.0",      # plate text reader (ONNX), MIT
+    "open-image-models==0.6.0",   # plate detector (ONNX), MIT
+    "onnxruntime==1.30.0",
+]
 
 [project.scripts]
 bree = "bree.cli:main"

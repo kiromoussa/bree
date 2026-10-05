@@ -1,0 +1,42 @@
+# BREE camera node config (Raspberry Pi Zero 2 W + Camera Module 3). Installed as /etc/bree/node.yaml.
+# The camera and zones blocks are the same as a store YAML, so scripts/draw_zones.py can write them:
+# draw on a still from THIS camera at the resolution below, then add the node block.
+camera:
+  id: shelf_g1l_a                 # unique per camera; letters, digits, _ . - only
+  resolution: [2304, 1296]        # pixels the polygons below are drawn in
+
+zones:                            # only shelf and cooler zones trigger; other kinds are ignored here
+  - name: G1L
+    kind: shelf
+    polygon: [[300, 150], [2000, 150], [2000, 1100], [300, 1100]]   # placeholder: draw the real shelf face
+
+node:
+  source: picamera2               # or a video file / webcam index ("0") to test without a camera
+  main_size: [2304, 1296]         # full-res stream. 2304x1296 is the sensor's binned mode. [4608, 2592] is the
+                                  # full 12 MP: 18 MB per frame in RAM, untested on a Zero 2 W, lower fps first.
+  fps: 10                         # capture rate of both streams
+  hub_url: http://bree-hub.local:8787
+  token: CHANGE_ME                # same value as the hub's --token
+  spool_dir: /var/lib/bree-node/spool
+  spool_max_mb: 2000              # bursts kept on the SD card while the hub is away; oldest dropped beyond this
+  pre_roll_s: 2.0                 # full-res frames from before the trigger, held raw in RAM: fps x pre_roll_s
+                                  # frames of 4.5 MB each at 2304x1296 = 90 MB, and up to as many again waiting
+                                  # for the JPEG encoder (180 MB). At 4608x2592 the ring alone is 358 MB: lower
+                                  # fps or pre_roll_s first. The Zero 2 W has 512 MB.
+  post_roll_s: 1.5
+  max_burst_s: 6.0                # a longer visit is sent in parts
+  jpeg_quality: 85
+  heartbeat_s: 10
+  stuck_window_s: 300             # heartbeat carries active_share (trigger active, share of this window) and
+  stuck_share: 0.9                # stuck_on: true above this. A node stuck on streams full-res all the time.
+  lowres_uplink_fps: 0            # > 0 also sends the low-res stream to the hub at this rate
+  trigger:                        # see src/bree/edge/trigger.py; tune on site, these were tuned on lab video
+    width: 320
+    margin_px: 6                  # low-res pixels added around each zone so a hand at the front edge counts
+    diff_thr: 18
+    motion_thr: 10
+    min_blob_px: 30
+    min_motion_px: 6
+    skin: true
+    gain_norm: true               # undo frame-wide brightness flicker before differencing
+    release_s: 0.5

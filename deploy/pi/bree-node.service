@@ -1,0 +1,23 @@
+[Unit]
+Description=BREE camera node (shelf trigger, full-res bursts to the hub)
+After=network-online.target time-sync.target
+Wants=network-online.target
+
+[Service]
+User=bree
+# No Group= line on purpose: the process runs as bree:bree (reads /etc/bree, root:bree 750) and gets
+# video (the camera) as a supplementary group from /etc/group. Group=video would drop group bree.
+Environment=PYTHONPATH=/opt/bree-node
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/python3 -m bree.edge.node --config /etc/bree/node.yaml
+Restart=always
+RestartSec=5
+# The Zero 2 W has 512 MB. Stop a runaway node before the kernel picks something else to kill.
+MemoryMax=380M
+StateDirectory=bree-node
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

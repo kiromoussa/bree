@@ -1,0 +1,44 @@
+{
+  "machine": "arm",
+  "cpu": "Apple M1 Max",
+  "opencv_threads": 1,
+  "lowres": [
+    320,
+    237
+  ],
+  "frames_timed": 600,
+  "trigger_ms_per_frame_here": 0.609,
+  "trigger_core_share_here_at_fps": 0.0061,
+  "fps": 10.0,
+  "jpeg_ms_per_frame_here_920x680": 1.45,
+  "jpeg_bytes_per_frame_920x680": 114994,
+  "upscaled_frame_encode": {
+    "2304x1296": {
+      "jpeg_ms_here": 6.1,
+      "jpeg_bytes_upscaled": 350303
+    },
+    "4608x2592": {
+      "jpeg_ms_here": 22.3,
+      "jpeg_bytes_upscaled": 919836
+    }
+  },
+  "ESTIMATE_pi_zero_2w": {
+    "assumption": "one Zero 2 W core is 8x to 20x slower than one core here (assumed, not measured)",
+    "trigger_ms_per_frame": [
+      4.9,
+      12.2
+    ],
+    "trigger_share_of_one_core_at_fps": [
+      0.049,
+      0.122
+    ],
+    "jpeg_ms_per_2304x1296_frame": [
+      49,
+      122
+    ],
+    "jpeg_ms_per_4608x2592_frame": [
+      178,
+      446
+    ]
+  }
+}

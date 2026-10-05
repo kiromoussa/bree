@@ -1,0 +1,49 @@
+{
+  "data": "SYNTHETIC empty textured scene 640x480, nobody in view",
+  "frames": 3000,
+  "fps": 10.0,
+  "cases": {
+    "still": {
+      "gain_norm_off": {
+        "active_frames": 0,
+        "runs": 0
+      },
+      "gain_norm_on": {
+        "active_frames": 0,
+        "runs": 0
+      },
+      "gain_norm_on_shake_px_1": {
+        "active_frames": 0,
+        "runs": 0
+      }
+    },
+    "shake_2px": {
+      "gain_norm_off": {
+        "active_frames": 2995,
+        "runs": 1
+      },
+      "gain_norm_on": {
+        "active_frames": 2995,
+        "runs": 1
+      },
+      "gain_norm_on_shake_px_1": {
+        "active_frames": 0,
+        "runs": 0
+      }
+    },
+    "flicker_10pct": {
+      "gain_norm_off": {
+        "active_frames": 1338,
+        "runs": 162
+      },
+      "gain_norm_on": {
+        "active_frames": 0,
+        "runs": 0
+      },
+      "gain_norm_on_shake_px_1": {
+        "active_frames": 0,
+        "runs": 0
+      }
+    }
+  }
+}

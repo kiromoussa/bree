@@ -668,6 +668,8 @@ the planogram, `register.jsonl`):
 .venv/bin/python -m bree.shelf.store <clip folder> <out folder> --rejoin   # reuse the stored shelf events and person boxes
 make bench-dev                        # SIMULATED DEV clips, about 10 minutes -> results/bench_dev.md
 make bench-dev BENCH_ARGS=--keep      # the same without running the models again (about 20 s of tracking, association, ledger)
+make bench-train                      # second tuning set: the 9 rendered TRAIN-seed clips (harder scenes) -> results/bench_train.md
+make bench-whatif WHATIF='reach6 --reach {"within_s":6}'   # a join or ledger setting on the stored events of both, one line each
 BREE_SKU_WEIGHTS=sim_sku make bench-dev BENCH_ARGS="--name old_weights"    # the first detector instead
 ```
 

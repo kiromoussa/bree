@@ -2,7 +2,7 @@
 
 SIMULATED (browser store simulator copy, scripts/bench/render_clip.mjs). Not real footage.
 
-6 clips (7001, 7002, 7003, 7004, 7005, 7006), 421 s of sim time, 37 shoppers (15 thieves, 22 honest), 70 picks, 20 stolen items. Runner `bree.shelf.store:run`, options {"backend": "sim_sku", "edge": true, "max_frames": null}. Scored 2026-10-05 14:52, commit 4dd290e.
+6 clips (7001, 7002, 7003, 7004, 7005, 7006), 421 s of sim time, 37 shoppers (15 thieves, 22 honest), 70 picks, 20 stolen items. Runner `bree.shelf.store:run`, options {"backend": "sim_sku", "edge": true, "max_frames": null}. Scored 2026-10-05 15:18, commit 7f6cede.
 
 ## Scorecard
 
@@ -173,7 +173,7 @@ What a stage means:
 | 7001 | 20 | 7 | 2 | 13 | 12 | 2 | 0 | 0 | 0 | 9 |  + 0.7 |
 | 7002 | 20 | 5 | 3 | 9 | 9 | 5 | 0 | 0 | 0 | 6 |  + 0.6 |
 | 7003 | 18 | 6 | 2 | 10 | 10 | 2 | 0 | 0 | 0 | 8 |  + 0.5 |
-| 7004 | 20 | 4 | 1 | 9 | 10 | 2 | 0 | 0 | 0 | 5 |  + 0.6 |
+| 7004 | 20 | 4 | 1 | 9 | 10 | 2 | 0 | 0 | 0 | 5 |  + 0.5 |
 | 7005 | 20 | 8 | 5 | 14 | 19 | 6 | 0 | 0 | 0 | 10 |  + 0.8 |
 | 7006 | 20 | 7 | 2 | 15 | 19 | 3 | 0 | 0 | 0 | 9 |  + 0.9 |
 

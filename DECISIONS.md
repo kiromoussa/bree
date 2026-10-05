@@ -695,3 +695,21 @@ An independent audit re-ran the commands behind the reports and probed the code.
 - **Tried and not kept: blur plus contrast stretch on dark crops.** On 60 crops per cell it lifted night_noisy at
   160 px from 13% to 45% whole plate, left 64 and 96 px at 0 to 2% and was
   neutral in day and night. One cell is not enough to add a step tuned on the bench's own noise model.
+
+## Improvement round 2 (2026-10-05)
+
+- **No rule change was kept, because none held on both sets.** Four join and ledger rules were measured on DEV and
+  on the TRAIN-seed clips (REPORT.md, round 2). One of them (a put with the item seen in the hand returns the take
+  from any slot the reach was read at) gives 16 of 20 thefts and 2 of 22 honest reviews on DEV, which meets every
+  bar. It was reverted: it is right in 2 of 7 uses on DEV and costs 2 of 13 flagged thefts on the TRAIN-seed clips
+  for 1 honest review. To overrule: the change is small (keep the places of merged readings in
+  `one_act_per_reach`, match puts against them in `confirm_puts`).
+- **The TRAIN-seed clips are a second tuning set (`make bench-train`), not a test set.** The per-camera shelf rules
+  were tuned on 4900 to 4902 and the scenes are harder than DEV by construction, so its numbers are not comparable
+  to DEV one to one. It is used to check that a rule chosen on DEV also helps on clips it was not chosen on. A rule
+  is kept only when it does not make either set worse.
+- **`bench train` reads whatever TRAIN-seed clips are rendered** under `data/synth/bench/train` (the manifest gives
+  train as a seed range, not a list). The clip list is printed in the result.
+- **`results/bench_dev.md` was written again from the stored shelf events and person boxes** (`--keep`): nothing
+  before tracking changed in this round.
+

@@ -97,6 +97,87 @@ Clothing colour alone does not move theft recall (11 against 12), it moves ident
 - **Not measured:** the shelf rules were tuned with the old weights and `make shelf-eval` was not repeated with
   `sim_sku_hands_v3`; the old weights were not run through the DEV benchmark; nothing was run on TEST.
 
+## 2026-10-05: improvement round 2 (SIMULATED): a second tuning set, a tracker crash, and four rules that did not hold up
+
+All numbers are simulated. TEST was not touched. No training, no new clips.
+
+**Result: the DEV scorecard did not move, and the goal is still not met.** 17 of 20 thefts flagged for review (0.85),
+4 of 22 honest shoppers reviewed (bar: about 2), pick recall 0.957, right SKU 0.910, 1.27 identities per shopper, no
+alert tier. The pipeline behaves as in round 1 except for one crash fix.
+
+**What was kept.**
+
+1. **A crash in the floor tracker** (`FloorTracker._colours`). When clothing colour put a swap right, the other
+   open meetings of those two people were dropped, and the loop then tried to drop them a second time
+   (`ValueError: list.remove(x): x not in list`). No DEV clip has that situation. 2 of the 9 TRAIN-seed clips
+   (4906, 4951) do: the pipeline died on them. A TEST clip could have hit it in the final run.
+2. **A second tuning set: `make bench-train`.** The 9 TRAIN-seed clips of `make shelf-clips` are complete clip
+   folders (people cameras, register feed, truth), so the benchmark can run and score them. They were never used to
+   tune the join or the ledger (the per-camera shelf rules were tuned on 4900 to 4902). Their scenes are harder on
+   purpose (a pair at the same shelf, swaps).
+3. **`make bench-whatif`** (`scripts/bench/whatif.py`): tracking, association and the ledger again on the stored
+   shelf events and person boxes of both sets with other settings, one line per set, in about a minute. It refuses
+   the test split.
+
+**The same pipeline on the TRAIN-seed clips** (`results/bench_train.md`: 653 s, 53 shoppers, 17 thieves, 36 honest,
+106 picks, 19 stolen items):
+
+| | DEV (6 clips) | TRAIN-seed (9 clips) |
+|---|---|---|
+| theft recall, alert or review | 0.85 (17/20) | 0.684 (13/19) |
+| reviews on honest shoppers | 4 of 22 | 4 of 36 |
+| pick recall | 0.957 | 0.915 |
+| pick precision | 0.848 (79 PICK events) | 0.866 (112) |
+| right SKU of paired picks | 0.910 | 0.938 |
+| right slot of paired picks | 0.851 | 0.825 |
+| right shopper of paired picks | 0.940 | 0.979 |
+| identities per shopper | 1.27 | 1.453 |
+| identities covering two shoppers | 6 of 47 | 26 of 77 |
+
+Read this as: the 0.85 on DEV is partly the result of two rounds of rules chosen while looking at DEV. On clips
+nobody tuned the join on, theft recall is 0.68. Identity is the visible difference (26 of 77 identities cover two
+shoppers). Expect TEST to land between the two, not at the DEV number.
+
+**Stage picked and what the cases showed.** The goal that fails is reviews on honest shoppers, so the cases read were
+the 4 honest reviews on DEV and then the unpaid items of every review on both sets. Root cause in one sentence: a
+false "unpaid" item is almost never a phantom take, it is a real take whose put-back or payment was not credited
+(14 of 19 false unpaid items on DEV and TRAIN-seed sit on a real act, 5 on none), and the events that would credit it
+(put events) cannot be told from the hand leaving the shelf: 41 of 92 put events with the item seen in the hand
+match a real put-back (11 of 24 on DEV, 30 of 68 in the cached TRAIN-seed shelf events of `make shelf-eval`).
+Evidence strength does not separate true from false unpaid items either (camera count, detector frames, cue, window
+length were tabulated: no usable split).
+
+**Tried on both sets and reverted** (thefts flagged / honest shoppers reviewed; code not kept):
+
+| rule | DEV | TRAIN-seed |
+|---|---|---|
+| as it stands | 17/20, 4/22 | 13/19, 4/36 |
+| a second reading inside the first one's time window is the same reach | 17, 4 | 13, 4 |
+| a person out of view pays for the width of the guess of where they are (log term in the association cost) | 17, 4 | 13, 5 |
+| both of the above | 17, 3 | 13, 5 |
+| a put with the item seen in the hand returns the take from any slot that reach was read at | 16, 2 | 11, 3 |
+| the same with the two rules above | 14, 2 | 11, 4 |
+| any put does that (with the first rule on) | 11, 1 | not run |
+| an ambiguous pick is not marked down once everyone who could have paid for it has left | 17, 5 | 15, 6 |
+
+The fourth row meets every bar on DEV (0.80 recall, 2 of 22). It was not taken: 2 of its 7 uses on DEV were real
+put-backs, it erases 1 stolen item on DEV and 2 on TRAIN-seed, and with the other two rules on it drops to 14. It is
+the rule round 1 already rejected in another form. Every rule in the table moves an error from one column to the
+other; none removes one on both sets.
+
+**What cannot improve at the join or the ledger, with counts.**
+
+- Put-backs: 41 of 92 item-in-hand put events are real (above). The time between a camera's take and its put of
+  the same slot does not separate them on DEV (57 such pairs, 2 under 2 s, the rest from 2.1 s up, the real
+  put-backs at 3.5 to 6.1 s in the middle of them).
+- Concealment: still no cue, alert tier 0 of 20 (DEV) and 0 of 19 (TRAIN-seed).
+- Two of the 4 honest reviews on DEV need a per-camera fix: one take read with the time its slot was first hidden
+  (6.3 s before the item left, 7003), one put-back the cooler camera that read the take never reported (7005).
+
+**Tests.** Full suite on the final code: 407 passed, 1 skipped, none failed (counted from the progress lines of
+`out/bench/round2/tests_full.log`, which has no closing summary line), plus 1 new test for the tracker crash in
+`tests/test_shelf_store.py`, which fails without the fix (that file: 10 passed).
+
 ## 2026-10-05: improvement round 1 on DEV (SIMULATED): receipts, puts, parties
 
 All numbers are from the six simulated DEV clips (20 stolen items, 22 honest shoppers). TEST was not touched. The

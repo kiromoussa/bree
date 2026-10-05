@@ -1,0 +1,559 @@
+{
+ "dev": {
+  "7001": {
+   "sim_seconds": 63,
+   "frames": 640,
+   "shoppers": 7,
+   "thieves": 2,
+   "picks": 13,
+   "outcomes": {
+    "concealed": 2,
+    "paid": 9,
+    "put_back": 2
+   },
+   "zones": {
+    "gondola": 9,
+    "cooler": 3,
+    "checkout": 1
+   },
+   "picks_without_an_item_camera": 1,
+   "picks_with_two_rendered_views": 3,
+   "render_seconds": 2455,
+   "cameras": [
+    "REGISTER-top",
+    "ENTRANCE-1",
+    "TRACK-1",
+    "TRACK-2",
+    "TRACK-3",
+    "TRACK-4",
+    "G1L-wall-1",
+    "G2R-price-rail-2",
+    "G3R-drop-rod-1",
+    "COOLER-endcap-1",
+    "G3R-price-rail-1",
+    "G1L-drop-rod-1",
+    "BACKBAR-price-rail-1",
+    "G4L-price-rail-1",
+    "G3L-price-rail-2",
+    "G3L-price-rail-3",
+    "G2R-price-rail-1",
+    "G4R-drop-rod-1",
+    "G3R-pole-on-gondola-1",
+    "G1L-wall-2"
+   ],
+   "same_shelf_pair": [
+    "P004",
+    "P005"
+   ],
+   "simulator": "bff1f32 2026-10-05T04:22:17-04:00"
+  },
+  "7002": {
+   "sim_seconds": 73,
+   "frames": 740,
+   "shoppers": 5,
+   "thieves": 3,
+   "picks": 9,
+   "outcomes": {
+    "put_back": 1,
+    "paid": 3,
+    "concealed": 5
+   },
+   "zones": {
+    "gondola": 7,
+    "cooler": 2
+   },
+   "picks_without_an_item_camera": 0,
+   "picks_with_two_rendered_views": 5,
+   "render_seconds": 2648,
+   "cameras": [
+    "REGISTER-top",
+    "ENTRANCE-1",
+    "TRACK-1",
+    "TRACK-2",
+    "TRACK-3",
+    "TRACK-4",
+    "G2L-pole-on-gondola-1",
+    "G4L-price-rail-1",
+    "G3R-price-rail-2",
+    "COOLER-price-rail-3",
+    "COOLER-endcap-1",
+    "COOLER-price-rail-5",
+    "COOLER-ceiling-2",
+    "G3R-drop-rod-2",
+    "G2R-price-rail-1",
+    "G2L-price-rail-1",
+    "G4L-price-rail-2",
+    "G3L-price-rail-1",
+    "G4R-counter-front-1",
+    "G3L-price-rail-2"
+   ],
+   "same_shelf_pair": [
+    "P003",
+    "P004"
+   ],
+   "simulator": "bff1f32 2026-10-05T04:22:17-04:00"
+  },
+  "7003": {
+   "sim_seconds": 61,
+   "frames": 620,
+   "shoppers": 6,
+   "thieves": 2,
+   "picks": 10,
+   "outcomes": {
+    "put_back": 2,
+    "concealed": 2,
+    "paid": 6
+   },
+   "zones": {
+    "checkout": 2,
+    "gondola": 7,
+    "cooler": 1
+   },
+   "picks_without_an_item_camera": 1,
+   "picks_with_two_rendered_views": 5,
+   "render_seconds": 2148,
+   "cameras": [
+    "REGISTER-top",
+    "ENTRANCE-1",
+    "TRACK-1",
+    "TRACK-2",
+    "TRACK-3",
+    "TRACK-4",
+    "BACKBAR-price-rail-1",
+    "COOLER-price-rail-3",
+    "G2R-ceiling-1",
+    "COOLER-price-rail-4",
+    "G4L-price-rail-3",
+    "COOLER-ceiling-2",
+    "G3L-price-rail-3",
+    "G3R-drop-rod-2",
+    "COOLER-price-rail-2",
+    "G4L-price-rail-1",
+    "COOLER-ceiling-1",
+    "COOLER-ceiling-3"
+   ],
+   "same_shelf_pair": [
+    "P004",
+    "P005"
+   ],
+   "simulator": "bff1f32 2026-10-05T04:22:17-04:00"
+  },
+  "7004": {
+   "sim_seconds": 79,
+   "frames": 800,
+   "shoppers": 4,
+   "thieves": 1,
+   "picks": 9,
+   "outcomes": {
+    "put_back": 1,
+    "paid": 6,
+    "concealed": 2
+   },
+   "zones": {
+    "gondola": 6,
+    "cooler": 2,
+    "checkout": 1
+   },
+   "picks_without_an_item_camera": 0,
+   "picks_with_two_rendered_views": 6,
+   "render_seconds": 2620,
+   "cameras": [
+    "REGISTER-top",
+    "ENTRANCE-1",
+    "TRACK-1",
+    "TRACK-2",
+    "TRACK-3",
+    "TRACK-4",
+    "G1R-drop-rod-1",
+    "G1R-price-rail-1",
+    "G2R-price-rail-1",
+    "COOLER-endcap-1",
+    "COOLER-ceiling-4",
+    "G1L-wall-2",
+    "BACKBAR-price-rail-1",
+    "G3L-price-rail-2",
+    "G2R-ceiling-1",
+    "COOLER-price-rail-2",
+    "COOLER-ceiling-3",
+    "G1L-wall-1",
+    "G3R-price-rail-2",
+    "COOLER-price-rail-4"
+   ],
+   "same_shelf_pair": [
+    "P001",
+    "P002"
+   ],
+   "simulator": "bff1f32 2026-10-05T04:22:17-04:00"
+  },
+  "7005": {
+   "sim_seconds": 65,
+   "frames": 660,
+   "shoppers": 8,
+   "thieves": 5,
+   "picks": 14,
+   "outcomes": {
+    "concealed": 6,
+    "paid": 7,
+    "put_back": 1
+   },
+   "zones": {
+    "checkout": 2,
+    "cooler": 4,
+    "gondola": 8
+   },
+   "picks_without_an_item_camera": 0,
+   "picks_with_two_rendered_views": 4,
+   "render_seconds": 2815,
+   "cameras": [
+    "REGISTER-top",
+    "ENTRANCE-1",
+    "TRACK-1",
+    "TRACK-2",
+    "TRACK-3",
+    "TRACK-4",
+    "BACKBAR-price-rail-1",
+    "COOLER-ceiling-4",
+    "G1R-price-rail-2",
+    "COOLER-ceiling-3",
+    "COOLER-price-rail-3",
+    "G3R-drop-rod-2",
+    "G4L-price-rail-3",
+    "COOLER-price-rail-2",
+    "G3R-price-rail-2",
+    "G4R-drop-rod-1",
+    "G1L-drop-rod-1",
+    "G2R-ceiling-1",
+    "G3L-price-rail-1",
+    "G2L-pole-on-gondola-1"
+   ],
+   "same_shelf_pair": [
+    "P002",
+    "P003"
+   ],
+   "simulator": "bff1f32 2026-10-05T04:22:17-04:00"
+  },
+  "7006": {
+   "sim_seconds": 74,
+   "frames": 750,
+   "shoppers": 7,
+   "thieves": 2,
+   "picks": 15,
+   "outcomes": {
+    "paid": 10,
+    "put_back": 2,
+    "concealed": 3
+   },
+   "zones": {
+    "gondola": 9,
+    "checkout": 3,
+    "cooler": 3
+   },
+   "picks_without_an_item_camera": 0,
+   "picks_with_two_rendered_views": 5,
+   "render_seconds": 940,
+   "cameras": [
+    "REGISTER-top",
+    "ENTRANCE-1",
+    "TRACK-1",
+    "TRACK-2",
+    "TRACK-3",
+    "TRACK-4",
+    "G3R-pole-on-gondola-1",
+    "G1L-wall-1",
+    "BACKBAR-price-rail-1",
+    "COOLER-price-rail-1",
+    "G2L-drop-rod-1",
+    "COOLER-ceiling-4",
+    "G4L-price-rail-3",
+    "G2R-price-rail-1",
+    "G1L-drop-rod-1",
+    "G2L-pole-on-gondola-1",
+    "G3R-price-rail-1",
+    "G3R-drop-rod-1",
+    "COOLER-price-rail-5",
+    "COOLER-price-rail-3"
+   ],
+   "same_shelf_pair": [
+    "P002",
+    "P003"
+   ],
+   "simulator": "bff1f32 2026-10-05T04:22:17-04:00"
+  }
+ },
+ "test": {
+  "9001": {
+   "sim_seconds": 63,
+   "frames": 640,
+   "shoppers": 5,
+   "thieves": 1,
+   "picks": 10,
+   "outcomes": {
+    "put_back": 4,
+    "paid": 5,
+    "concealed": 1
+   },
+   "zones": {
+    "gondola": 6,
+    "checkout": 4
+   },
+   "picks_without_an_item_camera": 0,
+   "picks_with_two_rendered_views": 4,
+   "render_seconds": 638,
+   "cameras": [
+    "REGISTER-top",
+    "ENTRANCE-1",
+    "TRACK-1",
+    "TRACK-2",
+    "TRACK-3",
+    "TRACK-4",
+    "G1R-price-rail-3",
+    "G1R-price-rail-2",
+    "G2L-ceiling-1",
+    "G3R-price-rail-2",
+    "BACKBAR-price-rail-1",
+    "G2R-price-rail-2",
+    "G1R-drop-rod-1",
+    "G3R-price-rail-1",
+    "COOLER-price-rail-1",
+    "G2R-price-rail-1",
+    "G2L-drop-rod-1",
+    "G3L-price-rail-3"
+   ],
+   "same_shelf_pair": [
+    "P001",
+    "P002"
+   ],
+   "simulator": "bff1f32 2026-10-05T04:22:17-04:00"
+  },
+  "9003": {
+   "sim_seconds": 59,
+   "frames": 600,
+   "shoppers": 8,
+   "thieves": 2,
+   "picks": 13,
+   "outcomes": {
+    "paid": 8,
+    "put_back": 2,
+    "concealed": 3
+   },
+   "zones": {
+    "checkout": 1,
+    "gondola": 8,
+    "cooler": 4
+   },
+   "picks_without_an_item_camera": 0,
+   "picks_with_two_rendered_views": 4,
+   "render_seconds": 686,
+   "cameras": [
+    "REGISTER-top",
+    "ENTRANCE-1",
+    "TRACK-1",
+    "TRACK-2",
+    "TRACK-3",
+    "TRACK-4",
+    "BACKBAR-price-rail-1",
+    "G3R-drop-rod-2",
+    "COOLER-price-rail-3",
+    "COOLER-endcap-1",
+    "COOLER-ceiling-2",
+    "COOLER-ceiling-4",
+    "G4R-drop-rod-1",
+    "G3R-pole-on-gondola-1",
+    "G1L-wall-1",
+    "G4L-price-rail-1",
+    "COOLER-price-rail-4",
+    "COOLER-ceiling-3",
+    "G1L-drop-rod-1",
+    "G1R-price-rail-2"
+   ],
+   "same_shelf_pair": [
+    "P002",
+    "P003"
+   ],
+   "simulator": "bff1f32 2026-10-05T04:22:17-04:00"
+  },
+  "9004": {
+   "sim_seconds": 94,
+   "frames": 950,
+   "shoppers": 4,
+   "thieves": 1,
+   "picks": 11,
+   "outcomes": {
+    "concealed": 2,
+    "put_back": 3,
+    "paid": 6
+   },
+   "zones": {
+    "gondola": 8,
+    "cooler": 2,
+    "checkout": 1
+   },
+   "picks_without_an_item_camera": 0,
+   "picks_with_two_rendered_views": 6,
+   "render_seconds": 940,
+   "cameras": [
+    "REGISTER-top",
+    "ENTRANCE-1",
+    "TRACK-1",
+    "TRACK-2",
+    "TRACK-3",
+    "TRACK-4",
+    "G1R-price-rail-3",
+    "COOLER-endcap-1",
+    "G1R-price-rail-1",
+    "G1L-drop-rod-1",
+    "COOLER-price-rail-4",
+    "G2L-pole-on-gondola-1",
+    "BACKBAR-price-rail-1",
+    "G1R-price-rail-2",
+    "G3L-price-rail-1",
+    "COOLER-ceiling-1",
+    "G1L-wall-1",
+    "G2L-price-rail-1",
+    "G3R-price-rail-1",
+    "G4R-counter-front-1"
+   ],
+   "same_shelf_pair": [
+    "P002",
+    "P003"
+   ],
+   "simulator": "bff1f32 2026-10-05T04:22:17-04:00"
+  },
+  "9005": {
+   "sim_seconds": 76,
+   "frames": 770,
+   "shoppers": 4,
+   "thieves": 1,
+   "picks": 9,
+   "outcomes": {
+    "put_back": 3,
+    "paid": 4,
+    "concealed": 2
+   },
+   "zones": {
+    "checkout": 3,
+    "gondola": 3,
+    "cooler": 3
+   },
+   "picks_without_an_item_camera": 0,
+   "picks_with_two_rendered_views": 3,
+   "render_seconds": 540,
+   "cameras": [
+    "REGISTER-top",
+    "ENTRANCE-1",
+    "TRACK-1",
+    "TRACK-2",
+    "TRACK-3",
+    "TRACK-4",
+    "BACKBAR-price-rail-1",
+    "G1R-drop-rod-1",
+    "G1R-price-rail-3",
+    "G2L-pole-on-gondola-1",
+    "COOLER-ceiling-2",
+    "COOLER-ceiling-3",
+    "COOLER-ceiling-1",
+    "COOLER-price-rail-5",
+    "G3L-price-rail-1",
+    "G1R-price-rail-2"
+   ],
+   "same_shelf_pair": [
+    "P002",
+    "P003"
+   ],
+   "simulator": "bff1f32 2026-10-05T04:22:17-04:00"
+  },
+  "9006": {
+   "sim_seconds": 78,
+   "frames": 790,
+   "shoppers": 5,
+   "thieves": 1,
+   "picks": 12,
+   "outcomes": {
+    "paid": 9,
+    "put_back": 2,
+    "concealed": 1
+   },
+   "zones": {
+    "gondola": 8,
+    "cooler": 3,
+    "checkout": 1
+   },
+   "picks_without_an_item_camera": 0,
+   "picks_with_two_rendered_views": 5,
+   "render_seconds": 782,
+   "cameras": [
+    "REGISTER-top",
+    "ENTRANCE-1",
+    "TRACK-1",
+    "TRACK-2",
+    "TRACK-3",
+    "TRACK-4",
+    "G1R-price-rail-1",
+    "G1R-price-rail-2",
+    "COOLER-ceiling-1",
+    "COOLER-price-rail-2",
+    "G2R-price-rail-1",
+    "BACKBAR-price-rail-1",
+    "COOLER-ceiling-3",
+    "G3R-pole-on-gondola-1",
+    "G4R-counter-front-1",
+    "COOLER-price-rail-3",
+    "G1R-price-rail-3",
+    "COOLER-ceiling-2",
+    "G2L-pole-on-gondola-1",
+    "COOLER-price-rail-4"
+   ],
+   "same_shelf_pair": [
+    "P003",
+    "P004"
+   ],
+   "simulator": "bff1f32 2026-10-05T04:22:17-04:00"
+  },
+  "9002": {
+   "sim_seconds": 90,
+   "frames": 910,
+   "shoppers": 5,
+   "thieves": 3,
+   "picks": 11,
+   "outcomes": {
+    "concealed": 5,
+    "paid": 5,
+    "put_back": 1
+   },
+   "zones": {
+    "cooler": 4,
+    "gondola": 7
+   },
+   "picks_without_an_item_camera": 0,
+   "picks_with_two_rendered_views": 9,
+   "render_seconds": 860,
+   "cameras": [
+    "REGISTER-top",
+    "ENTRANCE-1",
+    "TRACK-1",
+    "TRACK-2",
+    "TRACK-3",
+    "TRACK-4",
+    "COOLER-ceiling-1",
+    "G2L-pole-on-gondola-1",
+    "COOLER-price-rail-3",
+    "COOLER-ceiling-2",
+    "G1L-wall-2",
+    "COOLER-price-rail-5",
+    "G1L-drop-rod-1",
+    "G3R-pole-on-gondola-1",
+    "G2L-drop-rod-1",
+    "G3R-drop-rod-2",
+    "G1L-wall-1",
+    "G3R-price-rail-1",
+    "COOLER-ceiling-4",
+    "G3L-price-rail-1"
+   ],
+   "same_shelf_pair": [
+    "P003",
+    "P004"
+   ],
+   "simulator": "bff1f32 2026-10-05T04:22:17-04:00"
+  }
+ }
+}

@@ -16,6 +16,12 @@ Everything here is simulated: the clips come from a private copy of the browser 
 
 `clips.json` lists, per rendered clip, the cameras, frame count, what happens and the render time.
 
+Rendering takes about 9 to 16 minutes per clip with three clips at a time on a 10 core laptop with nothing else
+running hard (16 to 20 cameras, 600 to 950 frames), and 35 to 47 minutes per clip when the machine was busy with
+other jobs (dev 7001 to 7005). The 12 clips take 15 GB. A camera with nothing moving in view repeats its last
+frame instead of rendering it again (checked byte identical on a slice). If Chrome closes mid clip the split
+renderer starts that clip again, up to 3 times.
+
 ## Commands
 
 ```
@@ -30,6 +36,7 @@ node scripts/bench/render_clip.mjs --seed 1240 --out /tmp/q --from 10 --to 16 --
 .venv/bin/python -m bree.sim.bench dev --smoke    # one clip, 60 frames per camera, results/ untouched
 .venv/bin/python -m bree.sim.bench dev --score-only        # rescore the runs in out/bench/dev
 .venv/bin/python -m bree.sim.bench dev --clips 7001 --name mytry --runner mymodule:run   # partial or named runs
+.venv/bin/python -m bree.sim.bench dev --runner bree.sim.bench:run_pipeline --name baseline   # the recorded baseline: results/bench_dev_baseline.*
 .venv/bin/python -m pytest scripts/bench/test_bench.py -q
 ```
 

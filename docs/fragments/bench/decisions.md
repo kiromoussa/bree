@@ -40,3 +40,21 @@
   "right slot"; the "passed on its own" column shows the SKU stage separately.
 - **A theft counts as caught at shopper level**: an alert on the thief after the concealment. "Alerted with the
   right SKU" is reported next to it.
+- **A camera with nothing moving in view repeats its last frame.** The renderer skips the draw when no shopper,
+  held item, nearby floor (shadow) or open cooler door can be in a camera's image and the scene has not changed
+  since that camera's last such frame. Checked on a 20 s slice of seed 7001 with 4 cameras: 800 of 800 JPEG
+  frames and the truth rows are byte identical to the renderer without the skip (256 of them were repeats).
+  Dev clips 7001 to 7004 were rendered before the skip, 7005, 7006 and all test clips with it; `clip.json`
+  records the overlay hash and `truth/render.json` the number of repeated frames.
+- **The split renderer starts a clip again (up to 3 times) when Chrome closes mid clip.** That happened to
+  seeds 7006 and 9002 on a loaded machine ("browser has been closed"), cause not found. A clip is only complete
+  when `clip.json` exists; it is written last.
+- **The baseline is kept under its own name.** `results/bench_dev_baseline.*` is the per-camera engine as
+  committed at 19f51dc (`--runner bree.sim.bench:run_pipeline --name baseline`). `results/bench_dev.*` is
+  whatever the default runner is at the time, so later runs do not overwrite the baseline.
+- **Default runner left at the per-camera engine in this commit.** Another stream changed the default in the
+  working tree to `bree.shelf.store:run`, a module that is not committed yet. The benchmark commit does not
+  include that change so that `make bench-dev` works at this commit; the integrator switches the default when
+  the new runner lands (or pass `BENCH_ARGS="--runner module:function"`).
+- **No TEST numbers recorded.** The test command was only smoke checked on one clip with 60 frames per camera;
+  that writes to `out/bench/test_smoke` and never to `results/`.

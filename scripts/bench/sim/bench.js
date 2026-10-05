@@ -152,7 +152,7 @@ Shopper.prototype.sync = function (dt) { // a second and third item sit beside t
 
 function setup(seed, layout, opts = {}) {
   const params = Y.setup(seed, layout, { shoppers: 0, jitter: opts.jitter ?? true, swap: opts.swap ?? true });
-  B.items.clear(); B.minItem = Infinity; B.first = []; B.shoppers = []; B.k = 0;
+  B.items.clear(); B.minItem = Infinity; B.first = []; B.shoppers = []; B.k = 0; still.clear();
   const sc = planScenario(seed, { shoppers: opts.shoppers, window: opts.window ?? 30 });
   Object.assign(B, { plans: sc.plans, arrive: sc.arrive, rng: sc.rng, dr: mulberry32(seed * 6151 + 29), pair: sc.pair });
   const clerk = scene.children.find(o => o.isGroup && Math.hypot(o.position.x - 6.2, o.position.z - 3.3) < 1e-6 && o.children.length && !o.userData.vcam);
@@ -189,9 +189,29 @@ function advance(until, dt = 1 / 30) {
 const camOf = name => { const vc = sim.vcams.find(v => v.name === name); if (!vc) throw new Error('no camera ' + name); return vc; };
 const _v = new THREE.Vector3();
 const px = (vc, P) => { _v.copy(P).project(vc.cam); return _v.z > 1 || _v.z < -1 ? null : [+((_v.x + 1) / 2 * vc.res[0]).toFixed(1), +((1 - _v.y) / 2 * vc.res[1]).toFixed(1)]; };
+// Can anything that moves show up in this camera's image now? A shopper's body, held items, or the floor within 2 m of
+// the shopper (a shadow). No occlusion test, so this says yes more often than needed. An open cooler door: yes for all.
+const _q = new THREE.Vector3();
+function busy(vc) {
+  if (store.doorOpen.some(v => v > 0)) return true;
+  const inView = (x, y, z) => { _q.set(x, y, z).project(vc.cam); return _q.z > -1 && _q.z < 1 && Math.abs(_q.x) < 1.1 && Math.abs(_q.y) < 1.1; };
+  for (const sh of sim.shoppers) {
+    const { x, z } = sh.pos, c = vc.cam.position;
+    if (Math.hypot(x - c.x, z - c.z) < 1.5) return true;
+    for (const y of [0, 0.5, 1, 1.5, sh.height]) if (inView(x, y, z)) return true;
+    for (const [dx, dz] of [[2, 0], [-2, 0], [0, 2], [0, -2], [1.4, 1.4], [1.4, -1.4], [-1.4, 1.4], [-1.4, -1.4], [1, 0], [-1, 0], [0, 1], [0, -1]]) if (inView(x + dx, 0, z + dz)) return true;
+    const h = sh.fig.handWorld(0); if (inView(h.x, h.y, h.z)) return true;
+  }
+  return false;
+}
+const still = new Map();   // camera -> what the scene looked like when its last empty frame was rendered
+// A camera with nothing moving in view, in a scene that has not changed since its last such frame, would render the same
+// pixels again: capture() then returns { same: true } and the caller repeats that frame. The truth rows are repeated too.
 function capture(name, quality = 0.92) {
   const vc = camOf(name), [w, h] = vc.res;
   vc.cam.updateMatrixWorld(true);
+  const idle = !busy(vc), sceneKey = sim.events.length + ':' + sim.events.filter(e => e.outcome === 'put_back').length;
+  if (idle && still.get(name) === sceneKey) return { same: true };
   renderer.setPixelRatio(1); renderer.setSize(w, h, false); renderer.setRenderTarget(null); renderer.setScissorTest(false); renderer.setViewport(0, 0, w, h);
   renderer.setClearColor(0x0d1014, 1); renderer.clear(); renderer.shadowMap.needsUpdate = true; renderer.render(scene, vc.cam);
   const image = canvas.toDataURL('image/jpeg', quality);
@@ -223,6 +243,7 @@ function capture(name, quality = 0.92) {
       if (r) items.push({ sku: r.sku, kind: st?.it.onCounter ? 'counter' : 'hand', bbox: bb(b), vis_px: b[4], shopper: st?.sh.name ?? null, slot: st?.it.slot.label ?? null });
     }
   }
+  if (idle) still.set(name, sceneKey); else still.delete(name);
   return { image, persons, items };
 }
 // where every shopper is on the floor now (store metres, layout x and z), and where the reaching hand is

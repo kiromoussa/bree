@@ -3,7 +3,7 @@
 BENCH_JOBS ?= 2
 BENCH_ARGS ?=
 
-bench-clips:      ## render the DEV and TEST clips of the fixed benchmark (about 20 min per clip; skips clips already rendered). Needs Chrome, node, ffmpeg, BREE_PLAYWRIGHT
+bench-clips:      ## render the DEV and TEST clips of the fixed benchmark (10 to 45 min per clip depending on load; skips clips already rendered, retries a clip when Chrome closes). Needs Chrome, node, ffmpeg, BREE_PLAYWRIGHT
 	$(PY) scripts/bench/render_split.py dev
 	$(PY) scripts/bench/render_split.py test
 

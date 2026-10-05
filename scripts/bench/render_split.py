@@ -47,9 +47,13 @@ def main() -> None:
         if (out / "clip.json").exists():
             return 0
         out.mkdir(parents=True, exist_ok=True)
-        with (out / "render.log").open("w") as log:
-            return subprocess.run(["node", str(HERE / "render_clip.mjs"), "--seed", str(seed), "--out", str(out), "--layout",
-                                   str(Path.home() / "bree/software/shared/layouts" / MAN["layout"])], stdout=log, stderr=log).returncode
+        for _ in range(3):      # headless Chrome sometimes closes mid clip ("browser has been closed"): start the clip again
+            with (out / "render.log").open("w") as log:
+                code = subprocess.run(["node", str(HERE / "render_clip.mjs"), "--seed", str(seed), "--out", str(out), "--layout",
+                                       str(Path.home() / "bree/software/shared/layouts" / MAN["layout"])], stdout=log, stderr=log).returncode
+            if code == 0:
+                break
+        return code
     todo = seeds_of(a.split, a.seeds)
     with ThreadPoolExecutor(a.jobs) as ex:
         codes = list(ex.map(one, todo))

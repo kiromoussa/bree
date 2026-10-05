@@ -67,17 +67,20 @@ try {
     if (a.stills) fs.mkdirSync(path.join(out, 'stills'), { recursive: true });
     const params = await call((y, { seed, layout, window }) => y.setup(seed, layout, { window }), { seed, layout, window });
     const enc = Object.fromEntries(cams.map(c => { // one H.264 encoder per camera, fed JPEG frames
-      const p = spawn('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-c:v', 'mjpeg', '-framerate', String(fps), '-i', '-', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', String(a.crf ?? 16), '-pix_fmt', 'yuv420p', '-g', String(fps), path.join(out, `${c}.mp4`)], { stdio: ['pipe', 'inherit', 'inherit'] });
+      const p = spawn('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-c:v', 'mjpeg', '-framerate', String(fps), '-i', '-', '-c:v', 'libx264', '-threads', '2', '-preset', 'veryfast', '-crf', String(a.crf ?? 16), '-pix_fmt', 'yuv420p', '-g', String(fps), path.join(out, `${c}.mp4`)], { stdio: ['pipe', 'inherit', 'inherit'] });
       return [c, p];
     }));
     const f0 = a.from ? Math.floor(+a.from * fps) : 0, f1 = a.to ? Math.min(n, Math.ceil(+a.to * fps)) : n;
-    const frames = fs.createWriteStream(path.join(out, 'truth/frames.jsonl')), tracks = fs.createWriteStream(path.join(out, 'truth/tracks.jsonl'));
+    const frames = fs.createWriteStream(path.join(out, 'truth/frames.jsonl')), tracks = fs.createWriteStream(path.join(out, 'truth/tracks.jsonl')), last = {};
+    let reused = 0;
     for (let i = f0; i < f1; i++) {
       const t = i / fps, k = i - f0;
       const w = await call((y, t) => { y.advance(t); return y.world(); }, t);
       tracks.write(JSON.stringify({ frame: k, t: +(k / fps).toFixed(3), shoppers: w }) + '\n');
       for (const c of cams) {
-        const r = await call((y, c) => y.capture(c), c), buf = Buffer.from(r.image.slice(r.image.indexOf(',') + 1), 'base64');
+        let r = await call((y, c) => y.capture(c), c);          // { same: true }: nothing moved in view, repeat the last frame
+        if (r.same) { r = last[c]; reused++; } else { r.buf = Buffer.from(r.image.slice(r.image.indexOf(',') + 1), 'base64'); delete r.image; last[c] = r; }
+        const buf = r.buf;
         if (!enc[c].stdin.write(buf)) await new Promise(ok => enc[c].stdin.once('drain', ok));
         if (a.stills && k % +a.stills === 0) fs.writeFileSync(path.join(out, 'stills', `${c}_${String(k).padStart(4, '0')}.jpg`), buf);
         if (r.persons.length || r.items.length) frames.write(JSON.stringify({ frame: k, t: +(k / fps).toFixed(3), camera: c, persons: r.persons, items: r.items }) + '\n');
@@ -103,8 +106,8 @@ try {
     fs.writeFileSync(path.join(out, 'calibration.json'), JSON.stringify({ frame: 'store metres, y up, +z toward the front door (the layout frame)', model: 'pinhole, no distortion: pixel = K R (X - position); R rows are right, down, forward', cameras: calib }, null, 1));
     const seconds = +((Date.now() - t0) / 1000).toFixed(0);
     fs.writeFileSync(path.join(out, 'clip.json'), JSON.stringify({ source: 'browser simulator copy (SIMULATED)', simulator: simInfo, layout: path.basename(layoutFile), seed, fps, frames: f1 - f0, sim_seconds: +((f1 - f0) / fps).toFixed(2),
-      slice: a.from || a.to ? [f0 / fps, f1 / fps] : null, cameras: cams, camera_choice: { always: fixed, item_cameras_that_see_a_pick: item, item_cameras_that_see_no_pick: idle }, params, video: `H.264 (libx264 crf ${a.crf ?? 16}) from JPEG quality 0.92` }, null, 1));
-    fs.writeFileSync(path.join(out, 'truth/render.json'), JSON.stringify({ ...summary, frames: f1 - f0, render_seconds: seconds }, null, 1));
+      slice: a.from || a.to ? [f0 / fps, f1 / fps] : null, cameras: cams, camera_choice: { always: fixed, item_cameras_that_see_a_pick: item, item_cameras_that_see_no_pick: idle }, params, video: `H.264 (libx264 crf ${a.crf ?? 16}) from JPEG quality 0.92; a camera with nothing moving in view repeats its last frame` }, null, 1));
+    fs.writeFileSync(path.join(out, 'truth/render.json'), JSON.stringify({ ...summary, frames: f1 - f0, frames_repeated_because_nothing_moved: reused, render_seconds: seconds }, null, 1));
     console.error(`seed ${seed}: ${f1 - f0} frames x ${cams.length} cameras, ${ev.length} picks, ${seconds} s`);
   }
   if (s.errors.length) { console.error('console errors:\n' + s.errors.join('\n')); process.exitCode = 1; }

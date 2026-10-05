@@ -780,4 +780,29 @@ An independent audit re-ran the commands behind the reports and probed the code.
   events and person boxes of round 4's from-scratch run are what a fresh run would produce. Saves about 35 minutes.
 - **Tests:** full suite on the kept code, 415 passed, 1 skipped, 0 failed (counted from the progress lines of `out/bench/round5/tests_full.log`).
 - **goal_met is reported true for DEV** with the caveat that one case moves the honest rate by 0.45 per 10 and theft
-  recall by 0.05, and that alert tier is 0. TEST has not been run.
+  recall by 0.05, and that alert tier is 0. TEST had not been run at that point (it was run once afterwards, see the wrap-up below).
+
+
+## Wrap-up (2026-10-05)
+
+- **The audit's three major findings were fixed in the report, not by re-rendering the benchmark.** Re-exporting the
+  clips with a nominal planogram would make a new benchmark version and a second look at TEST. The stored runs were
+  re-scored where that needs no rerun.
+- **Right SKU is now reported twice: exact planogram (as benchmarked) and nominal planogram**
+  (`scripts/bench/nominal_sku.py`, scoring only). The simulator exports no "misplaced" flag, so the nominal SKU of a
+  slot is the most common SKU of its planogram block, with block borders from the simulator's unshuffled layout
+  (`/Users/kiromoussa/bree/software/shared/example-layout.json`, same 2,349 slots in the same order). A block with a
+  tie keeps its exact SKU (10 slots on DEV, 0 on TEST). Result: DEV 0.838, TEST 0.859 against the 0.85 bar. The
+  goal is therefore reported as met on TEST by one pick and missed on DEV by one pick for this bar under a nominal
+  planogram; under the exact planogram it is met on both.
+- **Re-scoring TEST this way is not tuning.** No code, rule or threshold in the pipeline changed after the TEST
+  run; the script reads stored outputs and truth and changes only how one number is counted.
+- **The camera choice limit is stated with a measured idle-camera rate and one all-camera clip** (12 PICK events against 11, no extra review) (`scripts/bench/idle_cameras.py`,
+  `out/bench/allcams`). The all-camera clip is TRAIN seed 4903, not a DEV or TEST seed, so the benchmark sets stay as
+  they were. One clip is one clip; the benchmark itself should be re-rendered with every camera in its next version.
+- **Plates:** the fuel drive-off fragments were already merged into the shared docs and committed before this
+  wrap-up; `docs/fragments` does not exist any more. Nothing left to merge.
+- **No new Makefile targets** for the two scoring scripts; the commands are in their docstrings and in REPORT.md.
+- **Tests at wrap-up:** full suite 416 passed, 0 failed, 0 skipped (the browser test ran, `BREE_PLAYWRIGHT` was set),
+  counted from the progress lines of `out/bench/wrapup/tests_full.log` because pytest prints no closing summary line
+  here; `scripts/bench/test_bench.py` 3 passed. No file under `src/` changed in the wrap-up.

@@ -714,6 +714,12 @@ make bench-smoke     # one clip, 60 frames per camera, writes nothing to results
 - After round 5 (SIMULATED) every DEV bar is met: 17 of 20 thefts flagged, 2 of 22 honest shoppers reviewed, pick
   recall 0.971, right SKU 0.926, 1.216 identities per shopper; TRAIN-seed clips 15 of 19 and 2 of 36. Alert tier is
   still 0 (no concealment cue). The ledger stops halving a crowded pick once every candidate has left. REPORT.md, round 5.
+- Held-out TEST, run once (SIMULATED, `results/bench_test.md`): 14 of 14 thefts flagged for review, alert tier 0 of 14,
+  pick recall 0.970, right SKU 0.922, 2 of 22 honest shoppers reviewed, 1.387 identities per shopper. Three limits go
+  with these numbers (REPORT.md, wrap-up): the planogram handed to the pipeline is exact, misplaced items included
+  (with a nominal planogram right SKU is 0.838 on DEV and 0.859 on TEST, bar 0.85; `scripts/bench/nominal_sku.py`);
+  each clip holds 16 to 20 of the 45 cameras, chosen so every pick is in view, so false picks from cameras with no
+  shopper are undercounted (`scripts/bench/idle_cameras.py`); and the sets are small (14 to 20 stolen items).
 - A put event names the take it undoes (`undoes` against the take's `eids`) and says whether the item was seen going
   into the slot (`item_in`); `bree.events.shelf.confirm_puts` returns takes on that basis.
 

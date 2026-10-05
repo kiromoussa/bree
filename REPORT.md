@@ -1,11 +1,185 @@
 # BREE vision: report
 
-Twelve parts, newest first. **Audit fixes (2026-10-05)** comes first. Then, from the integration of four parallel work streams: **Integration summary (2026-10-05)**, **End to end on simulated data**, **SKU detector trained on simulated frames**, **Calibration, 3D slots and store-wide identity**, **Camera node first pass**, **Human review feedback loop**. Then, unchanged: **Closed-world identity (2026-10-04)**, **Re-ID without the face (2026-10-03)**, **Overnight (2026-10-01)**, **Phase 2 (2026-09-30, real data)** and the **Phase 1 report**. Every number names the file it came from; real-data results and simulated or synthetic results are kept apart and labelled.
+Newest first. **Wrap-up (2026-10-05)** comes first: baseline, the DEV rounds, the held-out TEST result, stress results and what still fails. Then **One pipeline path** with improvement rounds 5 to 1 and the streams behind them, then **Audit fixes (2026-10-05)**. Then, from the integration of four parallel work streams: **Integration summary (2026-10-05)**, **End to end on simulated data**, **SKU detector trained on simulated frames**, **Calibration, 3D slots and store-wide identity**, **Camera node first pass**, **Human review feedback loop**. Then, unchanged: **Closed-world identity (2026-10-04)**, **Re-ID without the face (2026-10-03)**, **Overnight (2026-10-01)**, **Phase 2 (2026-09-30, real data)** and the **Phase 1 report**. Every number names the file it came from; real-data results and simulated or synthetic results are kept apart and labelled.
+
+# Wrap-up (2026-10-05): baseline, DEV rounds, held-out TEST, stress results, what still fails
+
+Everything in this section is SIMULATED: clips from the browser store simulator on the `recommended-3d-45` layout,
+16 to 20 of its 45 cameras per clip. Nothing here is real store footage. Sources: `results/bench_dev_baseline.json`,
+`bench_dev_first_join.json`, `bench_dev_round0.json`, `bench_dev.json`, `bench_train.json`, `bench_test.json`, and two
+scoring scripts added in this wrap-up (`scripts/bench/nominal_sku.py`, `scripts/bench/idle_cameras.py`).
+
+**Bottom line.** The pipeline went from catching 0 of 20 simulated thefts to putting 17 of 20 (DEV) and 14 of 14
+(held-out TEST) in front of a human reviewer, with 2 of 22 honest shoppers reviewed on each set. It never raises an
+alert by itself: alert tier is 0 on both sets because nothing detects concealment. Three limits found by the audit
+travel with every headline number and are measured below: the planogram was exact, only the cameras that matter were
+rendered, and the sample is small.
+
+## Three limits that travel with the numbers
+
+1. **Right SKU rests on an exact planogram.** The pipeline names the product from the slot it decided on
+   (`src/bree/shelf/events.py`), and the benchmark's `layout.json` gives every slot the SKU that is really in it,
+   including the single misplaced items the simulator puts in. A real planogram would not know those. Re-scored
+   against a nominal planogram (each slot gets the most common SKU of its planogram block; scoring only, no rerun,
+   `python scripts/bench/nominal_sku.py results/bench_test.json out/bench/test`):
+
+   | SIMULATED | paired picks | right SKU, exact planogram (as benchmarked) | right SKU, nominal planogram | picks on a misplaced slot | stolen items with the right SKU, exact then nominal |
+   |---|---|---|---|---|---|
+   | DEV | 68 | 63 (0.926) | 57 (0.838) | 7 of 70 | 19 then 16 of 19 paired |
+   | TEST | 64 | 59 (0.922) | 55 (0.859) | 6 of 66 | 12 then 10 of 14 paired |
+   | TRAIN-seed clips | 97 | 91 (0.938) | 85 (0.876) | 9 of 106 | 17 then 15 of 19 paired |
+
+   Against the 0.85 bar: with a nominal planogram DEV misses it by one pick (58 of 68 would be 0.853) and TEST
+   meets it by one pick. So "right SKU bar met" holds only for the exact planogram. The method finds 6.4 to 6.8
+   percent of slots misplaced (904 of 14,094 on DEV, 954 on TEST); the simulator redraws 12 percent of slots but
+   a redraw can land on the same product. 10 slots on DEV and 0 on TEST sit in a block with no clear majority
+   and keep their exact SKU. Theft recall, pick recall and the review counts do not depend on this: a pick on a
+   misplaced slot still becomes an unpaid item, under the wrong product name.
+
+2. **Which cameras are in a clip was chosen with ground truth.** `render_clip.mjs` renders the best item camera
+   for every pick, second views up to 12 item cameras, then 2 item cameras that see no pick. The layout has 38
+   shelf and cooler cameras, so about 25 item cameras are missing from every clip and cannot produce a false
+   event. What the 2 idle cameras per clip produced (`python scripts/bench/idle_cameras.py out/bench/dev
+   out/bench/test out/bench/train`):
+
+   | SIMULATED | idle item cameras | idle camera minutes | their shelf events (take, put) | PICK events that came from an idle camera |
+   |---|---|---|---|---|
+   | DEV | 12 | 14.0 | 8, 6 | 2 |
+   | TEST | 12 | 15.5 | 1, 0 | 1 |
+   | TRAIN-seed clips | 18 | 21.8 | 4, 3 | 3 |
+
+   6 PICK events in 51.3 idle camera minutes is 0.12 per idle camera per minute. If the 25 missing cameras
+   behaved like the idle ones, a 70 s clip would gain about 3 false PICK events (25 x 1.17 x 0.12); the clips
+   have 4 (DEV) and 7 (TEST) false PICK events in all six today. This is a projection from 6 events, not a
+   measurement.
+
+   One clip was then measured directly. TRAIN seed 4903 was rendered again with 43 of the layout's 45 cameras
+   (`render_clip.mjs --max-item-cams 100 --spare-cams 100`, 37 item cameras, 27 of them idle; clip in
+   `data/synth/bench/allcams`, run in `out/bench/allcams`, score in `results/bench_allcams_4903.json`) and compared with the 18
+   camera clip of the same seed in `results/bench_train.json`:
+
+   | SIMULATED, TRAIN seed 4903 | 18 cameras | 43 cameras |
+   |---|---|---|
+   | per-camera shelf events, after fusing | 32, 17 | 36, 20 |
+   | PICK events (8 true picks, 8 paired in both) | 11 | 12 |
+   | PUT_BACK events | 5 | 6 |
+   | thefts flagged for review | 2 of 2 | 2 of 2 |
+   | honest shoppers reviewed | 0 of 2 | 0 of 2 |
+   | identities | 6 for 4 shoppers | 6 for 4 shoppers |
+
+   Every one of the 8 picks ends at the same stage in both runs. The 27 idle cameras gave 4 shelf events and 1
+   PICK event in 27.9 camera minutes (0.036 PICK events per camera per minute, under the projection). So on this
+   one clip the 25 extra cameras cost one false PICK and no review. One clip with 4 shoppers does not settle it,
+   and it is a TRAIN seed, not DEV or TEST: the next benchmark version should render every camera.
+   Pick precision (0.944 DEV, 0.901 TEST) and reviews on honest shoppers (2 of 22 on both, at the bar with no
+   margin) are therefore optimistic for a whole store.
+
+3. **Small sample, one simulator.** DEV has 20 stolen items and 22 honest shoppers, TEST 14 and 22. One shopper
+   moves theft recall by 0.05 to 0.07 and the honest review rate by 0.45 per 10. Training, DEV and TEST share
+   one renderer, one store model and one set of invented package art: TEST is held-out scenes, not a held-out
+   store. The hand-set rules were tuned on DEV and, from round 2 on, also on the TRAIN-seed clips.
+
+## Baseline and DEV, round by round (SIMULATED, 6 clips, 70 picks, 20 stolen items, 22 honest shoppers)
+
+| step | thefts flagged, alert or review | alert tier | picks found | pick precision | right SKU of paired picks (exact planogram) | honest shoppers reviewed | identities per shopper |
+|---|---|---|---|---|---|---|---|
+| Baseline: per-camera engine | 0 of 20 | 0 | 2 of 70 | 2 of 2 | 1 of 2 | 0 of 22 | 4.0 |
+| First join of the streams | 12 of 20 | 0 | 69 of 70 | 0.552 | 0.913 | 6 of 22 | 1.27 |
+| Round 0: one act per reach, clothing colour | 16 of 20 | 0 | 67 of 70 | 0.744 | 0.910 | 4 of 22 | 1.27 |
+| Round 1: receipts, puts, parties | 17 of 20 | 0 | 67 of 70 | 0.848 | 0.910 | 4 of 22 | 1.27 |
+| Round 2: four rules measured and reverted | 17 of 20 | 0 | 67 of 70 | 0.848 | 0.910 | 4 of 22 | 1.27 |
+| Round 3: a put names the take it undoes | 17 of 20 | 0 | 67 of 70 | 0.848 | 0.940 | 3 of 22 | 1.27 |
+| Round 4: one person, one track | 17 of 20 | 0 | 67 of 70 | 0.905 | 0.940 | 3 of 22 | 1.216 |
+| Round 5: the ledger's doubt discount (final) | 17 of 20 | 0 | 68 of 70 | 0.944 | 0.926 | 2 of 22 | 1.216 |
+| Bar | 0.80 (16) | | 0.80 | | 0.85 | 1 per 10 (2.2) | 1.5 |
+
+Rounds 1 to 4 are as recorded in their own sections below; the first three rows and the last are read from the
+result files named above. With the nominal planogram of limit 1 the final right SKU on DEV is 0.838.
+
+What fixed it, in order of effect:
+- **Shelf events without a person box.** An item camera reports "something left this slot" from the change in
+  the picture and the item seen in a hand, with no person detection in that view. This took pick recall from 2 of
+  70 to 69 of 70.
+- **People on the floor plan.** The four overhead cameras and the entrance camera give one track per person in
+  store coordinates; shelf events are given to the nearest person in reach. Identities per shopper 4.0 to 1.27,
+  then 1.216 when a second track on the same person stopped counting as a new person.
+- **One act per reach, and puts that name the take they undo.** Pick precision 0.552 to 0.944.
+- **Ledger rules:** receipts matched to whoever stood at the register, a crowded pick discounted only while
+  another candidate can still pay for it. Honest reviews 6 to 2 of 22.
+
+## Held-out TEST (SIMULATED, seeds 9001 to 9006, run once on commit 9068c1a, result committed as 46b260b)
+
+6 clips, 466 s, 31 shoppers (9 thieves, 22 honest), 66 picks, 14 stolen items. No code or threshold changed after
+the run. `results/bench_test.md`.
+
+| TEST, SIMULATED | value | bar |
+|---|---|---|
+| Theft recall, alert or review | 14 of 14 (1.00) | 0.80 |
+| Theft recall, alert tier | 0 of 14 | |
+| Alert precision | undefined (0 alerts) | |
+| Pick recall | 64 of 66 (0.970) | 0.80 |
+| Pick precision | 64 of 71 PICK events (0.901) | |
+| Right SKU of paired picks, exact planogram | 59 of 64 (0.922) | 0.85 |
+| Right SKU of paired picks, nominal planogram | 55 of 64 (0.859) | 0.85 |
+| Right slot of paired picks | 0.828 | |
+| Reviews on honest shoppers | 2 of 22, both review tier | 1 per 10 (2.2) |
+| Identities per shopper | 1.387 (43 for 31), 14 identities cover two shoppers, 1 shopper never tracked | 1.5 |
+
+- Every bar is met on TEST, three of them with a margin of one case: honest reviews (2 against 2.2), right SKU
+  with a nominal planogram (55 against 54.4), and see limit 2 for what the honest review count leaves out.
+- "14 of 14" counts a theft as caught when the thief got a review. 12 of the 14 stolen items are listed as unpaid
+  on a record, and 12 of 14 have the right SKU on the paired pick (10 with a nominal planogram). Two would reach
+  the reviewer through the shopper, not through the item.
+- Funnel: 26 of 66 picks pass every stage. Lost at: hand or item detected 6, shelf event emitted 2, right slot 8,
+  right shopper 3, conceal or pay classified 11 (10 of them stolen items), alert 10.
+- TEST was touched once before the final run: a 60 frame smoke check on clip 9001 at 10:25 with the old engine
+  (`out/bench/test_smoke`), which wrote nothing to `results/`. The audit found no sign it was used for tuning.
+- Audit of the run (2026-10-05, on 46b260b): no ground truth is read at inference (the runner gets a folder
+  without `truth/`), no per-clip special cases, training seeds 1000 to 4951 and nothing at 5000 or above, and a
+  rerun from pixels of DEV 7001 and 7005 and TEST 9001 and 9004 gave identical per-pick outcomes.
+
+## Stress results (all SIMULATED or SYNTHETIC, recorded in the sections below)
+
+- **Shift and light on the shelf events** (`out/shelf/robust_4903.md`, TRAIN seed 4903, 13 item cameras, pixel
+  comparison alone): recall stays 0.923 under a 3 px or 8 px picture shift, dimming to 30 percent, and a 10 percent
+  brightness step. Precision 0.696 undisturbed, 0.560 with a 3 px shift, 0.312 when the picture is brightened by 60
+  percent (48 take events against 23). A sudden brightening is the open failure.
+- **Idle cameras:** limit 2 above.
+- **Harder scenes:** the TRAIN-seed clips (9 clips, camera sway included) with the final code: 15 of 19 thefts
+  flagged, 2 of 36 honest shoppers reviewed, pick recall 0.915, 1.377 identities per shopper.
+- **Identity under tracker breaks** (scripted, section "Closed-world identity"): a stress script written by the
+  same hand as the code; it shows the shape of the trade, not rates to expect.
+- **Fuel drive-off** (SYNTHETIC drawn plates and scripted timelines, `results/plates_bench.md`): 18 scripted
+  timelines give the right alerts and retractions. No real plate was read.
+- **Simulator realism pass** (in `/Users/kiromoussa/bree`, commit 94debca): lens, noise, blur, glare, day and night
+  now exist in the simulator, but the benchmark clips were rendered before it. The pipeline has not been run on
+  degraded clips.
+
+## What still fails, and why
+
+1. **No alert tier (0 of 20 DEV, 0 of 14 TEST).** There is no concealment cue: the overhead pose does not show it
+   and no item camera reports it. Every catch needs a human reviewer. With true concealment times fed in, review
+   recall on DEV did not move (round 1), so this decides the alert tier only.
+2. **Right SKU with a real planogram** (limit 1): the product is read from the slot, not from the picture at the
+   pick. The detector is weak on items in a hand, which is why the slot was used.
+3. **False events from cameras nobody is shopping at** (limit 2), and the two honest reviews left on DEV, both
+   per-camera errors: a far camera read 456 changed pixels at a top shelf as a take while a shopper walked past
+   (7001 P007); a cooler camera never reported a put-back (7005 P008).
+4. **Right slot** is the weakest perception stage: 0.868 on DEV, 0.828 on TEST, worst at the counter and in the
+   cooler. A pick read by two cameras did not get the slot right more often than one read by a single camera
+   (DEV 28 of 33 against 31 of 35, TEST 26 of 33 against 27 of 31; not a controlled comparison).
+5. **Identity when two people stand together at the register** (DEV 7001 P003 is hidden by it; TEST has 14
+   identities covering two shoppers and one shopper never tracked).
+6. **Three DEV thefts missed:** 7001 P003 (identity swap at the register), 7005 P001 (at the counter, no receipt),
+   7005 P007 (no shelf event).
+7. **Nothing here is real footage.** Same renderer, store and package art for training and testing.
 
 # One pipeline path: shelf events, floor tracks, association, ledger (2026-10-05)
 
 All numbers in this section are SIMULATED: the DEV split of the fixed benchmark (6 clips from the browser store
-simulator, 421 s, 37 shoppers, 15 thieves, 70 picks, 20 stolen items). The TEST split was not run.
+simulator, 421 s, 37 shoppers, 15 thieves, 70 picks, 20 stolen items). The TEST split had not been run when this section was written; its result is in the
+wrap-up section above. Right SKU numbers here use the exact planogram and the honest review counts cover only the
+rendered cameras (limits 1 and 2 of the wrap-up).
 
 **Bottom line.** The three core streams are wired into one runner (`bree.shelf.store:run`, the default of
 `make bench-dev`). On DEV it puts 16 of 20 stolen items in front of a reviewer (was 0 of 20), finds 67 of 70 picks
@@ -95,11 +269,15 @@ Clothing colour alone does not move theft recall (11 against 12), it moves ident
 - **Tests:** the full suite (`.venv/bin/python -m pytest`) ran after the merge: 398 passed, 1 skipped (the browser test of
   the review page, `BREE_PLAYWRIGHT` not set in that shell), none failed.
 - **Not measured:** the shelf rules were tuned with the old weights and `make shelf-eval` was not repeated with
-  `sim_sku_hands_v3`; the old weights were not run through the DEV benchmark; nothing was run on TEST.
+  `sim_sku_hands_v3`; the old weights were not run through the DEV benchmark; nothing had been run on TEST at the
+  time of this section (see the wrap-up section for the TEST result).
 
 ## 2026-10-05: improvement round 5 (SIMULATED): the ledger's doubt discount
 
-All numbers are simulated. TEST was not touched. No training, no new clips. Nothing before tracking changed, so DEV
+All numbers are simulated. TEST was not touched in this round (it was run once afterwards, see the wrap-up section).
+"Every DEV bar is met" below holds for the exact planogram the benchmark hands the pipeline: with a nominal planogram
+right SKU on DEV is 0.838, under the 0.85 bar, and the honest review count covers only the rendered cameras (limits 1
+and 2 of the wrap-up). No training, no new clips. Nothing before tracking changed, so DEV
 and the TRAIN-seed clips were both rejoined from their stored shelf events and person boxes
 (`make bench-dev BENCH_ARGS=--keep`, `make bench-train BENCH_ARGS=--keep`, stamped db103d3). The stored events are the
 ones of round 4's from-scratch DEV run.
@@ -179,7 +357,7 @@ event (one reach, read as take, put, take), so the rule would be right there for
 
 ## 2026-10-05: improvement round 4 (SIMULATED): one person, one track
 
-All numbers are simulated. TEST was not touched. No training, no new clips. DEV was run from scratch
+All numbers are simulated. TEST was not touched in this round. No training, no new clips. DEV was run from scratch
 (`make bench-dev`, stamped 65f4103: 8b5e265 plus a comment); the TRAIN-seed clips were rejoined from their stored shelf events and person
 boxes (`make bench-train BENCH_ARGS=--keep`: nothing before tracking changed this round).
 
@@ -273,7 +451,7 @@ The three honest shoppers reviewed on DEV each have their own cause, and none is
 
 ## 2026-10-05: improvement round 3 (SIMULATED): a put names the take it undoes
 
-All numbers are simulated. TEST was not touched. No training, no new clips. Both sets were run from scratch
+All numbers are simulated. TEST was not touched in this round. No training, no new clips. Both sets were run from scratch
 (`make bench-dev`, `make bench-train`, code at f72e3b4; `results/bench_dev.md` is stamped "28989f3 plus uncommitted
 changes" because it ran just before the commit, the code is the same).
 
@@ -366,7 +544,7 @@ cameras, still the only way to an alert tier. (3) Put-backs one camera reads and
 
 ## 2026-10-05: improvement round 2 (SIMULATED): a second tuning set, a tracker crash, and four rules that did not hold up
 
-All numbers are simulated. TEST was not touched. No training, no new clips.
+All numbers are simulated. TEST was not touched in this round. No training, no new clips.
 
 **Result: the DEV scorecard did not move, and the goal is still not met.** 17 of 20 thefts flagged for review (0.85),
 4 of 22 honest shoppers reviewed (bar: about 2), pick recall 0.957, right SKU 0.910, 1.27 identities per shopper, no
@@ -552,8 +730,8 @@ Tried and reverted (each made DEV worse or was right too rarely):
 
 Everything here is simulated: 12 clips from the browser store simulator copy on the recommended-3d-45 layout.
 Nothing is real footage. Command: `.venv/bin/python -m bree.sim.bench dev --runner bree.sim.bench:run_pipeline --name baseline`,
-result in `results/bench_dev_baseline.md` and `.json`. The TEST split was not run except a 60 frame smoke check on
-one clip; no TEST number is recorded.
+result in `results/bench_dev_baseline.md` and `.json`. At the time of this section the TEST split had not been run except a 60 frame smoke
+check on one clip; the TEST result recorded later is in the wrap-up section at the top.
 
 DEV split: 6 clips (seeds 7001 to 7006), 421 s of simulated time, 37 shoppers (15 thieves, 22 honest), 70 true
 picks (41 paid, 20 concealed, 9 put back; 46 at gondolas, 15 in the cooler, 9 at the counter), 18 to 20 cameras

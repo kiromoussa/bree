@@ -179,3 +179,44 @@ def test_a_swap_put_right_while_one_of_the_two_has_another_meeting_open_does_not
                    {"t0": 1.0, "a": a, "b": c, "fa": [], "fb": [], "marks": []}]
     tr._colours(1.0 + tr.cfg.app_wait_s + 1.0, {})
     assert (a.id, b.id) == (2, 1) and tr.meetings == [] and tr.counts.get("swaps_put_right") == 1
+
+
+def feed(tr, frames, t0=0.0):
+    """frames: per frame {camera: [(x, z, colour)]} -> every id given out."""
+    ids = []
+    for i, f in enumerate(frames):
+        boxes = {c: [{"bbox": box_of(cam, x, z)[:4], "conf": 0.9, "app": col * 2} for x, z, col in f.get(c, [])] for c, cam in OVER.items()}
+        ids += [v for got in tr.update(t0 + i / 10, boxes).values() for v in got if v is not None]
+    return ids
+
+
+RED, BLUE = [1.0] + [0.0] * 51, [0.0] * 10 + [1.0] + [0.0] * 41
+
+
+def test_a_second_track_of_a_tracked_person_is_not_a_new_person_and_takes_over_when_theirs_is_lost():
+    tr = FloorTracker(OVER, door_xz=[0.0, 4.0], cfg=FloorConfig(gate_m=0.6))      # as tight as a keypoint placement makes the gate
+    come = [{c: [(0.3 + 0.07 * i, 3.8 - 0.06 * i, RED)] for c in OVER} for i in range(30)]        # in at the door, to (2.3, 2.0)
+    # for 3 s the second camera places them about 0.9 m off (too far for one track, further than a second box), then only that camera sees them
+    apart = [{"o1": [(2.3, 2.0, RED)], "o2": [(2.85, 2.0, RED)]}] * 30
+    alone = [{"o2": [(2.85, 2.0, RED)]}] * 30
+    ids = feed(tr, come + apart + alone)
+    assert set(ids) == {1} and [k.id for k in tr.people()] == [1]
+    assert tr.counts.get("second_track_frames", 0) > 0 and tr.counts.get("births_inside", 0) == 0 and tr.counts.get("hand_backs", 0) == 1
+
+
+def test_far_from_where_they_were_lost_and_in_other_clothes_is_somebody_else_when_the_gate_is_on():
+    def run(cfg):
+        tr = FloorTracker(OVER, door_xz=[0.0, 4.0], cfg=cfg)
+        come = [{c: [(0.3 + 0.07 * i, 3.8 - 0.06 * i, RED)] for c in OVER} for i in range(30)]    # red, lost at (2.3, 2.0)
+        other = [{}] * 20 + [{c: [(4.6, 0.6, BLUE)] for c in OVER}] * 40                          # blue, 2.7 m away, 2 s later, not at the door
+        feed(tr, come + other)
+        return sorted(k.id for k in tr.people())
+    assert run(None) == [1]                              # position alone: the lost person, back
+    assert run(FloorConfig(other_m=2.0)) == [1, 2]       # an entry nobody saw; id 1 stays lost
+
+
+def test_an_act_can_be_timed_by_the_readings_no_put_took_back():
+    ev = lambda t, kind="take", **kw: {"kind": kind, "t": t, "t_start": t, "point_3d": [0.2, 1.0, 0.0], "sku_id": "sku1", "source": "both", "cameras": ["a"], **kw}  # noqa: E731
+    acts = [ev(22.4, eids=["a"]), ev(25.9, eids=["b"]), ev(26.6, eids=["c"]), ev(27.6, "put", undoes=["a"])]
+    assert [g["t"] for g in one_act_per_reach(acts, [1, 1, 1, 1]) if g["kind"] == "take"] == [22.4, 26.6]       # 4.2 s after the first reading: a second take
+    assert [g["t"] for g in one_act_per_reach(acts, [1, 1, 1, 1], standing=True) if g["kind"] == "take"] == [25.9]

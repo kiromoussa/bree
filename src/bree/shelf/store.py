@@ -38,7 +38,7 @@ def _dump(p: Path, rows) -> None:
     p.write_text("".join(json.dumps(r, default=str) + "\n" for r in rows))
 
 
-def one_act_per_reach(acts: list[dict], who: list, within_s: float = 4.0, within_m: float = 1.0, from_last: bool = False) -> list[dict]:
+def one_act_per_reach(acts: list[dict], who: list, within_s: float = 4.0, within_m: float = 1.0, from_last: bool = False, standing: bool = False) -> list[dict]:
     """Fused shelf events and the shopper each was attached to -> one event per reach. One reach into a shelf is often
     read more than once: by one camera at two facings, or by two cameras that put it at slots too far apart to be fused
     (45 of 60 false takes on DEV were such repeats of a true take). Events of one kind, by one shopper, this close in
@@ -48,11 +48,21 @@ def one_act_per_reach(acts: list[dict], who: list, within_s: float = 4.0, within
     ponytail: one shopper taking two different products from the same metre of shelf within 4 s becomes one take; split
     by the hand track or the count once a clip has that.
     from_last: measure the 4 s from the latest reading of the act instead of its first. Off: measured in round 3 it
-    removes one review of an honest shopper on DEV and loses one flagged theft on the TRAIN-seed clips."""
+    removes one review of an honest shopper on DEV and loses one flagged theft on the TRAIN-seed clips.
+    standing: time the act by the readings no put has taken back (see `undone` below). Off: measured in round 4 it
+    removes the same review on DEV, and one flagged theft there, and adds a review on the TRAIN-seed clips."""
     rank = lambda e: (e.get("cue") == "both_cues", e["source"] == "both", e.get("detector_frames") or 0, len(e.get("cameras") or []), e.get("sku_conf") or 0.0)      # noqa: E731
     out: list[dict] = []
+    # standing: a reading its own camera took back (a put names it in "undoes") does not time the act; the act happened
+    # when the readings that still stand saw it (DEV 7006: an arm covering a slot 3.5 s before the take stretched one
+    # reach past `within_s` and it was counted twice).
+    undone = {x for e in acts if e["kind"] == "put" for x in e.get("undoes") or []} if standing else set()
+
+    def when(g: dict) -> float:
+        return min((t for x, t in g["times"].items() if x not in undone), default=g["t"])
     for e, pid in sorted(zip(acts, who), key=lambda x: x[0]["t"]):
-        g = next((g for g in reversed(out) if pid is not None and g["by"] == pid and g["kind"] == e["kind"] and e["t"] - g["t_last" if from_last else "t"] <= within_s
+        e = {**e, "times": e.get("times") or {x: e["t"] for x in e.get("eids") or []}}
+        g = next((g for g in reversed(out) if pid is not None and g["by"] == pid and g["kind"] == e["kind"] and e["t"] - (g["t_last"] if from_last else max(g["t"], when(g))) <= within_s
                   and e.get("point_3d") is not None and g.get("point_3d") is not None and math.dist(g["point_3d"][::2], e["point_3d"][::2]) <= within_m), None)
         if g is None:
             out.append({**e, "by": pid, "repeats": e.get("repeats", 0), "t_last": e.get("t_last", e["t"])})
@@ -61,7 +71,11 @@ def one_act_per_reach(acts: list[dict], who: list, within_s: float = 4.0, within
             g.update({**best, "t": g["t"], "t_last": max(g["t_last"], e.get("t_last", e["t"])), "t_start": min(g["t_start"], e["t_start"]), "by": pid, "repeats": g["repeats"] + e.get("repeats", 0) + 1,
                       "cameras": sorted(set(g.get("cameras") or []) | set(e.get("cameras") or [])),
                       **{k: sorted({*(g.get(k) or []), *(e.get(k) or [])}) for k in ("eids", "undoes") if g.get(k) or e.get(k)},
-                      "read_as": {**(g.get("read_as") or {}), **(e.get("read_as") or {})}, "item_in": bool(g.get("item_in") or e.get("item_in"))})
+                      "read_as": {**(g.get("read_as") or {}), **(e.get("read_as") or {})}, "item_in": bool(g.get("item_in") or e.get("item_in")),
+                      "times": {**e["times"], **g["times"]}})
+    for g in out:
+        if g["kind"] == "take" and g["times"]:
+            g["t"] = max(g["t"], when(g))
     return out
 
 
@@ -104,7 +118,7 @@ def rejoin(clip: Path, out: Path, review: bool = True, floor=None, assoc=None, j
     events, assocs = store_events(acts, tracker.people(), layout, cams=cams, assoc_cfg=assoc, **(join or {}))
     alerts, book = run_ledger(events, load_payments(clip / "register.jsonl"), layout, **{"pos_lag_s": POS_LAG_S, **(ledger or {})})
     write_run(out, events, alerts, boxes, ids, fps)
-    _dump(pipe / "store_shelf_events.jsonl", [{**{k: v for k, v in g.items() if k != "views"}, "person_id": a.person_id, "uncertain": a.uncertain, "why": a.why}
+    _dump(pipe / "store_shelf_events.jsonl", [{**{k: v for k, v in g.items() if k != "views"}, "person_id": a.person_id, "uncertain": a.uncertain, "cost": a.cost, "why": a.why}
                                               for g, a in zip(acts, assocs)])
     (pipe / "ledger_log.txt").write_text("\n\n".join(f"person {pid}:\n" + "\n".join(rec.log) for pid, rec in sorted(book.people.items())))
     (pipe / "engine_log.txt").write_text("\n".join(tracker.log))

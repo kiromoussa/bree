@@ -274,3 +274,12 @@ def test_a_put_undoes_only_the_reading_it_names():
     # a put that nobody stands near still returns the take of the shopper who was given it
     events, _ = store_events([take, shelf(SLOT, 11.0, kind="put", undoes=["a", "b"])], [visit(1, pay=False)], LAY)
     assert [(e.type, e.person_id) for e in events if e.type == EventType.PUT_BACK] == [(EventType.PUT_BACK, 1)]
+
+
+def test_pixels_changing_at_the_pay_point_with_no_item_seen_are_not_a_pick():
+    x, _, z = SLOT["face"]
+    lay = {**LAY, "poi": {"register": [x + 0.5, 0.0, z + 0.2]}}           # the payer stands half a metre in front of this slot
+    events, assocs = store_events([shelf(SLOT, 6.0)], [visit(1, pay=False)], lay)
+    assert not [e for e in events if e.type == EventType.PICK] and "where the payer stands" in assocs[0].why
+    for evs, where in (([shelf(SLOT, 6.0, source="both")], lay), ([shelf(SLOT, 6.0)], LAY)):      # the item seen in a hand, or no pay point here
+        assert [e.type for e in store_events(evs, [visit(1, pay=False)], where)[0] if e.type == EventType.PICK] == [EventType.PICK]

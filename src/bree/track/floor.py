@@ -53,6 +53,7 @@ class FloorConfig:
     confirm_hits: int = 4             # frames with a detection before a new track counts
     duplicate_m: float = 0.4          # a new track this close to a tracked person is a second box of them
     duplicate_far_m: float = 0.8      # ... or this close when no single camera sees both
+    second_track_m: float = 1.0       # a track that starts inside this close to a tracked person, with nobody lost, is a second track of them
     door_m: float = 2.0               # births and exits happen this close to the door
     doorway_m: float = 0.3            # lost this close to the door line (or past it): left, at once
     walk_mps: float = 2.2             # a lost person can have walked at most this fast
@@ -70,6 +71,12 @@ class FloorConfig:
     app_frames: int = 5               # clear looks at each of the two after they part, before deciding who is who
     app_margin: float = 0.08          # straight and crossed colour match differ by less than this: cannot tell
     app_scale: float = 0.15           # hand-back: a lost person is e times less likely per this much colour distance
+    # hand-back: a track that starts further than other_m from where a lost person was last seen, in clothes more
+    # different than other_app, is not that person. Off (inf). At 2.0 m it refuses 12 of 25 wrong hand-backs and 0 of 45
+    # right ones on the TRAIN-seed clips (5 of 6 and 0 of 26 on DEV), but with identity right more often the ledger's
+    # doubt discounts drop one more theft and review one more honest shopper there (round 4, REPORT.md).
+    other_m: float = float("inf")
+    other_app: float = 0.25
     app_wait_s: float = 20.0          # no clear look at both for this long after they met: left undecided
     staff_share: float = 0.7          # an identity that spends this share of its time behind the counter is staff
 
@@ -440,7 +447,7 @@ class FloorTracker:
     def _confirm(self, k: Track, t: float) -> None:
         """A new track has lasted: whose is it? A second box, a lost person who could have walked here, or a new person."""
         c = self.cfg
-        near = [(float(np.linalg.norm(q.pos - k.pos)), q) for q in self.tracks if q is not k and q.state == "live" and q.t_seen >= t - c.lost_after_s]
+        near = sorted(((float(np.linalg.norm(q.pos - k.pos)), q) for q in self.tracks if q is not k and q.state == "live" and q.t_seen >= t - c.lost_after_s), key=lambda x: x[0])
         # a second box of a tracked person: right on top of them, or close and no camera shows the two apart
         if any(d <= c.duplicate_m or (d <= c.duplicate_far_m and not (q.cams & k.cams)) for d, q in near):
             self._count("second_box_frames")
@@ -460,11 +467,14 @@ class FloorTracker:
                     continue                               # someone walked out and someone else walks in right behind
             s = min(0.5 + c.drift_mps * gap, 6.0)           # where a lost person is after `gap`: near where they were lost
             colour = app_dist(q.app, k.app)                 # and they still wear the same clothes
+            if colour is not None and d > c.other_m and colour > c.other_app:
+                self._count("hand_backs_refused")
+                continue                                   # far from where they were lost and in other clothes: somebody else
             cand.append((float(np.exp(-d * d / (2 * s * s)) / (s * s)) * (1.0 if colour is None else float(np.exp(-colour / c.app_scale))), q))
         cand.sort(key=lambda x: -x[0])
         if cand:
             q = cand[0][1]
-            gap = k.t_first - q.t_seen
+            gap, colour = k.t_first - q.t_seen, app_dist(q.app, k.app)
             self.tracks.remove(q)
             k.id, k.path, k.kpts, k.born, k.staff = q.id, q.path, q.kpts, q.born, q.staff
             k.uncertain, k.t_uncertain, k.t_first = q.uncertain, q.t_uncertain, q.t_first
@@ -477,11 +487,17 @@ class FloorTracker:
                         r.uncertain, r.t_uncertain = why, min(r.t_seen, k.t_first) if r is not k else q.t_seen
                 self._count("uncertain_marks")
             self._count("hand_backs")
-            self.log.append(f"{t:7.1f}s id {k.id} seen again after {gap:.1f}s" + (" (uncertain)" if rivals else ""))
+            self.log.append(f"{t:7.1f}s id {k.id} seen again after {gap:.1f}s" + (" (uncertain)" if rivals else "")
+                            + f" [{np.linalg.norm(q.last - k.start):.1f} m from where lost, colour {'none' if colour is None else format(colour, '.2f')}, lost {np.linalg.norm(q.last - self.door):.1f} m"
+                              f" and back {np.linalg.norm(k.start - self.door):.1f} m from the door{', walking in' if heading_in else ''}, {len(cand)} lost fit, new track seen {k.app_n} and lost one {q.app_n} times clear]")
         elif at_door or k.t_first - self.t0 <= c.start_s:
             self.n += 1
             k.id, k.born = self.n, "door" if at_door else "start"
             self._count("births_" + k.born)
+        elif any(d <= c.second_track_m and in_zone(self.staff_zone, *q.pos) == in_zone(self.staff_zone, *k.pos) for d, q in near):
+            self._count("second_track_frames")
+            return                                         # nobody is lost and a tracked person stands right here: a second track of them (two
+            #                                                cameras place one person apart), not an entry nobody saw. If theirs is lost, this one takes over
         elif t - k.t_first < c.inside_birth_s or k.hits < c.inside_birth_share * k.frames:
             return                                         # wait: a flicker, a second box now and then, or someone about to be seen properly
         else:
@@ -489,7 +505,8 @@ class FloorTracker:
             k.id, k.born = self.n, "inside"
             k.uncertain, k.t_uncertain = "first seen inside the store with nobody unaccounted for (entry not seen)", k.t_first
             self._count("births_inside")
-            self.log.append(f"{t:7.1f}s id {k.id} first seen inside the store, away from the door, nobody lost fits")
+            self.log.append(f"{t:7.1f}s id {k.id} first seen inside the store, away from the door, nobody lost fits"
+                            + (f" [nearest tracked person: id {near[0][1].id}, {near[0][0]:.1f} m away, {np.linalg.norm(near[0][1].pos - k.start):.1f} m from where this track started at {k.t_first:.1f}s]" if near else ""))
         k.state = "live"
 
     def people(self) -> list[Track]:

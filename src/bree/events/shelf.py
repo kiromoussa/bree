@@ -90,7 +90,8 @@ def _doubt(person, t: float) -> dict:
     return {}
 
 
-def confirm_puts(shelf: list[dict], assocs: list[Assoc], slots: dict, margin: float, same_place_m: float = 0.25, put_returns: str = "in") -> tuple[list[bool], dict[int, list[int]]]:
+def confirm_puts(shelf: list[dict], assocs: list[Assoc], slots: dict, margin: float, same_place_m: float = 0.25, put_returns: str = "in",
+                 pay_xz=None, pay_reach_m: float = 0.75) -> tuple[list[bool], dict[int, list[int]]]:
     """Which shelf events may reach the ledger, and which takes each put returns: (keep[i], {put index: [take index]}).
     A put of the pixel comparison names the reading it undoes ("undoes": that camera saw that place go back to the
     picture from before its own take, because the item is back or because an arm that had covered the slot went
@@ -98,7 +99,7 @@ def confirm_puts(shelf: list[dict], assocs: list[Assoc], slots: dict, margin: fl
     whoever was given the take. An act other cameras still read stands, under the name one of them gave it, unless
     the item was seen going into the slot (`put_returns` "in": the put's "item_in"; "both": any item in a hand near
     it; "none": never), which returns the act whatever the other cameras say. Puts without that link:
-    Takes: all but those of the slot watch alone. Puts: about 6 put events in 10 match no act (4 of 23 with one cue on
+    Takes: all but those of the slot watch alone and pixel-only changes within reach of the pay point. Puts: about 6 put events in 10 match no act (4 of 23 with one cue on
     the TRAIN-seed clips), so a put counts when the item was seen in the hand going in (source "both") or when it lands
     where this person took something that is still out (same or neighbouring facing). Who puts it back is the one who
     took it: a put that fits two people about equally goes to the one with an item out from that place. Changes
@@ -145,6 +146,9 @@ def confirm_puts(shelf: list[dict], assocs: list[Assoc], slots: dict, margin: fl
             if ev.get("cue") == "slot_state" and ev.get("source") != "both":
                 keep[i] = False         # 0 of 6 such events matched an act on the TRAIN-seed clips (make shelf-eval)
                 a.why += "; slot watch alone (no pixel change, no item in a hand): not passed to the ledger"
+            elif ev.get("source") == "shelf_diff" and pay_xz is not None and at is not None and float(np.hypot(at[0] - pay_xz[0], at[2] - pay_xz[1])) <= pay_reach_m:
+                keep[i] = False         # 0 of 5 such events matched an act on the TRAIN-seed clips, 3 of 3 further along the counter did
+                a.why += "; pixels changed within reach of where the payer stands and no item was seen in a hand (the payer, or goods on the counter): not passed to the ledger"
             elif at is not None and i not in back:
                 out_by.setdefault(a.person_id, []).append((at, i))
             continue
@@ -163,13 +167,14 @@ def confirm_puts(shelf: list[dict], assocs: list[Assoc], slots: dict, margin: fl
 
 
 def store_events(shelf: list[dict], people: list, layout: dict, cams: dict | None = None, conceal: list[dict] | None = None,
-                 assoc_cfg: AssocConfig | None = None, register_dwell_s: float = 1.0, put_returns: str = "in") -> tuple[list[Event], list[Assoc]]:
+                 assoc_cfg: AssocConfig | None = None, register_dwell_s: float = 1.0, put_returns: str = "in", pay_reach_m: float = 0.75) -> tuple[list[Event], list[Assoc]]:
     """-> (events in time order, the association of each shelf event). Staff identities make no events."""
     acfg = assoc_cfg or AssocConfig()
     slots = slot_index(layout)
     by_id = {p.id: p for p in people}
     assocs = associate(shelf, people, layout, cams=cams, cfg=acfg)
-    keep, pair = confirm_puts(shelf, assocs, slots, acfg.margin, put_returns=put_returns)
+    pay = (layout.get("poi") or {}).get("register")       # where a customer stands to pay: marked once at install
+    keep, pair = confirm_puts(shelf, assocs, slots, acfg.margin, put_returns=put_returns, pay_xz=(pay[0], pay[2]) if pay else None, pay_reach_m=pay_reach_m)
     name = lambda e: e.get("sku_id") or (slots.get(e.get("slot_id")) or {}).get("skuId")      # noqa: E731  the planogram names the product when the camera could not
     events: list[Event] = []
     _, reg = counter_zones(layout)

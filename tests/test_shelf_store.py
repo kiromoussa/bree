@@ -1,0 +1,169 @@
+"""Shelf events without a person box (bree/shelf/diff.py), store-wide floor tracks (bree/track/floor.py) and the
+repeat filter of the store runner (bree/shelf/store.py). The join of shelf events and people is bree/events/shelf.py,
+tested in tests/test_association.py. SYNTHETIC pictures and boxes with known truth."""
+from __future__ import annotations
+
+import numpy as np
+import pytest
+
+from bree.calib.camera import Camera
+from bree.shelf.diff import ShelfDiff, slot_boxes
+from bree.shelf.store import one_act_per_reach
+from bree.track.floor import FloorConfig, FloorTracker, floor_point
+
+cv2 = pytest.importorskip("cv2")
+
+
+def look_at(pos, target, f=800.0, res=(1280, 720)) -> Camera:
+    fwd = np.subtract(target, pos) / np.linalg.norm(np.subtract(target, pos))
+    right = np.cross(fwd, [0.0, 1.0, 0.0])
+    right /= np.linalg.norm(right)
+    return Camera(f, res[0] / 2, res[1] / 2, np.stack([right, np.cross(fwd, right), fwd]), np.asarray(pos, float), res)
+
+
+def slot(i, x, sku):      # a shelf along x at z = 0, facing +z
+    return {"id": f"S{i}", "skuId": sku, "fixtureId": "G1", "position": [x, 1.0, -0.2], "size": [0.12, 0.2, 0.4],
+            "face": [x, 1.0, 0.0], "normal": [0, 0, 1]}
+
+
+SLOTS = [slot(i, 0.2 * i, f"sku{i}") for i in range(5)]
+CAM = look_at([0.4, 1.3, 2.5], [0.4, 1.0, 0.0])
+
+
+def shelf_picture(cam, present):
+    img = np.full((cam.resolution[1], cam.resolution[0], 3), 90, np.uint8)
+    boxes, keep = slot_boxes(cam, SLOTS, 1.0, 9.0)
+    for b, i in zip(boxes, keep):
+        if present[i]:
+            cv2.rectangle(img, (int(b[0]), int(b[1])), (int(b[2]), int(b[3])), (30 + 40 * i, 200, 250 - 40 * i), -1)
+    return img
+
+
+def play(sd, img, n):
+    return [e for _ in range(n) for e in sd.update(img)]
+
+
+def test_take_then_put_back_is_read_from_the_shelf_alone():
+    sd = ShelfDiff("cam", CAM, SLOTS, 10.0)
+    full, missing = shelf_picture(CAM, [True] * 5), shelf_picture(CAM, [True, True, False, True, True])
+    assert play(sd, full, 20) == []
+    arm = full.copy()
+    cv2.rectangle(arm, (500, 0), (900, 720), (10, 10, 10), -1)       # something big in front: never an event
+    assert play(sd, arm, 10) == []
+    evs = play(sd, missing, 10)
+    assert [(e["kind"], e["slot_id"], e["sku_id"], e["source"]) for e in evs] == [("take", "S2", "sku2", "shelf_diff")]
+    assert 1.9 <= evs[0]["t_start"] <= 2.1 and evs[0]["point_3d"] == [0.4, 1.0, 0.0]      # when the shelf was last as before
+    assert play(sd, missing, 20) == []                               # reported once
+    back = play(sd, full, 10)
+    assert [(e["kind"], e["slot_id"]) for e in back] == [("put", "S2")]
+
+
+def test_a_person_standing_still_is_not_a_shelf_event():
+    sd = ShelfDiff("cam", CAM, SLOTS, 10.0)
+    full = shelf_picture(CAM, [True] * 5)
+    play(sd, full, 5)
+    person = full.copy()
+    cv2.rectangle(person, (300, 100), (700, 720), (200, 180, 160), -1)
+    assert play(sd, person, 30) == [] and play(sd, full, 10) == []
+
+
+OVER = {"o1": look_at([0.0, 3.0, 6.0], [2.0, 0.0, 1.0], f=500.0), "o2": look_at([6.0, 3.0, 0.0], [2.0, 0.0, 2.0], f=500.0)}
+
+
+def box_of(cam, x, z, height=1.7, legs_hidden=False):
+    pts = np.array([[x + dx, y, z + dz] for dx in (-0.2, 0.2) for dz in (-0.2, 0.2) for y in ((0.9 if legs_hidden else 0.0), height)])
+    px, _ = cam.project(pts)
+    return [px[:, 0].min(), px[:, 1].min(), px[:, 0].max(), px[:, 1].max(), 0.9]
+
+
+def test_floor_point_uses_the_head_when_a_shelf_hides_the_legs():
+    cam = OVER["o1"]
+    whole, _, _ = floor_point(cam, box_of(cam, 2.0, 2.0)[:4], FloorConfig())
+    cut, _, _ = floor_point(cam, box_of(cam, 2.0, 2.0, legs_hidden=True)[:4], FloorConfig())
+    assert np.linalg.norm(whole - [2.0, 2.0]) < 0.35 and np.linalg.norm(cut - [2.0, 2.0]) < 0.45
+
+
+def walk(tracker, path, t0=0.0, hidden=(), fps=10.0):
+    ids = []
+    for i, (x, z) in enumerate(path):
+        t = t0 + i / fps
+        boxes = {c: np.array([] if any(a <= t < b for a, b in hidden) else [box_of(cam, x, z)]).reshape(-1, 5) for c, cam in OVER.items()}
+        ids += [v for got in tracker.update(t, boxes).values() for v in got if v is not None]
+    return ids
+
+
+def test_one_identity_through_a_gap_and_an_exit_at_the_door():
+    tr = FloorTracker(OVER, door_xz=[0.0, 4.0])
+    path = [(0.3 + 0.08 * i, 3.8 - 0.05 * i) for i in range(50)] + [(4.3 - 0.08 * i, 1.3 + 0.05 * i) for i in range(50)]
+    ids = walk(tr, path, hidden=[(2.0, 4.0)])
+    assert set(ids) == {1}
+    for i in range(30):
+        tr.update(10.0 + i / 10, {c: np.zeros((0, 5)) for c in OVER})
+    assert [(k.id, k.state) for k in tr.people()] == [(1, "exited")]
+
+
+def test_two_people_who_stood_on_one_spot_keep_their_own_identity_by_clothing_colour():
+    red, blue = [1.0] + [0.0] * 51, [0.0] * 10 + [1.0] + [0.0] * 41
+    tr = FloorTracker(OVER, door_xz=[0.0, 4.0])
+    a = [(0.3 + 0.07 * i, 3.8 - 0.06 * i) for i in range(30)]                   # in at the door, to (2.3, 2.0)
+    b = [(0.3 + 0.07 * i, 3.8 - 0.02 * i) for i in range(30)] + [(2.3, 3.2 - 0.06 * i) for i in range(20)]   # to the same spot, later
+    # both stand on that spot for 2 s, then walk off in opposite directions
+    pa = a + [(2.3, 2.0)] * 40 + [(2.3 + 0.07 * i, 2.0) for i in range(30)]
+    pb = [None] * 20 + b + [(2.3, 2.0)] * 10 + [(2.3 - 0.07 * i, 2.0) for i in range(30)]
+    seen = {"red": [], "blue": []}
+    for i in range(len(pa)):
+        dets = [(name, xz, col) for name, path, col in (("red", pa, red), ("blue", pb, blue)) if i < len(path) and (xz := path[i]) is not None]
+        boxes = {c: [{"bbox": box_of(cam, *xz)[:4], "conf": 0.9, "app": col * 2} for _, xz, col in dets] for c, cam in OVER.items()}
+        got = tr.update(i / 10, boxes)
+        for j, (name, _, _) in enumerate(dets):
+            seen[name].append(got["o1"][j])
+    first, last = {n: next(v for v in ids if v is not None) for n, ids in seen.items()}, {n: ids[-1] for n, ids in seen.items()}
+    assert first["red"] != first["blue"] and last == first                       # each ends with the identity it came in with
+    assert all(k.uncertain is None for k in tr.people())                         # and the meeting leaves no doubt mark
+    assert tr.counts.get("swaps_put_right", 0) + tr.counts.get("meetings_told_apart", 0) >= 1 and tr.counts.get("encounter_marks", 0) >= 1
+
+
+def test_one_reach_read_twice_is_one_take_and_two_shoppers_stay_two():
+    ev = lambda t, x, sku, **kw: {"kind": "take", "t": t, "t_start": t, "point_3d": [x, 1.0, 0.0], "sku_id": sku, "source": "shelf_diff", "cameras": ["a"], **kw}  # noqa: E731
+    acts = [ev(5.0, 0.2, "sku1"), ev(5.6, 0.6, "sku3", source="both", detector_frames=6), ev(6.0, 0.4, "sku2"), ev(20.0, 0.2, "sku1")]
+    got = one_act_per_reach(acts, [1, 1, 2, 1])
+    assert [(g["t"], g["sku_id"], g["by"], g["repeats"]) for g in got] == [(5.0, "sku3", 1, 1), (6.0, "sku2", 2, 0), (20.0, "sku1", 1, 0)]
+    assert len(one_act_per_reach(acts[:2], [None, None])) == 2                    # nobody attached: nothing is merged
+
+
+def shifted(img, dx, dy):
+    return cv2.warpAffine(img, np.float32([[1, 0, dx], [0, 1, dy]]), img.shape[1::-1], borderMode=cv2.BORDER_REPLICATE)
+
+
+def test_a_shifted_picture_is_put_back_in_place_before_comparing():
+    sd = ShelfDiff("cam", CAM, SLOTS, 10.0)
+    full, missing = shelf_picture(CAM, [True] * 5), shelf_picture(CAM, [True, True, False, True, True])
+    play(sd, full, 10)
+    assert play(sd, shifted(full, 6, -4), 30) == []                  # 3 px and 2 px at working scale: no event from the shift alone
+    assert abs(sd.shift[0] - 3) < 0.5 and abs(sd.shift[1] + 2) < 0.5
+    evs = play(sd, shifted(missing, 6, -4), 10)
+    assert [(e["kind"], e["slot_id"]) for e in evs] == [("take", "S2")]
+    assert evs[0]["t_start"] <= evs[0]["t_end"] and evs[0]["point_sigma_m"] == 0.06
+
+
+def test_a_large_brightness_change_is_undone_and_reported():
+    sd = ShelfDiff("cam", CAM, SLOTS, 10.0)
+    full, missing = shelf_picture(CAM, [True] * 5), shelf_picture(CAM, [True, True, False, True, True])
+    play(sd, full, 10)
+    dim = lambda im: cv2.convertScaleAbs(im, alpha=0.5)              # outside the 0.8 to 1.25 band of a lamp flicker
+    assert play(sd, dim(full), 30) == []
+    assert [s["status"] for s in sd.status] == ["brightness_changed"]
+    assert [(e["kind"], e["slot_id"]) for e in play(sd, dim(missing), 10)] == [("take", "S2")]
+    assert [(e["kind"], e["slot_id"]) for e in play(sd, dim(full), 10)] == [("put", "S2")]
+
+
+def test_a_picture_that_changed_everywhere_is_reported_and_a_new_reference_is_taken():
+    from bree.shelf.events import unreliable_windows
+    sd = ShelfDiff("cam", CAM, SLOTS, 10.0)
+    full = shelf_picture(CAM, [True] * 5)
+    play(sd, full, 10)
+    other = cv2.resize(np.random.default_rng(0).integers(0, 255, (45, 80, 3), dtype=np.uint8), full.shape[1::-1], interpolation=cv2.INTER_NEAREST)
+    assert play(sd, other, 30) == []                                 # nothing is read while the camera is unreliable
+    assert [s["status"] for s in sd.status] == ["unreliable", "reference_reset"]
+    assert unreliable_windows(sd.status) == {"cam": [(1.0, 2.0)]}
+    assert play(sd, other, 30) == [] and len(sd.status) == 2         # the new picture is the shelf now

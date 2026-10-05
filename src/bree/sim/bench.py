@@ -10,7 +10,8 @@ Clips: scripts/bench/manifest.json and scripts/bench/README.md. A clip folder ho
 The pipeline is run on a folder of links that leaves truth/ out (`public_view`), so the runner cannot read it
 by accident. Only `score_clip` opens truth/.
 
-The runner is one function, `run_pipeline(clip, out)` (replace it with --runner module:function). What the
+The runner is one function(clip, out): by default `bree.shelf.store:run` (shelf events from the item cameras, floor
+tracks from the people cameras). `--runner bree.sim.bench:run_pipeline` is the per-camera engine it replaced here. What the
 scorer reads from <out>/pipeline, and nothing else:
   events.jsonl         bree.events.types.Event rows. PICK: `sku` (or `item`) is the SKU claim, `meta.slot.id` the
                        slot claim, `zone` the fixture, `person_id` the store-wide identity.
@@ -467,12 +468,15 @@ def markdown(res: dict) -> str:
 def _one(args) -> None:
     """Child process: run the pipeline on one clip (public view only)."""
     clip, out = Path(args.run_one[0]), Path(args.run_one[1])
-    shutil.rmtree(out, ignore_errors=True)
-    out.mkdir(parents=True)
+    if not args.keep:
+        shutil.rmtree(out, ignore_errors=True)
+    out.mkdir(parents=True, exist_ok=True)
     mod, fn = args.runner.split(":")
     kw = {"max_frames": args.max_frames} if args.max_frames else {}
     if args.runner == "bree.sim.bench:run_pipeline":
         kw |= {"backend": args.backend, "edge": not args.no_edge, "verbose": args.verbose}
+    elif args.runner == "bree.shelf.store:run":
+        kw |= {"verbose": args.verbose}
     getattr(importlib.import_module(mod), fn)(public_view(clip, out), out, **kw)
 
 
@@ -482,7 +486,10 @@ def main(argv=None) -> None:
     ap.add_argument("--clips", help="comma separated seeds (default: the whole split)")
     ap.add_argument("--jobs", type=int, default=2, help="clips run at the same time")
     ap.add_argument("--out", help="default: out/bench/<split>")
-    ap.add_argument("--runner", default="bree.sim.bench:run_pipeline", help="module:function(clip, out, **options) that runs the pipeline on one clip")
+    ap.add_argument("--runner", default="bree.shelf.store:run", help="module:function(clip, out, **options) that runs the pipeline on one clip. "
+                    "Default: shelf events and floor tracks (bree.shelf.store). bree.sim.bench:run_pipeline is the per-camera engine it replaced here")
+    ap.add_argument("--keep", action="store_true", help="do not empty the run folders first: bree.shelf.store reuses its stored shelf events and person boxes "
+                    "and repeats only tracking, association and the ledger")
     ap.add_argument("--backend", default="sim_sku")
     ap.add_argument("--no-edge", action="store_true", help="skip the camera nodes and hub: every camera streams every frame")
     ap.add_argument("--max-frames", type=int, default=None, help="per camera (smoke test)")
@@ -509,7 +516,7 @@ def main(argv=None) -> None:
     def go(clip: Path) -> int:
         run = out / clip.name
         cmd = [sys.executable, "-m", "bree.sim.bench", "--run-one", str(clip), str(run), "--runner", a.runner, "--backend", a.backend]
-        cmd += (["--no-edge"] if a.no_edge else []) + (["--max-frames", str(a.max_frames)] if a.max_frames else []) + (["--verbose"] if a.verbose else [])
+        cmd += (["--no-edge"] if a.no_edge else []) + (["--max-frames", str(a.max_frames)] if a.max_frames else []) + (["--verbose"] if a.verbose else []) + (["--keep"] if a.keep else [])
         run.parent.mkdir(parents=True, exist_ok=True)
         with (out / f"{clip.name}.log").open("w") as log:
             code = subprocess.run(cmd, stdout=log, stderr=log).returncode

@@ -214,3 +214,128 @@ The design avoids faces, but several laws define biometric data broadly enough t
 - No real store footage with several shoppers and identity labels exists here. MERL is real but has one shopper per video, so it measures splits and cannot show a false merge. The multi-shopper numbers come from a scripted store (`synthetic_store_rows`: synthetic tracks, an occlusion every 4 to 10 s, half of them hiding two shoppers at once), which tests the logic, not perception.
 
 **Default: off (2026-10-04).** Rule set beforehand: make it the default for store configs only if it clearly beats the current default on store data without raising false merges. MERL test (real, one shopper per video): visits per shopper 2.43 to 1.36, with or without re-ID. Toy clips: scorecard unchanged. Scripted multi-shopper store: splits 3,209 to 1,214 and silent false merges 554 to 105, but raw false merges 554 to 1,238 without re-ID, and 62% of visits review-only. That fails the rule as written, so `EngineRules.closed_world` and the example store YAML stay off. With re-ID on as well it passes (false merges 314, splits 329), but re-ID is opt-in pending counsel. To switch a single-camera store on: `rules: {closed_world: true}`. Numbers: REPORT "Closed-world identity", `results/reid_bench.json`.
+
+## Calibration, 3D slots and store-wide identity (2026-10-04)
+
+- **One frame for everything: the layout file's.** Metres, y up, floor at y = 0; a store YAML floor point (x_m, y_m) is the layout point (x, 0, z). The simulator, the sim-eval adapter, the calibration and the slot map all use it, and a test checks that a layout camera projects to the same pixels through `bree.calib.camera` and through the adapter's matrices.
+- **Pinhole, no lens distortion.** The planned item lenses are about 25 degrees wide, where distortion is small. Add a k1 term (and a checkerboard) if the reprojection error of real marks grows toward the frame edge. The tracking cameras are about 120 degrees wide and will need it; they are only used for the floor mapping today.
+- **What `fit` does depends on what it is given.** 4 or more floor marks: a floor homography, which is all the handoff needs. A known lens (`--hfov`, `camera.hfov_deg`, or the layout entry): the full pose with `cv2.solvePnP`. 6 or more marks and no lens: pose and focal length together, which the bench shows is about three times worse in position, so the lens should be written down.
+- **`check` wants a fifth floor mark.** Exactly 4 marks fit exactly and prove nothing. Thresholds: 5 px reprojection RMS, 0.15 m on the floor.
+- **The floor homography is fitted on normalised points** (Hartley). 4MP pixel coordinates next to metres made the raw fit badly conditioned as soon as the marks carried click noise.
+- **The error model is the simulator's, on purpose.** Per camera, a 1 sigma miss across the line of sight of sqrt((pixel error / pixels per metre)^2 + (range x pointing error)^2). `NoiseModel.pixel_px` is the simulator's `pxSigma`, `cam_rot_deg` its `calibDeg`; `cam_pos_m` is added here because a hand-measured camera position is not exact. One definition means a layout scored in the simulator and a pick located in the pipeline are talking about the same error.
+- **The defaults are not the simulator's, also on purpose.** The simulator's 0.29 px is a shelf point known to the nearest pixel, a floor for what optics allow. The pipeline locates a pose keypoint on a hand, which is a few pixels off at best: 5 px, 2 cm, 0.2 degrees. `NoiseModel.sim()` returns the simulator's values. The synthetic bench puts the tool's own calibration at 0.08 degrees median and 0.24 at the 90th percentile for 2 px clicks, so 0.2 is on the careful side and the simulator's 0.1 is near the median. All three are placeholders until measured on installed cameras.
+- **Slot assignment weights each direction by how well it was measured.** A triangulated point is known well across both lines of sight and badly along them. Picking the nearest slot in plain metres ignores that: 38.6% exact against 56.0% at the default noise (synthetic bench).
+- **Source order for the slot: two views of the hand, then the item's own pixel, then one view of the hand.** The second camera does not need the shelf zone. A shelf zone still belongs to one camera, because two cameras with the same zone both raise a PICK and the basket counts the item twice.
+- **Store-wide closed world is one pool in `MultiCamIdentity`,** not one per camera. A per-camera pool takes a person walking in from another camera's area for someone lost in its own view. Births only in a door zone of a camera that sees it, deaths at a door camera's EXIT (dropped if another camera still sees the person a second later) or the timeout. The score and its weights are the single-camera ones (`CW_WEIGHTS`), not refitted.
+- **A track at the door is never handed to someone lost inside,** and someone seen leaving half a second ago is not handed to the next person walking in (`door_gap_s` 0.5 s).
+- **Default off,** by the same rule as the single-camera flag. Numbers and reasons in REPORT "Calibration, 3D slots and store-wide identity".
+
+## Camera node first pass: Pi Zero 2 W + Camera Module 3 (2026-10-04)
+
+**The node only answers "did something hand-sized move into a shelf zone", nothing more.** A Zero 2 W
+cannot run a detector on 12 MP frames, and shipping every full-res frame from 45 cameras is the cost we
+want to avoid. So the node runs a background model and a motion check on a 320 pixel wide stream and
+sends full-res frames only around a trigger. All recognition stays on the hub. Code:
+`src/bree/edge/trigger.py`.
+
+**Tuned for few misses, not for few false triggers.** A false trigger costs upload. A miss loses the
+pick for good, because the full-res frames are never sent. So the defaults are loose (30 low-res pixels
+of change, 6 moving), and the zone is grown by 6 low-res pixels: on the MERL train split the drawn shelf
+polygon alone missed reaches to the front edge of the shelf, and the margin fixed that. The price is
+that a body in front of the shelf triggers as well. In practice the trigger means "someone is at this
+shelf", and the saving comes from the time nobody is.
+
+**Colour as well as brightness.** A hand that is as bright as the packaging behind it is invisible to a
+grey-level difference. The background model keeps Cr and Cb too. Skin colour is only a shortcut that lets
+a smaller blob through; it never blocks a trigger, because gloves and bad light break skin detection.
+
+**Pre-roll is raw frames in RAM, encoded only when a trigger fires.** Encoding every full-res frame just
+in case would spend the CPU the trigger is there to save. The ring holds `fps x pre_roll_s` frames as
+YUV420. The frame size is a config value because the Zero 2 W has 512 MB: 2304x1296 (the sensor's binned
+mode) is the starting point, the full 4608x2592 is untested.
+
+**HTTP, not MQTT.** A burst is megabytes of JPEG: that is a POST body, and it is what MQTT brokers are
+tuned against. HTTP needs nothing beyond the Python standard library on either end (no broker to install,
+run and secure on the hub), the repo already takes POS payments by HTTP POST, and the hub can push back
+with a status code (429 + Retry-After). The nodes are on wired PoE, so MQTT's strength on flaky links
+buys little. What MQTT would give for free (queued delivery, last-will) is covered by the node's disk
+spool and the heartbeat. If a later design wants many small telemetry messages from many more nodes,
+MQTT is worth another look for those, not for the frames.
+
+**The spool drops the oldest burst when the card is full.** After a long outage the newest evidence is
+the one a person can still act on. Drops are counted and reported in every heartbeat.
+
+**Back-pressure in two places.** The hub answers 429 when its queue for the vision pipeline is full, and
+the node keeps the burst. As the node's spool fills, it sends less per burst: past half full every second
+pre-roll and post-roll frame is left out, past 90 % only the frames with a zone active are sent.
+
+**Frame times are the node's monotonic clock; the hub converts.** A Pi Zero has no battery clock, so its
+wall time is wrong until NTP answers, and wall time can jump. Monotonic time cannot. Each message carries
+a `boot_id` (monotonic time restarts at boot) and the node's monotonic time at send; the hub keeps the
+smallest (receive time minus send time) over the last 30 requests per boot and adds it to every frame
+time. A burst that was spooled before a node reboot and
+sent after it gets the old boot's offset if the hub still has it, else no hub time (`hub_time: null`),
+never the new boot's.
+
+**One pipeline run per burst in the hub's own `--store` mode.** The hub writes each burst as `burst.mp4` and
+runs the existing pipeline on it. A shopper therefore has no identity or basket across bursts. Joining
+bursts into one ledger is done outside the hub by `BurstSource` (see "Integration" below).
+
+## Human review feedback loop (2026-10-04)
+- **SQLite, one file per store, standard library only.** The shadow-mode `labels.jsonl` stays as it is. The review store is a superset that can ingest `would_be_alerts.jsonl`, so nothing has to migrate.
+- **Stdlib `http.server`, not FastAPI.** FastAPI is not a dependency of this repo, and the existing dashboard and shadow review page already use the stdlib server (JSON-only POST, byte ranges for Safari, 127.0.0.1). Same pattern, no new dependency.
+- **Four decisions: confirmed theft, not theft, theft with the wrong item, unclear.** "Wrong item" means a real theft where the system named the wrong product, and the reviewer must give the right one. So precision counts it as a correct alert, and a second figure (item precision) counts only alerts where theft and item were both right.
+- **Reviews are append-only, latest per reviewer counts.** Same rule as the shadow labels: a changed mind stays in the history.
+- **Two reviewers who disagree make the alert "disputed".** Disputed alerts are left out of precision and out of the label export. Agreement is reported as the share of same decisions and Cohen's kappa over the first two reviewers of each alert.
+- **Label rules are conservative.** Detector: only confirmed theft (class = predicted category) and wrong item (class = corrected item). "Not theft" says nothing about what the product was, so it gives no detector label. Pick: the reviewer's answer if given, otherwise 1 for a confirmed theft (marked `derived`). Conceal: only from the reviewer's answer, never derived, because a theft can be a plain walk-out.
+- **YOLO label files carry the reviewed box first and the detector's other boxes as unreviewed pseudo-labels.** A file with only the reviewed box would teach the rest of the shelf as background. The manifest gives `pseudo_boxes` per example so a trainer can drop them or mask them.
+- **Class names, not SKU ids.** The manifest lists class names as the alerts carry them, with ids that never shift between exports. The trainer maps names to its own ids.
+- **Export is a rebuild, dedup by content hash.** Each export rebuilds the list from the store. A changed decision or a purged alert drops out and its files are deleted. The key is a hash of the image bytes plus class plus box (or of the keypoint window plus label), so the same evidence logged under two alert ids is one example.
+- **Detector examples need a clean frame.** Alert clips are 640 px wide with boxes, zones and skeletons drawn on them, so they are not used as training images. A frame must come from `save_evidence_frame` (heads pixelated, no overlays, full resolution). The pipeline does not call it yet. That file belongs to another stream.
+- **Retention deletes media, not decisions.** Past `retention_days` (default 30) the clip, frames, stored keypoints and exported examples are deleted. The decision row has no image and no identity, so it stays and the weekly numbers do not change after a purge. Retention uses today's setting, so shortening it also removes examples exported earlier.
+- **Keypoints are stored for alerted people only, for the retention period.** They are pose, not appearance, and the conceal classifier trains on them. Whether pose over time counts as a biometric is already a question for counsel in the re-ID notes. If the answer is yes, ingest without `--frames-log` and no keypoints are stored.
+- **Staged tests are matched by test id, or by time and camera** (30 s before to 300 s after the staged time, one alert per test). Their alerts are reported separately and left out of the customer precision figure, so running tests cannot make the system look better.
+- **Plain pipeline alert ids restart at A00001 every run**, so the ingest command stores them as run folder name, alert number and a hash of the record. The same record twice is one alert. A different record under the same folder and number is a new alert, with a warning, because the earlier alert's clip file may have been overwritten. Shadow ids are already unique.
+- **Retention follows the export.** Every folder a label export is written to is recorded in the store's `meta` table, and the purge walks all of them. Refusing folders outside the store would have been simpler, but the training stream may want the dataset on another disk.
+- **A corrected item is stored only with "wrong item".** Text left in the field with any other decision is dropped in the store, not only in the page, so no other client can add a junk class either.
+- **Staged test matching looks across the week boundary.** A test staged just before midnight Sunday UTC is caught by an alert a few minutes into Monday. That alert counts as a staged one in the next week's report, not as a customer alert.
+- **The label export clips boxes to the image and drops boxes with no area.** A bad reviewed box is counted under `skipped.detector_bad_box`. A bad or unnamed unreviewed box is just left out of the label file.
+- **No train / test split in the manifest.** The trainer splits by `alert_id`, so one alert's frame and windows stay on one side.
+- **The page refuses decisions nobody could have looked at.** Verifier finding: holding key 1 for about a second decided a whole queue. Now a held key counts once, a decision is ignored while the previous one is being saved, and nothing can be decided in the first 0.4 s an alert is on screen. 0.4 s is far below the time a real look takes and only stops key bounce and double presses. There is no minimum watch time: a reviewer who knows the clip can still decide fast.
+- **Back goes one alert back.** Key U reopens the alert just decided and a new decision replaces the old one (a new row, the latest per reviewer counts). A full history browser was not built. Older mistakes are fixed by a second reviewer or directly through `store.decide`.
+- **A fully withdrawn alert leaves the queue and the metrics. A lowered one stays.** A late receipt that clears every item means staff were told to stand down, so asking a reviewer about it wastes their time and counting it as "sent" would charge the system for an alert it took back itself. It is counted on its own. An alert lowered to the review tier is still an open question, so it stays, with a line on the page. Shadow mode keeps tiers "as first decided" in its own summary. The two differ on purpose: shadow measures what staff would have been told at the time, the review store measures what was left for a person to judge.
+- **One rule for "sent" in `metrics()` and the owner report.** Both leave out staged-test alerts and withdrawn alerts, through one shared function. Before, `metrics()` counted staged alerts and the same week had two precision numbers.
+- **Every alert that names a staged test is a staged alert**, whether or not the test was logged. Unlogged ids are listed in the report so the owner can see a test was not written down.
+- **Corrected items have one spelling** (trimmed, lower case, underscores). A name the pipeline has never used still becomes a class, because a new product is a legitimate correction, but it is marked `class_known: false` and the page asks for Enter twice.
+- **Allow-list, not deny-list, for what is stored.** Items, receipt lines, frames and product boxes keep only named fields. The earlier filter matched identity-looking key names and missed names like `vector` or `crop`.
+- **Media is accepted by folder name: clips from `alerts`, frame images from `frames`.** This is best effort and the docs say so. Checking pixels for blurred heads was not attempted.
+- **One dataset folder, one store.** The manifest carries the store's id (a random id made when the store is created) and an export from another store is refused, because an export rebuilds the folder and would delete the other store's examples.
+- **The page checks the Host header.** Only `127.0.0.1:<port>` and `localhost:<port>` are answered, so a web page that points its own name at this machine cannot read alerts or post decisions. POST bodies are capped at 64 kB.
+
+## SKU detector trained on simulated frames (2026-10-04)
+
+- **Train on renders of the store simulator, because no labelled real frames exist.** The point is to have a product backend that names SKUs so the rest of the chain can run on simulator views, and to put a first number on the pixel threshold the camera layouts assume. It is not a claim about real accuracy, and every result file says SIMULATED.
+- **A private copy of the simulator, never the original.** `render_synth.mjs` copies `~/bree/software/sim-prototype` to `out/sim-copy` and adds one overlay file (`scripts/train/sim/synth.js`). The research repo's simulator is not run or edited by this repo.
+- **Ground-truth boxes come from an instance-id render,** so a box is what is visible after hands, bodies, neighbours and shelves hide what they hide. A box is a label only if at least 30 pixels of the item show, its short side is at least 5 pixels and at least 25% of it is visible.
+- **640 px tiles at native resolution.** A 4MP frame squeezed to 640 px turns a 25 px can into a 6 px one. Training and inference both tile; overlap 128 px. Ceiling: an item larger than the overlap that no tile holds whole is cut, which shows as the accuracy drop above 40 px across a can. Upgrade: a downscaled whole-frame pass next to the tiles.
+- **Split by scene seed.** No scene, shopper or lighting draw is shared between train, val and test. It is still one store and one set of package art.
+- **Small colour augmentation and no mirroring.** The SKU is in the label art.
+- **In the pipeline the detector runs only on tiles around people** (`roi="people"`). The event engine uses products in or near a hand, not the stock on the shelf, and a whole frame is 15 tiles. Cost: no person box means no product box, which is where the end-to-end run on simulator views lost its picks (REPORT "End to end on simulated data").
+- **No validation pass during training** (on MPS it costs about a fifth of an epoch); the kept weights are the last epoch's and the val split is scored once at the end.
+- **The minimum-pixel rule and what it returned.** Rule, fixed in `evaluate.py` before the run: the lowest bucket edge from which every bucket with 30 or more items has the right SKU 90% of the time, for clearly visible front items. Every bucket passed, so the rule returns no lower limit. The first version of the report printed that as "0 px", which is not a recommendation; the text now says the 20 px default holds and nothing supports raising it, and gives the curve by the item's own box size, where the floor does show (81.7% at 10 to 15 px).
+- **Documented default: 20 px across a 6.6 cm can.** It is the simulator's `pxMin`, the threshold the layout reports use, and it stays. Simulated evidence only; the first real labelled frames replace it.
+- **Fine-tuning on real frames starts from the sim weights** with the backbone frozen and a low learning rate, and rebuilds the class head when the real SKU list differs. Not run: there are no real labelled frames.
+
+## Integration of the four streams (2026-10-04)
+
+- **Result files live in `results/`** (`calib_bench.json`, `edge_measure_*.json`, `sku_detector.*`, `px_vs_accuracy.png`, `e2e_sim_chain.*`), like every earlier benchmark. The stream fragments under `docs/fragments/` were merged and removed.
+- **Edge numbers were re-measured at integration.** The edge stream's result files predated its last trigger change (brightness normalisation), so the tables in REPORT come from a re-run of every file with the final code: 429 triggers and 77 false ones where the fragment said 455 and 81.
+- **One error model, two sets of defaults.** The triangulation in `bree.calib` and the simulator's two-camera 3D metric use the same formula, tested. The defaults stay different because they describe different things (a shelf point in the simulator, a hand keypoint in the pipeline), and both documents now say so and give the simulator's numbers at the pipeline's values.
+- **`camera.calibration` is loaded with the store YAML.** The calibration tool wrote it and nothing read it.
+- **The review manifest is what the detector fine-tune reads** (`finetune_real.py --manifest`). Split by a hash of `alert_id`, so an alert never changes side between exports. Examples with `class_known: false` are left out, not guessed. The derived dataset is built in a temp folder and deleted after training, because the review store's retention only tracks the export folder.
+- **Node bursts become a pipeline source (`BurstSource`) instead of changing the pipeline.** The hub already stores every frame with its time. Reading a camera's bursts back as one stream with gaps lets node cameras and continuous cameras share one ledger, one identity pool and the 3D slot logic with a two-line change in `pipeline.py`. Ceiling: it reads recorded bursts, and the tracker is not told about the gaps.
+- **In the end-to-end run the node cameras are the item cameras** (layout kind shelf or cooler), as in the hardware plan. Checkout and overhead cameras stream every frame.
+- **Sim-eval zone rules changed for the recommended layout.** A zone partly behind the camera is kept (rail cameras sit beside the gondola they watch; before, those cameras got no shelf zone at all), and the door and register zones go to a camera that watches people when one sees them.
+- **The reviewer in the end-to-end run is the simulator's ground truth,** and the report says so. It exists to exercise ingest, decisions, metrics and the owner report on the pipeline's own alert records, not to measure reviewers.
+- **`BREE_PERSON_CONF` exists for simulator runs only.** The simulator's figures seen close up score around the default 0.3 with COCO weights. The recorded scorecard uses the default; the lower setting is reported next to it and labelled as chosen on that clip.
+- **Not wired, on purpose:** alerts are not written to the review store live, the pipeline does not save clean evidence frames, and the ledger does not read the 3D slot. Each is a change to `pipeline.py` or the ledger with its own tests, and none was needed to run the chain.

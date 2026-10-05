@@ -1,8 +1,462 @@
 # BREE vision: report
 
-Five parts: **Closed-world identity (2026-10-04)** first, then **Re-ID without the face (2026-10-03)**, then **Overnight (2026-10-01)**, then **Phase 2 (2026-09-30, real data)**, then the **Phase 1 report** unchanged. Every number names the file it came from; real-data results and simulated results are kept apart.
+Eleven parts, newest first. From the integration of four parallel work streams: **Integration summary (2026-10-05)**, **End to end on simulated data**, **SKU detector trained on simulated frames**, **Calibration, 3D slots and store-wide identity**, **Camera node first pass**, **Human review feedback loop**. Then, unchanged: **Closed-world identity (2026-10-04)**, **Re-ID without the face (2026-10-03)**, **Overnight (2026-10-01)**, **Phase 2 (2026-09-30, real data)** and the **Phase 1 report**. Every number names the file it came from; real-data results and simulated or synthetic results are kept apart and labelled.
+
+# Integration summary (2026-10-05)
+
+Four streams were built in parallel and merged here. What each added, what was measured, and on what kind of data:
+
+| stream | what exists now | measured on | headline | where |
+|---|---|---|---|---|
+| SKU detector | a detector that names the SKU, trained on simulator renders; `--backend sim_sku` | SIMULATED frames, held-out scenes of one store model | right SKU 97.3% for a clearly visible shelf item at 20 to 25 px across a can; 50.0% to 83.6% for items in a hand; the 20 px default holds | next section but one |
+| calibration | camera calibration from clicked marks, 3D slot of a pick, store-wide closed-world identity | SYNTHETIC geometry of the 45 camera layout | all 45 cameras calibrate (0.5 cm, 0.08 degrees median at 2 px clicks); exact slot 56.0% and right SKU 98.7% from two views at the default noise | "Calibration, 3D slots and store-wide identity" |
+| camera node | zone trigger on a Pi node, full-res bursts to a hub, Pi install kit | real lab video (MERL) replayed on a Mac; toy clips; nothing on a Pi | 425 of 425 reaches triggered; 22.7% of bytes saved with a shopper at the shelf the whole time | "Camera node first pass" |
+| human review | review store, reviewer page, label export, metrics, weekly owner report, retention | SYNTHETIC alerts and random-number reviewers | the loop runs and adds up (61 alerts in, 128 label examples out, 0 left after retention) | "Human review feedback loop" |
+| all together | one command from simulator views to a scorecard | one SIMULATED clip | 0 of 2 thefts caught, 0 alerts: the picks are lost before recognition | next section |
+
+**What integration changed** (details in DECISIONS "Integration of the four streams"): the sim-trained detector is a backend choice everywhere; `make sim-eval` takes `--closed-world` and `--slots`; a node camera's bursts can be read back as one frame stream, so node cameras share a ledger and an identity pool with ordinary streams; the store YAML's `camera.calibration` is now loaded; the review store's label export is what the detector fine-tune script reads; the camera node numbers were re-measured with the final trigger code; the sim-eval adapter gives rail cameras their shelf zone. One error model is shared by the triangulation and the simulator's 3D metric. The minimum pixel threshold stays at 20 px across a 6.6 cm can.
+
+**Tests.** `make test`: 302 passed (with `BREE_PLAYWRIGHT` set and the sim-trained weights in place; without them the reviewer-page test and the detector weights test are skipped). `make test-fast` (no model weights): 289 passed, 1 skipped, 12 deselected. Each new area has its own file: `test_calib.py`, `test_multicam_closed_world.py`, `test_calib_bench.py`, `test_edge_node.py`, `test_review.py`, `test_detector_train.py`.
+
+**The most important finding.** The recommended camera layout and the pipeline do not fit together yet. The layout gives people to the overhead cameras and labels to the rail cameras; the pipeline needs the person, the hand and the shelf edge in one camera. On the simulated clip that cost every pick. The next piece of work is a pick decided across cameras in 3D, not more accuracy in any one stage.
+
+**Still open, in order.**
+1. A cross-camera pick: person from the overhead cameras, hand and item from the item cameras, joined in 3D. Without it the recommended layout produces no picks in simulation.
+2. Real frames. No stage here has seen the pilot store. The detector needs real labelled frames (`make sku-finetune`), the calibration tool has not been used on a real camera, the node has not run on a Pi, the review page has not had a real reviewer.
+3. Items in a hand are the detector's weak class (50.0% to 83.6% right SKU, simulated); more in-hand renders, then real ones.
+4. The pipeline does not write alerts to the review store live, does not save a clean evidence frame at an alert (so real alerts give no detector labels), and writes no wall-clock time on alerts.
+5. The ledger does not use the 3D slot. Store-wide closed world and re-ID stay off by default; re-ID waits on legal advice.
+6. Node to hub is plain HTTP with a shared token: no TLS. JPEG bursts are 15 times larger than an H.264 stream of the same clips.
+7. Isaac Sim has still not been run (no GPU). The simulator used here is the browser one.
+
+# End to end on simulated data (2026-10-05)
+
+**Bottom line.** The whole chain now runs as one command on simulator views, every stage through the repo's real code: simulator clip, camera nodes with the zone trigger, hub over HTTP, one pipeline run over all cameras with the sim-trained SKU detector, store-wide closed-world identity and the 3D slot step, alerts, review store, owner report, and the `make sim-eval` scorer. **The scorecard on the one clip run is zero: 0 of 2 simulated thefts caught, 0 alerts, 0 false alerts, 0 of 7 picks turned into a PICK event.** The chain did not break; it found nothing to alert on, and the run shows where the picks are lost. This is SIMULATED data (one 53 second clip from the browser simulator, 4 shoppers, simulated figures and invented products), so it is a test of the plumbing and of how the pieces fit, not a detection rate. Source: `results/e2e_sim_chain.json` and `.md` (`make e2e-sim`).
+
+**Reproduce.**
+```bash
+export BREE_PLAYWRIGHT=<path to node_modules/playwright>     # Chrome, node 18+, network for three.js
+node scripts/train/render_synth.mjs --clip --seed 5001 --out data/synth/clip_5001_door \
+    --layout ~/bree/software/shared/layouts/recommended-47.json \
+    --cams REGISTER-top,TRACK-2,TRACK-3,G4L-rail-1,G2L-rail-4,G2L-rail-3,G1R-rail-3,G3R-rail-1
+.venv/bin/python scripts/e2e_sim_chain.py --sim-out data/synth/clip_5001_door
+```
+The camera list is the register camera, the overhead camera that sees the door (TRACK-2), a second overhead, and the best item camera of each pick. `make sku-clip` picks cameras by itself and leaves the door camera out, which is why the list is given here. The clip is 530 frames at 10 fps on 8 of the 45 layout cameras, 7 picks by 4 shoppers, 2 concealed and 5 paid, 4 receipts.
+
+**Stage 1 and 2: camera nodes and hub (SIMULATED views, real node and hub code, HTTP on localhost).** The five item cameras ran as nodes, as in the hardware plan; the register and overhead cameras streamed every frame.
+
+| camera | kind | path | frames | triggers | bursts | frames that reached the hub | burst MB | every frame at the same mean size, MB (estimate) | trigger ms per frame |
+|---|---|---|---|---|---|---|---|---|---|
+| G1R-rail-3 | shelf | node, then hub | 530 | 2 | 4 | 197 (37.2%) | 89.9 | 241.7 | 1.522 |
+| G2L-rail-3 | shelf | node, then hub | 530 | 3 | 5 | 234 (44.2%) | 110.3 | 249.9 | 1.587 |
+| G2L-rail-4 | shelf | node, then hub | 530 | 4 | 5 | 221 (41.7%) | 95.9 | 230.0 | 0.645 |
+| G3R-rail-1 | shelf | node, then hub | 530 | 4 | 6 | 281 (53.0%) | 154.0 | 290.4 | 1.768 |
+| G4L-rail-1 | shelf | node, then hub | 530 | 3 | 5 | 231 (43.6%) | 112.5 | 258.1 | 1.677 |
+| REGISTER-top | checkout | continuous stream | 530 | | | 530 (100%) | | | |
+| TRACK-2 | overhead | continuous stream | 530 | | | 530 (100%) | | | |
+| TRACK-3 | overhead | continuous stream | 530 | | | 530 (100%) | | | |
+
+The nodes sent 1,164 of 2,650 full-resolution frames (43.9%), 562.6 MB against an estimated 1270.1 MB for every frame, with 0 hub errors. A busy 53 second clip with four shoppers is close to the worst case for the trigger; the saving comes from the hours when nobody is at a shelf. **No pick was lost at this stage:** all 296 ground-truth boxes of an item in a hand on the item cameras are in frames that reached the pipeline.
+
+**Stage 3 to 7: the scorecard (make sim-eval scorer).**
+
+| metric | default settings (the recorded run) | person threshold 0.15 (probe, see below) |
+|---|---|---|
+| theft recall, alert tier | 0.0% (0 of 2) | 0.0% (0 of 2) |
+| theft recall, alert or review | 0.0% | 0.0% |
+| alerts / false alerts / review-tier | 0 / 0 / 0 | 0 / 0 / 0 |
+| alert precision, SKU-correct rate, time to alert | no alerts, so none | no alerts, so none |
+| PICK events from 7 true picks | 0 | 0 |
+| product boxes seen by the pipeline | 5,370 in 2,754 frames | 7,333 in 2,754 frames |
+| pipeline events | 20 enter, 1 exit | 17 enter, 1 exit |
+| people created for 4 shoppers (at the door / inside as "missed entry" / warm-up) | 4 / 16 / 0 | 4 / 12 / 1 |
+| cross-camera handoffs to someone seen now / to someone lost | 30 / 16 | 32 / 16 |
+| identity uncertain marks / exits seen | 42 / 1 | 40 / 1 |
+| 3D slots on picks | none (no PICK) | none (no PICK) |
+| review store: alerts ingested, decisions | 0, none | 0, none |
+| owner report, week of 2026-10-05: alerts sent | 0 | 0 |
+
+**Where the picks are lost (ground-truth boxes of an item in a hand, per camera kind).** Each column counts the item boxes that pass that step.
+
+| run | item boxes | frame reached pipeline | person box in frame | product box on item | right sku | item inside a shelf zone of this camera |
+|---|---|---|---|---|---|---|
+| default, shelf cameras | 296 | 296 | 69 | 69 | 69 | 203 |
+| default, overhead cameras | 602 | 602 | 578 | 2 | 0 | 0 |
+| default, checkout cameras | 1 | 1 | 1 | 0 | 0 | 0 |
+| person threshold 0.15, shelf cameras | 296 | 296 | 79 | 83 | 83 | 203 |
+| person threshold 0.15, overhead cameras | 602 | 602 | 602 | 2 | 0 | 0 |
+| person threshold 0.15, checkout cameras | 1 | 1 | 1 | 0 | 0 | 0 |
+
+1. **The person detector rarely fires on the item cameras.** Of the 296 in-hand item boxes on the item cameras, 69 are in a frame with a person box (23%). The rail cameras sit at shelf height and look along the aisle, so a shopper fills the frame and is cut by its edges, and the simulator's figures are smooth mannequins; COCO weights score them around the 0.3 threshold (0.24 to 0.58 on five pick-moment frames checked by hand). Lowering the threshold to 0.15, chosen from those five frames and so not a clean setting, moved it to 79 of 296. Whether real people in a real rail view do better is not known from this.
+2. **The SKU detector is not the problem when it gets to look.** It only runs around people. In the frames with a person box it found the item in a hand 69 times with the right SKU 69 times.
+3. **The overhead cameras see the people and cannot see the items.** A person box was in 578 of 602 overhead frames, a product box on the item in 2: from the ceiling an item is a few pixels.
+4. **The shelf zone as an image polygon does not fit an along-the-aisle view.** The event engine counts an item as taken once it is outside the shelf polygon. From a rail camera the shelf face fills most of the image, and 203 of the 296 in-hand item boxes (69%) lie inside that camera's shelf polygon, so by the engine's rule most of them would not count as taken while they are there, whatever the detector does.
+5. **Identity on these views is poor.** 4 shoppers became 20 people, 16 of them created inside the store because a track appeared with nobody unaccounted for, and 1 exit was seen. No exit means no reconciliation, so even a detected pick would mostly not have reached an alert.
+
+**What this means.** The pipeline was built and measured on views that show the person, the hand and the shelf edge in one camera (MERL's overhead view, the toy clips). The recommended layout splits those jobs: overhead cameras see people, rail cameras see labels. Nothing yet joins a person tracked from above to an item seen from a rail camera. That join is the missing piece, and the parts exist: store-wide identity gives one person id across cameras, and the calibration work gives the 3D position of a hand and of a shelf face. A pick decided in 3D (the hand crosses the shelf face plane, the item camera names what left) would replace both the per-camera person requirement and the image-polygon zone. Not built.
+
+**Integration fixes found by this run.** The sim-eval adapter dropped any shelf zone with a corner behind the camera, so the rail cameras had no shelf zone at all; it now keeps the part in front. The door zone went to the item camera that saw it largest, which as a node only sends frames on a trigger; door and register zones now go to a people camera when one sees them. `summary.json` had no store-wide identity counts. All three are fixed; `tests/test_sim_eval.py` has a test for the rail camera zone and the fixture test covers the door rule.
+
+**Limits.** One clip, 53 seconds, 4 shoppers, 2 thefts: every count above is tiny. Simulated figures, simulated products, a detector trained on the same simulator. The second theft's best item camera was added to the clip by hand. Zero alerts means the review store, owner report and slot scoring ran on empty input here; they are exercised with data by their own tests and by `make review-demo` (SYNTHETIC). The node read an mp4 of the rendered frames, not a sensor.
+
+# SKU detector trained on simulated frames (2026-10-04)
+
+**Bottom line.** A product detector that names the SKU now exists, trained only on frames rendered from the browser store simulator, and it is a first-class backend (`--backend sim_sku`, `make sim-eval SIM_BACKEND=sim_sku`). **Every number in this section is on SIMULATED frames from one store model with invented package art. None of it is accuracy on real footage.** On held-out simulated scenes it finds a clearly visible shelf item with the right SKU 97.3% of the time at 20 to 25 pixels across a can and 96.2% at 15 to 20, so the simulator's 20 pixel threshold holds on this data and nothing here supports raising it. Two things are weak: items in a hand (50.0% to 83.6% right SKU by bucket, few examples), which is the case the pick logic depends on, and items larger than a tile's overlap, which the tiling cuts. Source: `results/sku_detector.json`, `results/sku_detector.md`, `results/px_vs_accuracy.png` (`make sku-eval`, run at integration).
+
+**What was built** (`src/bree/train/`, `scripts/train/`). `render_synth.mjs` drives a private copy of the browser simulator headless (the original is never edited) with an overlay that randomises lights, exposure, colour cast, clothing, slot fill, item pose, same-size SKU swaps and camera pose, and reads ground-truth boxes from an instance-id render, so a box is what is actually visible. `dataset.py` cuts each 4MP frame into 640 px tiles at native resolution (a 25 px can stays 25 px) after adding blur, noise, white balance, gain and JPEG compression. `train.py` fine-tunes YOLO26 nano. `backend.py` runs it tiled in the pipeline, around people only. `evaluate.py` scores it. `finetune_real.py` is the path to real labelled frames, and it reads the review store's label export (`--manifest`).
+
+**Data and training.** 151 scene seeds for training (3,299 frames, 13,596 tiles, 170,667 boxes), 44 for validation, 45 for the test (965 frames, 3,991 tiles, 49,424 boxes). The split is by scene seed, so no scene, shopper or lighting draw is shared; it is still one store and one set of package art. 33 SKUs. Of the training boxes 2,079 are items in a hand and 808 on the counter; the rest sit on shelves. yolo26n.pt fine-tuned for 6 epochs at batch 32 on mps. The recorded wall time is 320.8 minutes, but the first epoch took 4 hours 4 minutes because the machine stalled, and the fourth took 27 minutes while other jobs ran (the training log shows 11 to 12 minutes for each of the other four), so that figure is not a cost. No validation pass ran during training; the kept weights are the last epoch's. Val split at the end: mAP50 0.973, mAP50-95 0.884.
+
+**Test tiles (SIMULATED).** mAP50 0.972, mAP50-95 0.882 over 3,991 tiles and 49,424 boxes. Lowest per SKU: orchard_peach 0.903 and orchard_lemon 0.916; every other SKU is at 0.953 or above.
+
+**Pixels against accuracy (SIMULATED; whole test frames through the same tiled inference the pipeline uses; 965 frames, 84,873 labelled items, confidence 0.25, IoU 0.5, box precision 90.9%).** "Pixels across a can" is the simulator's effective-pixel metric without its lens edge term. Each cell is the share of ground-truth items found with the right SKU.
+
+| pixels across a 6.6 cm can | 0-10 | 10-15 | 15-20 | 20-25 | 25-30 | 30-40 | 40-60 | 60-100 | 100+ |
+|---|---|---|---|---|---|---|---|---|---|
+| shelf, front item, 80%+ visible: right SKU (items) | 100.0% (93) | 94.3% (124) | 96.2% (1,238) | 97.3% (2,048) | 98.4% (2,357) | 98.3% (12,070) | 91.8% (5,743) | 91.8% (1,958) | 92.2% (64) |
+| shelf, front item, 25 to 80% visible: right SKU (items) | 96.6% (267) | 92.3% (804) | 91.6% (4,060) | 94.7% (5,788) | 94.4% (6,006) | 95.6% (10,353) | 89.8% (9,268) | 83.7% (2,922) | 90.1% (81) |
+| shelf, item behind the front one: right SKU (items) | 95.7% (392) | 84.3% (261) | 87.5% (1,299) | 91.8% (1,996) | 91.6% (2,214) | 91.3% (7,277) | 86.9% (4,589) | 79.9% (1,160) | 75.9% (29) |
+| in a hand or on the counter: right SKU (items) | none | none | none | none | none | 60.0% (5) | 58.3% (144) | 83.6% (165) | 50.0% (98) |
+| all items: found / right SKU | 97.6% / 96.5% | 92.5% / 90.8% | 94.0% / 91.7% | 96.4% / 94.6% | 95.8% / 94.7% | 96.4% / 95.6% | 90.2% / 89.5% | 85.9% / 85.5% | 79.8% / 74.6% |
+
+| short side of the item's own box, pixels | 0-10 | 10-15 | 15-20 | 20-25 | 25-30 | 30-40 | 40-60 | 60-100 | 100+ |
+|---|---|---|---|---|---|---|---|---|---|
+| all items: right SKU (items) | 50.0% (96) | 81.7% (1,071) | 92.4% (2,790) | 93.5% (3,073) | 93.6% (3,316) | 96.4% (16,130) | 96.2% (23,504) | 87.9% (18,612) | 90.6% (16,281) |
+
+**What the curve says.**
+- **The 20 px threshold holds in simulation.** For a clearly visible front item the right-SKU rate is 94.3% at 10 to 15 px, 96.2% at 15 to 20, 97.3% at 20 to 25, 98.4% at 25 to 30 and 98.3% at 30 to 40. There is no cliff between 20 and 40, which is the range the camera layout report worried about. **Documented default: 20 px across a 6.6 cm can** (the simulator's `pxMin`), unchanged.
+- **The floor is lower, and it shows in the item's own box.** When the short side of the box is 10 to 15 px the right-SKU rate is 81.7%, and under 10 px it is 50.0%. From 15 px it is 92.4% or better up to 60 px. The two measures differ because "across a can" normalises to a 6.6 cm width and includes the viewing angle, while most items are wider than a can.
+- **Accuracy drops again for large, close items** (91.8% at 40 to 60 px for clear front items, 74.6% over all items at 100 px and more). These are found less often, not confused: an item larger than the 128 px tile overlap that no tile holds whole is cut. A downscaled whole-frame pass next to the tiles is the fix, not built.
+- **Items in a hand are the weak class:** 60.0% at 30-40 px (5 items), 58.3% at 40-60 px (144 items), 83.6% at 60-100 px (165 items), 50.0% at 100+ px (98 items). The pick logic reads exactly these. They are 1.2% of the training boxes; more in-hand renders is the cheap next step.
+- **Near-identical variants** (same shape and size, only the label art differs, 11 families): the detector gives a sibling's SKU in 0.2% to 7.5% of found items. Worst: orchard_lemon / orchard_peach 7.5% (284 of 3,770); torqueline_5w30 / torqueline_10w30 2.0% (83 of 4,153); cocoa_crest / peanut_pilot / caramel_crest 1.0% (172 of 17,366); fizzo_cola / fizzo_zero / fizzo_cherry / lumen_citrus 0.8% (92 of 11,697).
+- **Speed (this Mac, random-pixel frames):** 8.2 ms per 640 px tile on MPS and 39.8 ms on CPU; a whole 1520x2688 frame is 15 tiles, 48.2 ms on MPS (20.73 frames per second) and 300.3 ms on CPU (3.33). In the pipeline only tiles around people are run.
+
+**Limits.** One store model, one planogram, one set of invented package art, and the detector is trained and tested on the same renderer: the test split measures held-out scenes, not a held-out store, and says nothing about real packaging, real lenses or real light. Real labels seen 60 degrees off the shelf normal are the untested case. On real footage this detector finds nothing useful until it is fine-tuned on real labelled frames (`make sku-finetune`), which has not been run. Six epochs without a validation pass is a short run; nothing was tuned.
+
+# Calibration, 3D slots and store-wide identity (2026-10-04)
+
+**Bottom line.** Three things are built and tested, all off until a store is configured for them, and **every number here is SYNTHETIC geometry** (the 45 camera layout's camera poses and the store's slots, seeded random draws, no footage and no rendering): (1) each camera can be calibrated to the floor plan from hand-clicked marks (`scripts/calibrate.py`, `make calibrate`, `make calib-check`); (2) every PICK can carry the 3D slot it came from, from two views of the hand when two calibrated cameras saw it, else from one; (3) closed-world identity now runs across cameras as one pool for the store. With 2 px clicks and a known lens all 45 layout cameras calibrate, with a median pose error of 0.5 cm and 0.08 degrees. The exact slot is the hard part: under the default noise model (5 px on the hand, 2 cm and 0.2 degrees of calibration) two views name the exact slot 56.0% of the time and the right SKU 98.7% of the time, because neighbouring slots usually hold the same SKU. Store-wide closed world with re-ID beats the current handoff on every count; without re-ID it trades splits for wrong joins it marks as uncertain, the same shape as the single-camera result. Source: `results/calib_bench.json` (`make calib-bench`, re-run at integration, 190 s, identical to the stream's file apart from the wall time). Design: DECISIONS.md "Calibration, 3D slots and store-wide identity".
+
+**Calibration from hand-clicked marks (SYNTHETIC marks: each of the 45 layout cameras calibrated from up to 12 marks it can see, Gaussian click noise).**
+
+| click noise, lens | cameras calibrated | reprojection RMS px (median / max) | position error cm (median / p90 / max) | rotation error degrees (median / p90 / max) | focal length error % (median / max) |
+|---|---|---|---|---|---|
+| 1 px, lens known | 45 of 45 | 1.2 / 1.6 | 0.2 / 0.9 / 1.8 | 0.04 / 0.12 / 0.19 | 0.00 / 0.00 |
+| 1 px, focal length fitted | 45 of 45 | 1.1 / 1.6 | 0.8 / 1.9 / 4.0 | 0.05 / 0.13 / 0.27 | 0.18 / 0.90 |
+| 2 px, lens known | 45 of 45 | 2.3 / 3.2 | 0.5 / 1.9 / 3.6 | 0.08 / 0.24 / 0.39 | 0.00 / 0.00 |
+| 2 px, focal length fitted | 45 of 45 | 2.3 / 3.2 | 1.6 / 3.8 / 8.1 | 0.11 / 0.26 / 0.55 | 0.37 / 1.81 |
+| 5 px, lens known | 45 of 45 | 5.8 / 8.0 | 1.2 / 4.7 / 9.1 | 0.20 / 0.58 / 0.98 | 0.00 / 0.00 |
+| 5 px, focal length fitted | 45 of 45 | 5.7 / 7.9 | 4.0 / 9.5 / 20.5 | 0.26 / 0.65 / 1.40 | 0.93 / 4.55 |
+
+Leave-one-out floor error at 2 px clicks, for the 19 cameras that see 5 or more floor marks: median 7.9 cm, p90 1.19 m, max 20.2 m. The large values are item cameras that see only a short strip of floor: a floor-only fit there is close to degenerate, which is why the full pose (floor plus raised marks) is the default when the lens is known.
+
+**3D slot of a pick (SYNTHETIC reaches, one per slot; 2349 slots, 41 item cameras; fixtures block lines of sight, bodies do not).** Slots seen by no item camera: 5, by one: 785, by two or more: 1559.
+
+| noise model (hand keypoint, calibration) | two views: exact slot | two views: right SKU | two views, plain nearest slot (no error weighting) | one view, hand only, same slots: exact | one view, item seen on the shelf, same slots: exact | as deployed, all seen slots: exact / right SKU | two view 3D error cm (median / p90) |
+|---|---|---|---|---|---|---|---|
+| pixel 0.29 px, pointing 0.1 deg (the simulator's defaults) | 79.8% | 99.7% | 79.9% | 60.0% | 98.9% | 75.8% / 99.4% | 6.2 / 10.1 |
+| pixel 2 px, perfect calibration | 84.0% | 100.0% | 84.2% | 60.2% | 99.3% | 79.1% / 99.5% | 6.0 / 9.5 |
+| pixel 5 px, perfect calibration | 72.8% | 99.9% | 69.1% | 59.5% | 99.1% | 71.1% / 99.5% | 7.0 / 12.8 |
+| pixel 5 px, calibration 1 cm / 0.1 deg | 66.7% | 99.3% | 56.1% | 54.1% | 87.0% | 66.2% / 98.9% | 8.1 / 19.4 |
+| pixel 5 px, calibration 2 cm / 0.2 deg (default model) | 56.0% | 98.7% | 38.6% | 46.2% | 63.8% | 56.7% / 98.3% | 10.6 / 29.5 |
+| pixel 5 px, calibration 5 cm / 0.5 deg | 32.8% | 95.6% | 14.2% | 26.8% | 27.4% | 34.3% / 94.0% | 19.7 / 63.3 |
+| pixel 10 px, calibration 2 cm / 0.2 deg | 53.4% | 98.5% | 37.6% | 43.9% | 62.3% | 53.7% / 98.0% | 11.2 / 34.9 |
+| pixel 20 px, calibration 2 cm / 0.2 deg | 47.8% | 97.9% | 29.2% | 38.9% | 54.5% | 46.8% / 96.5% | 14.3 / 52.0 |
+| pixel 5 px, cameras calibrated by the tool (2 px clicks, 12 marks) | 70.2% | 99.7% | 69.7% | 57.5% | 98.7% | 68.5% / 99.5% | 6.8 / 13.5 |
+
+**Store-wide identity, 2 overhead cameras (TRACK-1, TRACK-2; door cameras TRACK-1, TRACK-2). SYNTHETIC shoppers, 200 episodes, identity logic only, appearance features drawn, not extracted from pixels.**
+
+| | current (floor-plan handoff) | re-ID | closed world | closed world + re-ID |
+|---|---|---|---|---|
+| shoppers / camera tracks | 683 / 6,123 | 683 / 6,123 | 683 / 6,123 | 683 / 6,123 |
+| handoffs right, another camera sees them now | 2,044 of 3,347 (61.1%) | 3,047 of 3,347 (91.0%) | 3,149 of 3,347 (94.1%) | 3,296 of 3,347 (98.5%) |
+| handoffs right, after a gap nobody saw | 451 of 2,093 (21.6%) | 1,854 of 2,093 (88.6%) | 1,361 of 2,093 (65.0%) | 1,930 of 2,093 (92.2%) |
+| handoff success, all | 45.9% | 90.1% | 82.9% | 96.1% |
+| false merges | 776 | 246 | 904 | 190 |
+| of those, silent (not marked uncertain) | 776 | 246 | 62 | 3 |
+| splits | 2,815 | 435 | 699 | 173 |
+| visits with one clean identity | 0.1% | 41.4% | 21.4% | 75.7% |
+| visits marked uncertain (alerts capped at review) | 0 | 0 | 672 | 239 |
+| exits on the right person / the wrong person | 612 / 53 | 659 / 22 | 640 / 0 | 642 / 0 |
+| still counted inside at the end | 0 | 0 | 63 | 61 |
+
+**Store-wide identity, 4 overhead cameras (TRACK-1, TRACK-2, TRACK-3, TRACK-4; door cameras TRACK-1, TRACK-2). SYNTHETIC shoppers, 200 episodes, identity logic only, appearance features drawn, not extracted from pixels.**
+
+| | current (floor-plan handoff) | re-ID | closed world | closed world + re-ID |
+|---|---|---|---|---|
+| shoppers / camera tracks | 703 / 8,505 | 703 / 8,505 | 703 / 8,505 | 703 / 8,505 |
+| handoffs right, another camera sees them now | 3,589 of 5,830 (61.6%) | 5,251 of 5,830 (90.1%) | 5,503 of 5,830 (94.4%) | 5,760 of 5,830 (98.8%) |
+| handoffs right, after a gap nobody saw | 367 of 1,972 (18.6%) | 1,741 of 1,972 (88.3%) | 1,242 of 1,972 (63.0%) | 1,814 of 1,972 (92.0%) |
+| handoff success, all | 50.7% | 89.6% | 86.5% | 97.1% |
+| false merges | 1,370 | 426 | 1,008 | 196 |
+| of those, silent (not marked uncertain) | 1,370 | 426 | 70 | 19 |
+| splits | 3,500 | 566 | 806 | 181 |
+| visits with one clean identity | 0.0% | 31.3% | 19.2% | 76.1% |
+| visits marked uncertain (alerts capped at review) | 0 | 0 | 700 | 237 |
+| exits on the right person / the wrong person | 602 / 80 | 669 / 32 | 658 / 0 | 659 / 0 |
+| still counted inside at the end | 0 | 0 | 72 | 67 |
+
+**How to read the slot table.** "Two views" rows are over the 1,559 slots two or more item cameras see. "One view, hand only" is the fallback when a single camera saw the hand: the line of sight meets the shelf face, and a hand held in front of the shelf lands on the wrong slot along that line. "One view, item seen on the shelf" is the case where the camera that raised the PICK first saw the item sitting in its slot; it beats two views of the hand whenever calibration is good, because the item is on the shelf face and the hand is not. "As deployed" is what the pipeline does: the best source available for each slot. The 3D error column is the distance from the estimated hand to the true slot face, so it includes how far the hand is from the shelf. It is not the simulator's triangulation error of an exactly known point (about 1 cm in `~/bree/research/camera-layouts-3d.md`).
+
+**What the numbers say.**
+- **Calibration is not the bottleneck if the lens is known.** 2 px clicks give 0.08 degrees median and 0.24 degrees at the 90th percentile, close to the simulator's 0.1 degree placeholder at the median and to this repo's 0.2 degree default at the tail. Fitting the focal length as well roughly triples the position error (0.5 to 1.6 cm median), so write the lens into the YAML.
+- **Exact slot needs good calibration more than good pixels.** Going from 5 px to 20 px on the hand at fixed calibration costs 8 points (56.0% to 47.8%). Going from perfect calibration to 2 cm and 0.2 degrees at 5 px costs 17 points (72.8% to 56.0%), and 5 cm and 0.5 degrees leaves 32.8%. Cameras calibrated by the tool itself (2 px clicks) give 70.2%.
+- **Weighting by the error model earns its keep once calibration is imperfect:** 56.0% against 38.6% for the plain nearest slot at the default model. With near-perfect calibration the two are the same.
+- **The right SKU is much easier than the right slot** (98.7% at the default model), which is what the ledger needs. The exact slot matters for planogram audits and for telling two SKUs on neighbouring facings apart.
+- **Store-wide closed world.** With 4 overhead cameras, handoff success goes from 50.7% (current) to 86.5% (closed world) and 97.1% (closed world plus re-ID); exits credited to the wrong person go from 80 to 0. Without re-ID, false merges fall with 4 cameras (1,370 to 1,008) and rise with 2 (776 to 904), but silent ones fall to 62 and 70; nearly every visit is then marked uncertain (672 of 683, 700 of 703), so alerts are capped at review. With re-ID 237 to 239 visits are marked.
+
+**Decision: store-wide closed world stays off by default.** Same rule as the single-camera decision: on only if clearly better on store data without more false merges. Without re-ID it marks almost every visit uncertain and raises raw false merges with 2 cameras; with re-ID it wins on every count, and re-ID is still waiting on legal advice. All of it is synthetic. To turn it on: `rules: {closed_world: true}` in the camera YAMLs; `multicam: {closed_world: false}` keeps the plain handoff.
+
+**Shared definitions with the simulator.** The triangulation error model is the simulator's two-camera formula (`pixel_px` = `pxSigma`, `cam_rot_deg` = `calibDeg`), checked in `tests/test_calib.py::test_error_model_is_the_simulators`; the camera model projects layout cameras to the same pixels as the sim-eval adapter (`test_layout_camera_projects_like_the_simulator_adapter`). The defaults differ and say so: simulator 0.29 px and 0.1 degree for a shelf point, pipeline 5 px, 2 cm and 0.2 degrees for a hand keypoint. The simulator re-run at the pipeline's values is in `~/bree/research/camera-layouts-3d.md`, addendum 2026-10-04.
+
+**Integration fixes.** `load_store_config` now loads the `camera.calibration` block that `scripts/calibrate.py` writes (it was written but never read, so a calibrated YAML fell back to floor marks). `summary.json` `identity.store` and `engine_log.txt` `[store]` lines carry the store-wide closed-world counts and log. `make sim-eval SIM_ARGS="--closed-world --slots"` runs both on simulator output and scores the slot of each pick against the simulator's slot.
+
+**Tests.** `tests/test_calib.py` (21), `tests/test_multicam_closed_world.py` (14), `tests/test_calib_bench.py` (4, a seeded guard against `tests/fixtures/calib_guard.json`).
+
+**Limits.** Pinhole model, no lens distortion. Bodies are points and do not block views in the bench. Appearance features are drawn, not extracted. Nothing has been calibrated from a real frame. The slot of a pick is not used by the ledger yet. No real multi-camera footage with identity labels exists here.
+
+# Camera node first pass (2026-10-04): trigger on the node, full-res bursts to the hub
+
+What it is: each Pi node runs a cheap "something hand-sized moved into a shelf zone" check on a 320 pixel
+wide stream and sends full-resolution frames only around a trigger (2 s before, while active, 1.5 s
+after). Code in `src/bree/edge/` (`trigger.py`, `capture.py`, `uplink.py`, `node.py`, `hub.py`), Pi kit in
+`deploy/pi/`. Nothing here has run on a Pi or seen a Camera Module 3: every number below is from recorded
+clips replayed through the node code on a Mac (Apple M1 Max), with a file standing in for the camera.
+
+Reproduce (results in `results/edge_measure_*.json`; `make edge-measure` runs the first three). Every file was re-run at integration with the final trigger code:
+
+```bash
+PYTHONPATH=src .venv/bin/python scripts/edge/measure.py merl --split test --out results/edge_measure_merl_test.json
+PYTHONPATH=src .venv/bin/python scripts/edge/measure.py toy --fps 15 --out results/edge_measure_toy.json
+PYTHONPATH=src .venv/bin/python scripts/edge/measure.py cpu --out results/edge_measure_cpu.json
+PYTHONPATH=src .venv/bin/python scripts/edge/measure.py merl --split train --every 6 --sweep --out results/edge_measure_merl_train_sweep.json
+PYTHONPATH=src .venv/bin/python scripts/edge/measure.py synthetic --out results/edge_measure_synthetic.json
+PYTHONPATH=src .venv/bin/python scripts/edge/measure.py table      # the tables below
+.venv/bin/python -m pytest tests/test_edge_node.py                 # 29 tests
+```
+
+Data and truth:
+- **MERL Shopping, test split**: real overhead lab video, 920x680, one shopper at one shelf, hand actions
+  labelled per frame. MERL has no "pick" label. Every pick starts with a reach, so recall is counted on the
+  425 labelled "reach to shelf" instances. A trigger is false when it touches no labelled reach, retract
+  or hand-in-shelf (within 0.5 s).
+- **Toy clips**: the repo's synthetic flat-colour drawings. Truth is the renderer's own script: the
+  moment each item is taken or put back.
+- The trigger settings were chosen on 10 MERL training videos and then run once on the test split.
+- The browser store sim was not used: its shoppers are cylinders without arms, so there is no hand to
+  trigger on.
+
+| | MERL test split (real lab video, 10 fps) | toy clips (SYNTHETIC, 15 fps) |
+|---|---|---|
+| clips, length | 28, 64.3 min | 8, 4.1 min |
+| reaches (MERL) / takes and put-backs (toy) | 425 | 12 |
+| trigger recall | 100.0 % (425 of 425) | 100.0 % (12 of 12) |
+| fully inside a full-res burst | 99.8 % | 100.0 % |
+| triggers | 429 | 31 |
+| false triggers | 77 = 72 per hour | 16 = 237 per hour |
+| always-on control (a trigger active on every frame) | 100.0 % recall, 0 false triggers, 0 % saved | 100.0 % recall, 0 false triggers, 0 % saved |
+| frames within 0.5 s of labelled hand activity | 46.2 % | 12.7 % |
+| active frames outside labelled hand activity | 32.4 % | 79.2 % |
+| reach frames with the trigger active | 81.3 % | 91.0 % |
+| share of time the trigger is active | 55.4 % | 51.0 % |
+| share of frames sent at full resolution | 77.1 % | 80.2 % |
+| full-res JPEG stream, every frame (baseline) | 4487.4 MB = 9.31 Mbit/s | 130.6 MB = 4.29 Mbit/s |
+| bursts only | 3468.3 MB = 7.20 Mbit/s | 106.1 MB = 3.48 Mbit/s |
+| bandwidth saved, bursts only | 22.7 % | 18.8 % |
+| low-res stream as well (every frame) | 488.5 MB = 1.01 Mbit/s | 15.6 MB = 0.51 Mbit/s |
+| bandwidth saved, bursts + low-res stream | 11.8 % | 6.8 % |
+| same clips as continuous H.264 (libx264 crf 23) | 227.0 MB = 0.47 Mbit/s | 4.5 MB = 0.15 Mbit/s |
+| JPEG bursts against that H.264 stream | 15.3 times larger | 23.5 times larger |
+
+Projection, not a measurement: MERL rates scaled by the share of time someone is at the shelf (MERL itself is 100 %: a shopper is in front of the shelf for the whole of every clip).
+
+| someone at the shelf | bursts, Mbit/s | saved against the full-res JPEG stream |
+|---|---|---|
+| 100 % of the time | 7.20 | 22.7 % |
+| 50 % of the time | 3.60 | 61.4 % |
+| 20 % of the time | 1.44 | 84.5 % |
+| 5 % of the time | 0.36 | 96.1 % |
+
+| CPU, one core, OpenCV on 1 thread | measured here (Apple M1 Max) | ESTIMATE for a Pi Zero 2 W (one Zero 2 W core is 8x to 20x slower than one core here (assumed, not measured)) |
+|---|---|---|
+| trigger, per 320x237 frame | 0.61 ms | 4.9 to 12.2 ms |
+| trigger at 10 fps, share of one core | 0.6 % | 4.9 % to 12.2 % |
+| JPEG encode, 920x680 clip frame | 1.4 ms | not estimated |
+| JPEG encode, clip frame upscaled to 2304x1296 | 6.1 ms | 49 to 122 ms |
+| JPEG encode, clip frame upscaled to 4608x2592 | 22.3 ms | 178 to 446 ms |
+
+| SYNTHETIC empty scene, nobody in view, 3000 frames at 10 fps: frames with the trigger active | gain_norm off (first version) | gain_norm on (default) | gain_norm on, shake_px 1 (option) |
+|---|---|---|---|
+| still | 0 (0 runs) | 0 (0 runs) | 0 (0 runs) |
+| shake_2px | 2995 (1 runs) | 2995 (1 runs) | 0 (0 runs) |
+| flicker_10pct | 1338 (162 runs) | 0 (0 runs) | 0 (0 runs) |
+
+What the numbers say:
+- **No reach was missed** on the MERL test split (425 of 425), and all but one lay fully inside a
+  full-res burst. On the training videos the drawn shelf polygon alone found 128 of 155 reaches; growing
+  the zone by 6 low-res pixels found 155 of 155 (the misses were hands at the front edge of the shelf).
+  That margin is the default.
+- **The trigger means "someone is at this shelf", not "a hand is in it".** It is active 55.4 % of the time
+  on MERL, where a shopper stands at the shelf for the whole clip, and 77.1 % of the full-res frames are
+  sent once pre-roll and post-roll are added. So with a shopper present the saving is small (22.7 %).
+  The saving comes from the time nobody is at that shelf, and no data here measures how much of the day
+  that is. The projection rows only scale the MERL rate.
+- **False triggers: 72 per hour of a shopper standing at the shelf** (77 in 64.3 minutes: bodies and arms
+  near the zone without a labelled reach). A false trigger costs upload, not an alert (8.1 MB per trigger
+  on average over all 429 triggers at 920x680). The always-on row is the control: a trigger that is
+  active on every frame has the same recall and saves nothing, so recall alone says little; the saving
+  and the false trigger rate are the numbers to watch.
+- **Empty aisle (SYNTHETIC textured scene, nobody in view, last table).** Still: 0 active frames of 3,000.
+  10 % brightness flicker: 1,338 active frames with the first version, 0 with the brightness
+  normalisation that is now the default. A 2 pixel camera shake keeps the trigger on for 2,995 of 3,000
+  frames unless `shake_px: 1` is set, which is off by default. A real sensor's noise, a cooler door
+  reflection and a real mount's vibration are not measured: there is no such clip here.
+- **JPEG bursts are far larger than H.264.** The same clips as one continuous H.264 stream are 15 times
+  smaller than the JPEG bursts. Against a camera that can stream H.264 at full resolution, bursts of
+  JPEGs lose. The Pi's hardware H.264 encoder stops at 1080p, so for 2304x1296 or 12 MP frames the
+  choices on a Zero 2 W are JPEG stills or software encoding; and stills keep the label detail that
+  product recognition needs. Still, the byte cost per burst is the weak point of this design. Next
+  steps that would cut it, not built: send only the crop around the active zone, and lower the burst
+  frame rate once the hand is in (a few sharp frames matter more than ten a second).
+- **The low-res stream is not free**: every 320 pixel frame as JPEG at 10 fps is 1.01 Mbit/s. It is off
+  by default (`lowres_uplink_fps: 0`); the trigger does not need it to leave the node.
+- **CPU**: the trigger costs 0.61 ms per frame on one M1 Max core. The Pi column is an estimate from an
+  assumed 8 to 20 times slowdown, not a measurement, and it leaves out the camera stack and the copy of
+  each full-res frame into the ring. The real figure arrives in the first heartbeat (`trigger_ms`).
+  JPEG encoding is the heavy part: at the estimated 49 to 122 ms per 2304x1296 frame a 10 fps burst
+  cannot be encoded in real time on one core, so the node encodes on a second thread and capture waits
+  if the encoder falls a ring buffer behind. Expect to run bursts below 10 fps on the Zero 2 W.
+- Clip frames are 920x680 and 1280x720, not 12 MP. Byte counts will be larger on the real sensor; the
+  saved share depends on how often the trigger fires, not on the frame size.
+
+Tested on this Mac (`tests/test_edge_node.py`): a hand entering the zone triggers and releases, a dark
+glove triggers, movement outside the zone and a lighting change do not; a burst holds 2 s of pre-roll,
+the active frames and the post-roll with camera id, time and zone ids; a long trigger is cut into parts
+with no frame lost; node to hub over real HTTP stores full-res frames; the hub being down loses nothing
+(spool, then drain); a busy hub answers 429 and the node keeps the burst; a wrong token is refused; a
+repeated message is stored once; a toy clip through node, hub and the existing pipeline produces a pick
+event (toy data); bursts left on disk reach the pipeline after a hub restart; brightness flicker on an
+empty scene does not trigger and a hand under flicker still does; a node whose trigger is stuck on says
+so in its heartbeat; and the stored bursts of a camera read back as one frame stream in time order
+(`BurstSource`, added at integration).
+
+Not done:
+- Nothing has run on a Raspberry Pi. `Picamera2Source` is written from the picamera2 manual and untested.
+- The hub's own `--store` mode still runs the pipeline once per burst, with no shopper identity or basket
+  across bursts. `bree.edge.hub.BurstSource` (integration) reads a camera's stored bursts as one stream
+  with gaps, so node cameras and ordinary streams run into one ledger with one identity pool; that path
+  has run on SIMULATED views only (`make e2e-sim`, section "End to end on simulated data") and reads
+  recorded bursts, it does not follow a live hub.
+- No TLS: the token and frames travel in clear text on the camera network.
+
+# Human review feedback loop (2026-10-04)
+
+What exists: a review store (SQLite), a local reviewer page, label export with a manifest, metrics, a
+weekly owner report, a retrain hook, and retention with automatic deletion. `src/bree/review/`,
+tests in `tests/test_review.py`. One of them drives the page in headless Chrome and is skipped unless
+`BREE_PLAYWRIGHT` points at a `node_modules/playwright` folder.
+
+**Everything below is SYNTHETIC.** The alerts are drawn rectangles, the two "reviewers" are a seeded
+random number generator, and the theft mix is made up. The table shows that the loop runs and that
+the numbers add up. It says nothing about how well the vision pipeline detects theft. No real
+reviewer has used the page on real store footage yet.
+
+Reproduce: `make review-demo` (`.venv/bin/python scripts/review/synthetic_e2e.py`, re-run at integration with the same output) (60 synthetic alerts, seed 0, plus one
+alert logged twice on purpose to test dedup; same output on every run).
+
+| Measure (SYNTHETIC) | Value |
+|---|---|
+| Alerts recorded | 61 |
+| Of those, from staged tests (counted on their own) | 2 |
+| Of those, withdrawn by a late receipt | 0 |
+| Customer alerts (every figure below is on these) | 59 |
+| Alerts reviewed | 55 |
+| Review rate | 0.932 |
+| Confirmed theft | 30 |
+| Theft, wrong item | 6 |
+| Not theft | 13 |
+| Unclear | 3 |
+| Reviewers disagree | 3 |
+| Alert precision | 0.735 |
+| Item precision | 0.612 |
+| Median time from event to decision | 38,236 s |
+| Median time a reviewer looked | 5.6 s |
+| Precision by week (W38, W39, W40) | 0.722, 0.722, 0.769 |
+| Owner report precision for the same three weeks | 0.722, 0.722, 0.769 |
+| Owner report, week of 2026-09-14: sent, staged, customer | 21, 2, 19 |
+| Precision by zone and camera (cooler, snacks) | 0.708, 0.76 |
+| Alerts seen by two reviewers | 17 |
+| Same decision | 14 (0.824) |
+| Cohen's kappa | 0.749 |
+| Detector examples exported | 37 (6 with a corrected class, 0 with an unknown class) |
+| Pick examples exported | 53 |
+| Conceal examples exported | 38 |
+| Duplicates dropped at export | 2 |
+| New examples on a second export | 0 |
+| Retrain hook, new examples on first call | 128 (command exit code 0) |
+| Retrain hook, new examples on second call | 0 |
+| Staged tests: staged, caught, missed | 3, 2, 1 |
+| Clips on disk before and after retention | 60, 0 |
+| Dataset examples left after retention | 0 |
+
+The precision figures are lower than in the first version of this table (0.745 overall, 0.75 for
+W38) because `metrics()` now leaves out the 2 alerts caused by staged tests, the same as the owner
+report. Both were confirmed thefts, so counting them had raised the number.
+
+Left out of the export in that run: 3 alerts where the reviewers disagreed, and 16 conceal windows
+where no reviewer answered "concealment seen".
+
+Checks on real output from this repo:
+- `out/rehearsal/alerts.jsonl` with its `frames.jsonl` ingests as 1 alert with 39 pose frames tagged
+  "pick" and its real clip. After one decision the export gives 1 pick example and 0 detector
+  examples (no clean frame, see below).
+- Ingesting that file from a different working directory still finds the clip, and ingesting it a
+  second time adds 0 alerts.
+- The reviewer page was driven in Chrome: the clip loaded and played (320 px wide, 1.6 s), key 1
+  recorded a decision and loaded the next alert, key 3 with no item typed did not submit, and the page
+  made 0 requests to anything other than 127.0.0.1.
+- Keyboard flow in headless Chrome on a SYNTHETIC store (`scripts/review/page_keys.mjs`, run by the
+  test suite): key 3 leaves the item field empty and focused, typing `chips` and Enter stores
+  `wrong_item` with `chips`, and text left in the field is not stored with a later "confirmed theft".
+  An earlier version typed the "3" into the field and could store `3chips` as a class.
+- Same script, guards against unseen decisions: key 1 held for 30 repeat keydowns took the queue
+  from 6 left to 5 left (one decision), five fast taps of key 2 took it from 5 to 4, a key pressed
+  right after an alert appeared did nothing, key U reopened the alert just decided and key 4 then
+  replaced that decision, key 3 held for 10 repeats left the item field empty, and an item not in
+  the list (`chpis`) was stored only after a second Enter. With the repeat, busy and 0.4 s guards
+  taken out of the page, the same script on a 14 alert SYNTHETIC store decided all 14 alerts and
+  then failed.
+- A SYNTHETIC dataset of 4 alerts exported to a folder outside the store (7 `.npz`, 4 `.jpg`, 4 `.txt`)
+  has 0 of each after the store is reopened 60 days later.
+
+Not done, and why:
+- **Real alerts produce no detector examples yet.** The pipeline has to save a clean, head-pixelated
+  frame with the item box when it alerts (`bree.review.store.save_evidence_frame`). `pipeline.py` is
+  not in this stream.
+- **Alerts are not written to the store live.** They are ingested from `alerts.jsonl` or
+  `would_be_alerts.jsonl` with a command (`make e2e-sim` does this on SIMULATED alerts). Wiring `on_alert` to the store is a few lines in the pipeline
+  or shadow code, also outside this stream.
+- **The retrain hook has only been run with a stand-in command.** The detector fine-tune script now reads
+  the manifest (`scripts/train/finetune_real.py --manifest`, integration): it builds the YOLO dataset from
+  the detector examples, split by alert, and that step is tested on a SYNTHETIC export
+  (`tests/test_detector_train.py::test_review_manifest_feeds_the_finetune_dataset`). No training run has
+  been made from review labels, and the pick and conceal windows have no trainer reading them yet.
+- **Pipeline alerts have no wall-clock time.** Their event time is the ingest time, so "time from
+  event to decision" on real pipeline alerts is really time from ingest to decision until the
+  pipeline writes a clock time.
+- **No reviewer login.** The reviewer id is typed in. The page only listens on 127.0.0.1 and only
+  answers requests addressed to `127.0.0.1` or `localhost`.
+- **The head-pixelation check is by folder name only.** Clips must come from a folder named `alerts`
+  and frames from one named `frames`. Nothing checks the pixels.
+- **No minimum watch time and no full history.** The page stops held keys and double presses, and Back
+  goes one alert back. A reviewer can still confirm an alert after 0.4 s without watching the clip.
+- **Retractions have only been tested with hand-written records.** No pipeline run with a late receipt
+  has been ingested.
+- **Time to decision on real alerts is unknown.** The 5.6 s above is a number the generator drew.
 
 # Closed-world identity (2026-10-04)
+
+*Update from the integration: closed world now also runs across cameras as one pool for the store (section "Calibration, 3D slots and store-wide identity" above). The text below is as it was written for the single-camera flag; where it says a multi-camera store falls back to the floor-plan handoff, that is no longer the case.*
 
 **Bottom line.** Kiro's idea is built behind `rules: {closed_world: true}`: a store is a closed room with a door, people are only created at the door, a track that starts anywhere else is one of the shoppers already inside, and identities end at the exit or after 60 minutes unseen. On real footage (MERL) it cuts visits per shopper from 2.43 to 1.36, with or without re-ID, and removes the damage re-ID did there (4.64). **It is not the default yet.** The rule was "clearly better on store data without more false merges". MERL has one shopper per video and cannot show a false merge; the only multi-shopper store test here is scripted, and there closed world without appearance makes more than twice as many wrong joins as today (1,238 vs 554), because position cannot tell two people apart who were lost at the same time. 92% of those are marked uncertain and capped at review, so wrong joins that could silently reach an alert fall from 554 to 105, but the raw count goes up and 62% of visits end up review-only. Closed world plus re-ID beats today on every count, but re-ID is still waiting on legal advice. Everything below is from `results/reid_bench.json` (`make reid-bench`, run 2026-10-03/04); design in DECISIONS.md "Closed-world identity".
 

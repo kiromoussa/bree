@@ -713,3 +713,26 @@ An independent audit re-ran the commands behind the reports and probed the code.
 - **`results/bench_dev.md` was written again from the stored shelf events and person boxes** (`--keep`): nothing
   before tracking changed in this round.
 
+## Improvement round 3 (2026-10-05)
+
+- **A put event is read as what it is: one camera saying one place looks as it did before that camera's own take.**
+  It carries the name of that take (`undoes`), and the join removes exactly that reading from the act it was merged
+  into. Before, a put was matched to a take by place and product after the cameras had been merged, which let an arm
+  leaving a slot return a stolen item, or left a real put-back with nothing to return. Reason: on the TRAIN-seed
+  clips the take's place is back in 82 of 85 pixel puts, real put-back or not, so the event is right and the
+  reading of it was wrong.
+- **An act another camera still reads stands, unless the item was seen going into the slot.** Measured both ways:
+  never returning such an act leaves 5 honest reviews on each set; returning it whenever any item was seen near the
+  put drops DEV to 12 of 20 thefts. "Going in" (the item track ends at the slot, from further away) is right for 19
+  of 28 puts on the TRAIN-seed clips. Its two thresholds (`ShelfConfig.put_in`) come from those clips.
+- **`from_last` is in the code but off, although it meets every DEV bar (17 of 20, 2 of 22).** It loses one flagged
+  theft on the TRAIN-seed clips (15 to 14). Same standard as round 2: a rule is kept only when it makes neither set
+  worse. To overrule: `one_act_per_reach(..., from_last=True)` in `bree.shelf.store.rejoin`, one line.
+- **The door rule for the floor tracker was reverted.** It clears the 7001 review but loses a flagged theft on DEV
+  and changes nothing on the TRAIN-seed clips.
+- **Dropping a camera's own take and put pair before merging was not taken** (16 of 20 and 13 of 19): a take another
+  camera still reads protects stolen items, and a live system cannot drop a take it has already reported.
+- **Reading names are amended after an event was handed out** (a repeat dropped in the camera adds its name to the
+  kept event). The clip runner writes events at the end, so this is free here; a camera node that streams events has
+  to send the amendment. Marked in `ShelfCamera._absorb`.
+- **The two results files were made from scratch**, not with `--keep`: the shelf events changed.

@@ -97,6 +97,99 @@ Clothing colour alone does not move theft recall (11 against 12), it moves ident
 - **Not measured:** the shelf rules were tuned with the old weights and `make shelf-eval` was not repeated with
   `sim_sku_hands_v3`; the old weights were not run through the DEV benchmark; nothing was run on TEST.
 
+## 2026-10-05: improvement round 3 (SIMULATED): a put names the take it undoes
+
+All numbers are simulated. TEST was not touched. No training, no new clips. Both sets were run from scratch
+(`make bench-dev`, `make bench-train`, code at f72e3b4; `results/bench_dev.md` is stamped "28989f3 plus uncommitted
+changes" because it ran just before the commit, the code is the same).
+
+**Result: one false review fewer on DEV, two more thefts flagged on the TRAIN-seed clips, nothing worse on either.
+The goal is still missed by one honest shopper.**
+
+| | DEV before | DEV now | TRAIN-seed before | TRAIN-seed now |
+|---|---|---|---|---|
+| theft recall, alert or review | 0.85 (17/20) | 0.85 (17/20) | 0.684 (13/19) | 0.789 (15/19) |
+| reviews on honest shoppers | 4 of 22 | 3 of 22 | 4 of 36 | 3 of 36 |
+| pick recall | 0.957 | 0.957 | 0.915 | 0.915 |
+| pick precision | 0.848 (79) | 0.848 (79) | 0.866 (112) | 0.858 (113) |
+| right SKU of paired picks | 0.910 | 0.940 | 0.938 | 0.938 |
+| right slot of paired picks | 0.851 | 0.881 | 0.825 | 0.835 |
+| right shopper of paired picks | 0.940 | 0.940 | 0.979 | 0.969 |
+| identities per shopper | 1.27 | 1.27 | 1.453 | 1.453 |
+
+Goal check on DEV: theft recall 0.85, pick recall 0.957, right SKU 0.940 and 1.27 identities per shopper meet their
+bars. Reviews on honest shoppers do not: 3 of 22 is 1.4 per 10 against 1 per 10 (that is 2 of 22). All three are
+review tier; there is still no alert tier (0 of 20).
+
+**Stage picked and what the cases showed.** The failing goal is reviews on honest shoppers, and round 2 named the put
+events as the weakest input. Reading the four DEV cases frame by frame and the put events of both sets gave the root
+cause in one sentence: a put event of the pixel comparison is a true statement about one camera and one slot ("this
+place looks again as it did before my own take of it", because the item is back or because an arm that covered the
+slot went away), but the join treated it as "this shopper returned this product", matched by place and product name
+after the takes had been merged across cameras, so it either undid nothing (put ignored, honest shopper reviewed) or
+undid a real take (stolen item erased).
+
+Checked before changing anything: on the TRAIN-seed clips the place of the take is fully back to the old picture in
+82 of 85 pixel puts (share of the take's patch still changed under 0.05; 0.45 to 0.56 in the other three), true put-back or not. So the put is not a
+misread; what was wrong is what it was taken to mean.
+
+**What was changed (2 commits, e93c4bf and f72e3b4).**
+
+1. **A put names the take it undoes.** Every take carries the names of its readings (`eids`); a put of the pixel
+   comparison carries `undoes`, the name of that camera's own take of that slot. The names survive the merges (two
+   cues in one camera, two cameras, one reach read twice). In the join a put takes only the reading it names out of
+   the act. An act with no reading left is returned, to whoever was given the take, wherever the put was read and
+   whoever stood nearest. An act another camera still reads stands, under the name a remaining reading gave it.
+2. **A put with the item seen going in returns the whole act.** A held-item track that ends at the slot, coming from
+   further away (`item_in`), is the pixel cue round 2 asked for. Scored against truth afterwards: 19 of 28 such puts
+   are real put-backs on the TRAIN-seed clips and 4 of 6 on DEV, against 27 of 65 and 9 of 24 for "an item was seen
+   in a hand near the put". The two thresholds were read off the TRAIN-seed clips, not DEV.
+3. **A take whose slot was hidden for long is timed by the item.** When somebody stands in front of a slot and the
+   item is first seen in a hand inside the hidden span, the take is 0.3 s before that sighting, not the moment the
+   slot was first hidden (clip 7003: 6.3 s early, so the take went to the shopper who stood there before). The 0.3 s
+   is the median lead on the TRAIN-seed clips (0.17 s, 9 in 10 under 0.46 s); over 147 takes there the mean time
+   error goes from 0.23 s to 0.20 s.
+
+**Variants measured on both sets** (thefts flagged / honest shoppers reviewed; from the stored events of this
+round's code, `scripts/bench/whatif.py`):
+
+| variant | DEV | TRAIN-seed |
+|---|---|---|
+| round 2 code | 17/20, 4/22 | 13/19, 4/36 |
+| kept: a put undoes its reading, item seen going in returns the act | 17, 3 | 15, 3 |
+| the same, and a reach is measured from its latest reading (`from_last`) | 17, 2 | 14, 3 |
+| a put never returns an act other cameras still read (`put_returns` "none") | 17, 5 | not run without `from_last`; 15, 5 with it |
+| any item seen in a hand near the put returns the act (`put_returns` "both") | 12, 2 | not run |
+| a camera's own take and put pair is dropped before the cameras are merged | 16, 2 | 13, 3 |
+| a track that starts at the door walking in is never a person lost inside (floor tracker) | 16, 3 (round 2 events) | 13, 4 |
+
+`from_last` meets every bar on DEV (17 of 20, 2 of 22). It was not switched on: it loses one flagged theft on the
+TRAIN-seed clips, so over both sets it trades one error for another (32 thefts and 6 reviews against 31 and 5). The
+option is in the code (`one_act_per_reach(from_last=True)`), off.
+
+**The three honest reviews left on DEV, and why this round does not reach them.**
+
+- 7001 P007: the floor tracker handed the identity of a thief who was lost in an aisle to the next shopper through
+  the door 7.4 s later, so the thief's item is on the honest shopper and the theft is missed. An identity fault. The
+  door rule in the table clears the review but loses a flagged theft in 7005.
+- 7005 P008: the cooler camera that read the take never reported the put-back; a second camera read both, at a slot
+  of another product one door away, with no item track going in. Nothing in the pictures the pipeline reads says the
+  first camera's reading is undone.
+- 7006 P001: one take of a cooler drink read twice, 4.2 s apart, because the act's time came from a third reading
+  that was later undone. `from_last` merges it.
+
+**The three missed thefts on DEV** are unchanged: 7001 P001 (the identity fault above), 7005 P001 (took from the
+counter, stood at the register, no receipt: the ledger scores one such item 0.27 to 0.30, below review, by design
+for POS gaps), 7005 P007 (no shelf event: a passer-by covered more than half of the only camera's picture 0.7 s
+after the take).
+
+**Tests.** Full suite on the final code: 410 passed, 1 skipped, 0 failed (counted from the progress lines of
+`out/bench/round3/tests_full.log`; pytest prints no closing line here, as in rounds 1 and 2). Three new tests.
+
+**What limits the next round.** (1) Identity: 6 of 47 identities cover two shoppers on DEV, 26 of 77 on the
+TRAIN-seed clips; it is behind one honest review and one missed theft on DEV. (2) A concealment cue from the item
+cameras, still the only way to an alert tier. (3) Put-backs one camera reads and the other does not (7005).
+
 ## 2026-10-05: improvement round 2 (SIMULATED): a second tuning set, a tracker crash, and four rules that did not hold up
 
 All numbers are simulated. TEST was not touched. No training, no new clips.

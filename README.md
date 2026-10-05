@@ -705,6 +705,11 @@ make bench-smoke     # one clip, 60 frames per camera, writes nothing to results
   `src/bree/sim/bench.py`.
 - The recorded baseline (per-camera engine at 19f51dc) is `results/bench_dev_baseline.md`: 0 of 20 thefts caught, 2 of
   70 picks, 4.0 identities per shopper. Rerun it with `make bench-dev BENCH_ARGS="--runner bree.sim.bench:run_pipeline --name baseline"`.
+- Where it stands after improvement round 3 (SIMULATED, `results/bench_dev.md`): 17 of 20 thefts flagged for review, 3 of
+  22 honest shoppers reviewed (the bar is 2), pick recall 0.957, right SKU 0.940, 1.27 identities per shopper, no alert
+  tier. The same code on the TRAIN-seed clips (`results/bench_train.md`): 15 of 19 and 3 of 36. REPORT.md, round 3.
+- A put event names the take it undoes (`undoes` against the take's `eids`) and says whether the item was seen going
+  into the slot (`item_in`); `bree.events.shelf.confirm_puts` returns takes on that basis.
 
 ## Shelf events without a person box (`src/bree/shelf/`)
 

@@ -213,7 +213,7 @@ def infer_fps(sim_out: Path, events: list[dict], n_frames: int, default: float =
 
 
 # ------------------------------------------------------------------ adapter
-def adapt(sim_out, layout_path, work, fps: float | None = None, zone_owner: str = "best") -> dict:
+def adapt(sim_out, layout_path, work, fps: float | None = None, zone_owner: str = "best", say=None) -> dict:
     """Write <work>/<cam>.mp4 and <work>/<cam>.store.yaml for every camera with frames.
     zone_owner: "best" gives each fixture zone to the one camera that sees it largest (the pipeline
     does not de-duplicate a pick seen by two cameras), with the door and register zones going to a
@@ -255,7 +255,9 @@ def adapt(sim_out, layout_path, work, fps: float | None = None, zone_owner: str 
     catalog = {s["id"]: {"category": s["id"], "price": s["price"]} for s in layout["skus"]}
     out = {"fps": fps, "fps_note": fps_note, "cameras": [], "zone_owner": zone_owner,
            "zones_unseen": sorted(set(kinds) - set(seen))}
-    for cid, c in cams.items():
+    for k, (cid, c) in enumerate(cams.items()):
+        if say:             # the slow part of the adapter (4MP PNGs to video): one line per camera
+            say(f"camera {k + 1} of {len(cams)}: {cid}, {len(c['frames'])} frames to video")
         video = work / f"{cid}.mp4"
         vw = _video_writer(video, fps, c["w"], c["h"])
         for png in c["frames"]:

@@ -5,7 +5,7 @@ STORE   ?= configs/store_gas_station_small.yaml
 
 .PHONY: setup hw test test-fast demo demo-toy bench reid-bench sim sim-eval sim-fixture data export dashboard clean \
         calibrate calib-check calib-bench edge-test edge-measure edge-hub review review-report review-demo \
-        sku-data sku-train sku-eval sku-clip sim-eval-sku sku-finetune e2e-sim
+        sku-data sku-train sku-eval sku-clip sku-clip-door sim-eval-sku sku-finetune e2e-sim gc
 
 setup:            ## create venv, install pinned deps (CPU torch unless CUDA is present), fetch weights
 	./scripts/setup.sh
@@ -87,9 +87,17 @@ review-demo:      ## SYNTHETIC end to end run of the review loop: alerts, decisi
 SYNTH        ?= data/synth
 SKU_SEEDS    ?= 1000:1240
 SKU_EPOCHS   ?= 6
+# the research repo (simulator, layouts) is expected next to the home folder: ~/bree. Elsewhere: pass SKU_LAYOUT
+# and, for the renders, node scripts/train/render_synth.mjs --sim-src <bree>/software/sim-prototype
 SKU_LAYOUT   ?= $(HOME)/bree/software/shared/layouts/recommended-47.json
 CLIP_SEED    ?= 5001
 REAL_DATA    ?=
+# The recorded end to end run (REPORT "End to end on simulated data"): register camera, the overhead camera that
+# sees the door, a second overhead, and five rail cameras that see the picks. E2E_RESULTS=e2e_sim_chain replaces
+# the tracked results/e2e_sim_chain.*; empty (the default) leaves results/ alone.
+E2E_CAMS     ?= REGISTER-top,TRACK-2,TRACK-3,G4L-rail-1,G2L-rail-4,G2L-rail-3,G1R-rail-3,G3R-rail-1
+E2E_CLIP     ?= $(SYNTH)/clip_$(CLIP_SEED)_door
+E2E_RESULTS  ?=
 # needs Chrome, node 18+, Playwright (BREE_PLAYWRIGHT=/path/to/node_modules/playwright) and network for three.js
 
 sku-data:         ## SIMULATED dataset: render the browser sim copy headless (out/sim-copy), then cut 640 px tiles, split by scene seed
@@ -102,8 +110,11 @@ sku-train:        ## train the SKU detector on the simulated tiles (YOLO26n, MPS
 sku-eval:         ## held-out simulated scenes: mAP per SKU, pixels-vs-accuracy curve, variant confusion, speed -> results/sku_detector.json, .md, px_vs_accuracy.png
 	$(PY) -m bree.train.evaluate --data $(SYNTH)/sku --out results
 
-sku-clip:         ## render one simulated scenario as video frames in the folder shape sim-eval reads
+sku-clip:         ## render one simulated scenario as video frames in the folder shape sim-eval reads (cameras picked by the script: NO door camera; for sim-eval-sku)
 	node scripts/train/render_synth.mjs --clip --seed $(CLIP_SEED) --out $(SYNTH)/clip_$(CLIP_SEED) --layout $(SKU_LAYOUT)
+
+sku-clip-door:    ## the clip of the recorded end to end run: the same scenario on the E2E_CAMS list (door camera included) -> $(E2E_CLIP)
+	node scripts/train/render_synth.mjs --clip --seed $(CLIP_SEED) --out $(E2E_CLIP) --layout $(SKU_LAYOUT) --cams $(E2E_CAMS)
 
 sim-eval-sku:     ## sim-eval with the sim-trained SKU detector as the product backend, then the COCO baseline for comparison
 	$(PY) -m bree.train.sim_eval_sku --sim-out $(SYNTH)/clip_$(CLIP_SEED) --backend sim_sku
@@ -113,8 +124,12 @@ sku-finetune:     ## fine-tune on REAL labelled frames once they exist: make sku
 	@test -n "$(REAL_DATA)" || { echo "usage: make sku-finetune REAL_DATA=<YOLO data.yaml of real labelled frames>"; exit 2; }
 	PYTHONPATH=src $(PY) scripts/train/finetune_real.py --data $(REAL_DATA)
 
-e2e-sim:          ## SIMULATED end to end: sim clip -> node trigger -> hub -> pipeline (sim_sku, closed world, 3D slots) -> alerts -> review store -> owner report -> scorecard (results/e2e_sim_chain.*)
-	$(PY) scripts/e2e_sim_chain.py --sim-out $(SYNTH)/clip_$(CLIP_SEED)
+e2e-sim:          ## SIMULATED end to end on the sku-clip-door clip: node trigger -> hub -> pipeline (sim_sku, closed world, 3D slots) -> alerts -> review store -> owner report -> scorecard in $(E2E_CLIP)/e2e/ (E2E_RESULTS=e2e_sim_chain also replaces results/e2e_sim_chain.*)
+	@test -f $(E2E_CLIP)/events.jsonl || { echo "no clip at $(E2E_CLIP): run make sku-clip-door first"; exit 2; }
+	$(PY) scripts/e2e_sim_chain.py --sim-out $(E2E_CLIP) --results-name "$(E2E_RESULTS)"
+
+gc:               ## drop unreachable git objects (something large staged once and never committed); run when no other process is using the repo
+	git gc --prune=now
 
 data:             ## download whatever public datasets are reachable
 	./scripts/download_data.sh

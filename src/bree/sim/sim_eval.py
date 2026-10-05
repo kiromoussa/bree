@@ -217,9 +217,14 @@ def markdown(card: dict) -> str:
 def run(sim_out, layout_path, out_dir, backend: str = "yolo", fps: float | None = None, zone_owner: str = "best",
         pos: dict | None = None, pick_tol_s: float = 3.0, alert_window_s: float = 300.0, save_video: bool = False,
         max_frames: int | None = None, data_note: str = "Simulator data.", closed_world: bool = False,
-        slots: bool = False, sources: dict | None = None) -> dict:
+        slots: bool = False, sources: dict | None = None, progress: bool = False) -> dict:
     """`sources`: camera id -> frame source object that replaces that camera's adapter video (a node camera's
-    bursts from the hub, bree.edge.hub.BurstSource)."""
+    bursts from the hub, bree.edge.hub.BurstSource). `progress`: one line per stage and per camera on
+    stderr and one per 100 pipeline frames on stdout, so a long run is not mistaken for a hang."""
+    import sys
+    import time
+    t_run = time.time()
+    say = (lambda msg: print(f"[sim-eval {time.time() - t_run:6.0f} s] {msg}", file=sys.stderr, flush=True)) if progress else (lambda msg: None)
     from bree.cli import make_backend
     from bree.events.zones import load_store_config, merge_stores
     from bree.ledger.payments import JsonlPayments
@@ -227,15 +232,19 @@ def run(sim_out, layout_path, out_dir, backend: str = "yolo", fps: float | None 
     sim_out, out = Path(sim_out), Path(out_dir)
     layout = json.loads(Path(layout_path).read_text())
     truth = load_events(sim_out)
-    ad = adapt(sim_out, layout_path, out / "inputs", fps=fps, zone_owner=zone_owner)
+    say(f"reading {sim_out}: frames to video, zones and floor marks per camera")
+    ad = adapt(sim_out, layout_path, out / "inputs", fps=fps, zone_owner=zone_owner, say=say if progress else None)
     receipts, pos_info = pos_feed(truth, [s["id"] for s in layout["skus"]], **(pos or {}))
     pay_path = out / "inputs" / "payments.jsonl"
     pay_path.write_text("".join(json.dumps(r) + "\n" for r in receipts))
     stores = [load_store_config(c["store"]) for c in ad["cameras"]]
     cams = [CameraInput(c["id"], (sources or {}).get(c["id"], c["video"]), s) for c, s in zip(ad["cameras"], stores)]
+    say(f"pipeline on {len(cams)} camera(s) ({', '.join(c['id'] for c in ad['cameras'])}), {sum(c['frames'] for c in ad['cameras'])} frames, "
+        f"backend {backend}; a line every 100 frames")
     summary = run_store(cams, make_backend(backend, merge_stores(stores)), out / "pipeline", payments=JsonlPayments(pay_path),
-                        save_video=save_video, max_frames=max_frames, verbose=False,
+                        save_video=save_video, max_frames=max_frames, verbose=progress,
                         handoff=sim_handoff(layout, closed_world, slots) if len(cams) > 1 or slots else None)
+    say("pipeline done, scoring against the simulator's ground truth")
     ev_path = out / "pipeline" / "events.jsonl"
     pipeline_events = [json.loads(line) for line in ev_path.read_text().splitlines() if line.strip()]
     card = score(truth, final_alerts(summary.alerts), layout, ad["duration_s"], pipeline_events, ad["cameras"],
@@ -300,7 +309,7 @@ def main(argv=None) -> None:
     card = run(a.sim_out, layout, out, a.backend, a.fps, a.zone_owner,
                {"delay_s": a.pos_delay, "delay_sd_s": a.pos_delay_sd, "dropout": a.pos_dropout,
                 "sku_noise": a.pos_sku_noise, "seed": a.seed},
-               a.pick_tol, a.alert_window, a.save_video, a.max_frames, note, a.closed_world, a.slots)
+               a.pick_tol, a.alert_window, a.save_video, a.max_frames, note, a.closed_world, a.slots, progress=True)
     print(markdown(card))
     print(f"scorecard: {out}/scorecard.json and scorecard.md; pipeline outputs in {out}/pipeline")
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """One end-to-end chain on SIMULATED data. Every stage is the repo's real code path; only the data is simulated.
 
-    .venv/bin/python scripts/e2e_sim_chain.py --sim-out data/synth/clip_5001          (make e2e-sim)
+    .venv/bin/python scripts/e2e_sim_chain.py --sim-out data/synth/clip_5001_door     (make e2e-sim)
 
   simulator views      a clip from the browser store simulator copy (make sku-clip): <camera>/rgb_NNNN.png,
                        events.jsonl (ground truth), layout.json
@@ -20,7 +20,10 @@
   -> owner report      the weekly owner report for this week
   -> scorecard         the make sim-eval scorer against the simulator's ground truth
 
-Writes <out>/e2e.json and <out>/e2e.md (default <sim-out>/e2e) and copies both to results/e2e_sim_chain.*.
+Writes <out>/e2e.json and <out>/e2e.md (default <sim-out>/e2e). With --results-name NAME both are also copied
+to results/NAME.* (the tracked, recorded result is results/e2e_sim_chain.*; the default is no copy, so a run
+never replaces it by accident). --refunnel recounts "where a pick is lost" on a finished run without running
+the chain again.
 """
 from __future__ import annotations
 
@@ -99,10 +102,13 @@ def edge_stage(sim_out: Path, layout: Path, out: Path, max_frames: int | None) -
 def funnel(sim_out: Path, run_dir: Path) -> dict | None:
     """Where the chain loses a pick, counted on the simulator's ground-truth boxes of items in a hand
     (truth_frames.jsonl, one row per camera frame). Per camera kind, for every such item box:
-    did that frame reach the pipeline (the node sent it), was a person box found in the frame (the SKU
-    detector only looks around people), was a product box found on the item (IoU 0.5), with the right SKU,
-    and does the item sit inside a shelf zone of that camera in the image (the event engine counts an item as
-    taken only once it is outside the shelf polygon)."""
+    did that frame reach the pipeline (the node sent it), was a TRACKED person in the frame (the pipeline's
+    frame log lists tracks, not raw detections; the SKU detector looks around raw person detections, so it
+    can find a product in a frame with no track), was a product box found on the item (IoU 0.5), with the
+    right SKU, and does the item sit inside a shelf zone of that camera in the image (the event engine counts
+    an item as taken only once it is outside the shelf polygon).
+    The columns are independent counts over the same item boxes, NOT nested steps. The two
+    `..._and_tracked_person` columns are the intersections."""
     import cv2
     import numpy as np
     tf = sim_out / "truth_frames.jsonl"
@@ -119,7 +125,8 @@ def funnel(sim_out: Path, run_dir: Path) -> dict | None:
     def iou(a, b):
         ix = max(0.0, min(a[2], b[2]) - max(a[0], b[0])) * max(0.0, min(a[3], b[3]) - max(a[1], b[1]))
         return ix / max((a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - ix, 1e-9)
-    keys = ("item_boxes", "frame_reached_pipeline", "person_box_in_frame", "product_box_on_item", "right_sku", "item_inside_a_shelf_zone_of_this_camera")
+    keys = ("item_boxes", "frame_reached_pipeline", "tracked_person_in_frame", "product_box_on_item", "right_sku",
+            "product_box_on_item_and_tracked_person", "right_sku_and_tracked_person", "item_inside_a_shelf_zone_of_this_camera")
     out: dict[str, dict] = {}
     for row in map(json.loads, tf.read_text().splitlines()):
         cid = row["camera"]
@@ -136,10 +143,13 @@ def funnel(sim_out: Path, run_dir: Path) -> dict | None:
             if fr is None:
                 continue
             n["frame_reached_pipeline"] += 1
-            n["person_box_in_frame"] += bool(fr["persons"])
+            n["tracked_person_in_frame"] += bool(fr["persons"])
             hit = [q for q in fr["products"] if iou(q["bbox"], it["bbox"]) >= 0.5]
+            right = any(q["cat"] == it["sku"] for q in hit)
             n["product_box_on_item"] += bool(hit)
-            n["right_sku"] += any(q["cat"] == it["sku"] for q in hit)
+            n["right_sku"] += right
+            n["product_box_on_item_and_tracked_person"] += bool(hit) and bool(fr["persons"])
+            n["right_sku_and_tracked_person"] += right and bool(fr["persons"])
     return out
 
 
@@ -196,6 +206,9 @@ def markdown(res: dict) -> str:
         f = res["funnel_items_in_hand"]
         keys = list(next(iter(f.values())))
         L += ["## Where a pick is lost (ground-truth boxes of items in a hand, per camera kind)", "",
+              "Each column is its own count over the same item boxes, not a step that follows the one before. "
+              "\"Tracked person\" is a track in the pipeline's frame log; the SKU detector looks around raw person "
+              "detections, so a product box can be found in a frame with no track.", "",
               "| camera kind | " + " | ".join(k.replace("_", " ") for k in keys) + " |", "|---|" + "---|" * len(keys)]
         L += [f"| {kind} | " + " | ".join(str(n[k]) for k in keys) + " |" for kind, n in f.items()] + [""]
     L += ["## Review store and owner report", "",
@@ -213,11 +226,27 @@ def main(argv=None) -> None:
     ap.add_argument("--no-closed-world", action="store_true")
     ap.add_argument("--no-slots", action="store_true")
     ap.add_argument("--max-frames", type=int, default=None, help="per camera (smoke test)")
-    ap.add_argument("--results-name", default="e2e_sim_chain", help="copy the result to results/<name>.json and .md ('' = no copy)")
+    ap.add_argument("--results-name", default="", help="also copy the result to results/<name>.json and .md "
+                    "(the tracked recorded result is e2e_sim_chain; default: no copy)")
+    ap.add_argument("--refunnel", action="store_true", help="do not run the chain: recount the funnel of the finished run in --out and rewrite its e2e.json and e2e.md")
     a = ap.parse_args(argv)
     sim_out = Path(a.sim_out)
     out = Path(a.out or sim_out / "e2e")
     layout = sim_out / "layout.json"
+
+    def write(res: dict) -> None:
+        (out / "e2e.json").write_text(json.dumps(res, indent=1))
+        (out / "e2e.md").write_text(markdown(res))
+        if a.results_name:
+            for ext in ("json", "md"):
+                shutil.copy(out / f"e2e.{ext}", ROOT / "results" / f"{a.results_name}.{ext}")
+        print(markdown(res))
+    if a.refunnel:
+        res = json.loads((out / "e2e.json").read_text())
+        res["funnel_items_in_hand"] = funnel(sim_out, out / "sim_eval")
+        if Path(res["weights"]).is_absolute() and ROOT in Path(res["weights"]).parents:
+            res["weights"] = str(Path(res["weights"]).relative_to(ROOT))
+        return write(res)
     shutil.rmtree(out, ignore_errors=True)
     out.mkdir(parents=True)
     t0 = time.time()
@@ -230,7 +259,8 @@ def main(argv=None) -> None:
         from bree.train.backend import sku_weights
         from bree.train.sim_eval_sku import product_recognition
         card["product_recognition"] = product_recognition(load_events(sim_out), out / "sim_eval", json.loads(layout.read_text()))
-        weights = str(sku_weights())
+        w = Path(sku_weights()).resolve()
+        weights = str(w.relative_to(ROOT) if ROOT in w.parents else w)      # no home path in a tracked result file
     else:
         weights = "none (COCO classes)" if a.backend == "yolo" else "toy colours"
     (out / "sim_eval" / "scorecard.json").write_text(json.dumps(card, indent=1))
@@ -241,12 +271,7 @@ def main(argv=None) -> None:
            "closed_world": not a.no_closed_world, "slots_3d": not a.no_slots, "max_frames": a.max_frames,
            "person_conf": float(os.environ.get("BREE_PERSON_CONF", 0.3)),
            "edge": edge, "scorecard": card, "funnel_items_in_hand": fun, "review": review, "wall_s": round(time.time() - t0, 1)}
-    (out / "e2e.json").write_text(json.dumps(res, indent=1))
-    (out / "e2e.md").write_text(markdown(res))
-    if a.results_name:
-        for ext in ("json", "md"):
-            shutil.copy(out / f"e2e.{ext}", ROOT / "results" / f"{a.results_name}.{ext}")
-    print(markdown(res))
+    write(res)
 
 
 if __name__ == "__main__":

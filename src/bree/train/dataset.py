@@ -89,28 +89,106 @@ def tile_labels(anns: list[dict], x0: int, y0: int, tile: int = TILE) -> list[tu
     return out
 
 
-def build(frames_dir, out_dir, tiles_per_frame: int = 4, background_share: float = 0.05, limit: int | None = None) -> dict:
-    frames_dir, out = Path(frames_dir), Path(out_dir)
+HAND = "hand"                                    # extra detector class when the frames carry hand boxes (render_hands.mjs)
+HARD_KINDS = ("hand", "counter", "body_hand")    # item in a hand, item on the counter, a hand: tiles with these come first
+
+
+def split_from(seed: int, heldout_from: int | None = None) -> str:
+    """Default: split_of. With `heldout_from`: seeds from there up are the test split (rendered apart, never
+    trained on), an eighth of the rest is val."""
+    if heldout_from is None:
+        return split_of(seed)
+    return "test" if seed >= heldout_from else "val" if zlib.crc32(str(seed).encode()) % 8 == 0 else "train"
+
+
+def frame_anns(m: dict, ref: dict[str, float]) -> list[dict]:
+    """Labels of one frame: items by the visible-share rule, hands (class HAND, kind body_hand) by visible pixels."""
+    anns = []
+    for a in m["annotations"]:
+        v = visible_share(a, ref)
+        if keep(a, v):
+            anns.append({**a, "vis": round(v, 3)})
+    for h in m.get("hands", []):
+        x0, y0, x1, y1 = h["bbox"]
+        if h["vis_px"] >= MIN_VIS_PX and min(x1 - x0, y1 - y0) >= MIN_SIDE:
+            anns.append({**h, "sku": HAND, "kind": "body_hand", "vis": 1.0, "px_eff": h.get("px_eff", 0.0)})
+    return anns
+
+
+def _frame(job) -> dict:
+    """One frame -> its tiles on disk. Returns what the index needs (runs in a worker process)."""
+    path, out, sp, cls, ref, tiles_per_frame, background_share, max_hard, focus = job
+    path, out = Path(path), Path(out)
+    m = json.loads(path.read_text())
+    stem = f"s{m['seed']}_{path.stem}"
+    rng = np.random.default_rng(zlib.crc32(stem.encode()))
+    img, effects = sensor(cv2.imread(str(path.with_suffix(".jpg"))), rng)
+    anns = frame_anns(m, ref)
+    if sp == "test":
+        cv2.imwrite(str(out / "test_frames" / f"{stem}.jpg"), img, [cv2.IMWRITE_JPEG_QUALITY, 95])
+        (out / "test_frames" / f"{stem}.json").write_text(json.dumps(
+            {"seed": m["seed"], "camera": m["camera"], "width": m["width"], "height": m["height"], "effects": effects,
+             "chosen_for": m.get("chosen_for"), "params": m["params"], "annotations": anns}))
+    tiles = [(x, y, tile_labels(anns, x, y)) for y in tile_origins(m["height"]) for x in tile_origins(m["width"])]
+    hard = [t for t in tiles if any(a["kind"] in HARD_KINDS for a, _ in t[2])]     # item in hand: always kept
+    rest = [t for t in tiles if t not in hard and t[2]]
+    pyr = random.Random(zlib.crc32(stem.encode()))
+    pyr.shuffle(rest)
+    if max_hard is not None and len(hard) > max_hard:
+        hard = pyr.sample(hard, max_hard)
+    chosen = hard + rest[:max(0, tiles_per_frame - len(hard))]
+    empty = [t for t in tiles if not t[2]]
+    if empty and pyr.random() < background_share * tiles_per_frame:
+        chosen.append(pyr.choice(empty))
+    # crops at any offset around a held item or a raised hand (the pipeline also crops around a point, not only on the grid)
+    targets = [a for a in anns if a["kind"] in ("hand", "counter") or a.get("reaching")]
+    for a in pyr.sample(targets, min(focus, len(targets))):
+        cx, cy = (a["bbox"][0] + a["bbox"][2]) / 2, (a["bbox"][1] + a["bbox"][3]) / 2
+        x = int(min(max(cx - pyr.uniform(80, TILE - 80), 0), max(m["width"] - TILE, 0)))
+        y = int(min(max(cy - pyr.uniform(80, TILE - 80), 0), max(m["height"] - TILE, 0)))
+        chosen.append((x, y, tile_labels(anns, x, y)))
+    rec = {"sp": sp, "seed": m["seed"], "tiles": []}
+    for x, y, labs in chosen:
+        name = f"{stem}_{x}_{y}"
+        crop = img[y:y + TILE, x:x + TILE]
+        h, w = crop.shape[:2]
+        cv2.imwrite(str(out / "images" / sp / f"{name}.jpg"), crop, [cv2.IMWRITE_JPEG_QUALITY, 95])
+        (out / "labels" / sp / f"{name}.txt").write_text("\n".join(
+            f"{cls[a['sku']]} {(b[0] + b[2]) / 2 / w:.6f} {(b[1] + b[3]) / 2 / h:.6f} {(b[2] - b[0]) / w:.6f} {(b[3] - b[1]) / h:.6f}" for a, b in labs))
+        rec["tiles"].append((name, w, h, [(a["sku"], b, {"kind": a["kind"], "px_eff": a["px_eff"], "vis": a["vis"],
+                                                         **({"held": a["kind"] == "hand"} if a["kind"] != "body_hand" else
+                                                            {"reaching": a["reaching"], "holding": a["holding"]})}) for a, b in labs]))
+    return rec
+
+
+def build(frames_dir, out_dir, tiles_per_frame: int = 4, background_share: float = 0.05, limit: int | None = None,
+          heldout_from: int | None = None, max_hard: int | None = None, focus: int = 0, workers: int = 1, stride: int = 1) -> dict:
+    """frames_dir: one folder or a list of them (render_synth.mjs or render_hands.mjs output)."""
+    dirs = [Path(d) for d in (frames_dir if isinstance(frames_dir, (list, tuple)) else [frames_dir])]
+    frames_dir, out = dirs[0], Path(out_dir)
     skus = json.loads((frames_dir / "skus.json").read_text())
-    names = [s["id"] for s in skus]
-    cls = {n: i for i, n in enumerate(names)}
-    metas = sorted(p for p in frames_dir.glob("s*/*.json") if (p.parent / "done").exists())[:limit]
+    metas = sorted(p for d in dirs for p in d.glob("s*/*.json") if (p.parent / "done").exists())[:limit][::stride]
     if not metas:
         raise SystemExit(f"no rendered frames under {frames_dir}")
-    loaded = [(p, json.loads(p.read_text())) for p in metas]
     # unhidden reference per shape, from train scenes only
     ratios: dict[str, list[float]] = {}
-    for _, m in loaded:
-        if split_of(m["seed"]) == "train":
+    split, hands = {}, False
+    for p in metas:
+        m = json.loads(p.read_text())
+        split[p] = split_from(m["seed"], heldout_from)
+        hands |= "hands" in m
+        if split[p] == "train":
             for a in m["annotations"]:
                 if a["full"]:
                     x0, y0, x1, y1 = a["full"]
                     ratios.setdefault(a["geo"], []).append(a["vis_px"] / max((x1 - x0) * (y1 - y0), 1.0))
     if not ratios:      # a short --seeds range can leave the train split empty (the split is by seed)
-        seeds = sorted({m["seed"] for _, m in loaded})
+        seeds = sorted({int(p.parent.name[1:]) for p in metas})
         raise SystemExit(f"no train scenes among seeds {seeds[0]}..{seeds[-1]} ({len(seeds)} seeds): the visible-share "
                          "reference comes from train scenes only. Render more seeds; a smoke run that has all three "
                          "splits is `make sku-data SKU_SEEDS=1000:1004 SYNTH=out/synth_smoke`.")
+    names = [s["id"] for s in skus] + ([HAND] if hands else [])
+    cls = {n: i for i, n in enumerate(names)}
     ref = {g: float(np.percentile(v, 95)) for g, v in ratios.items()}
     sim_copy = frames_dir / "sim_copy.json"      # which simulator version rendered the frames (render_synth.mjs)
     for sp in SPLITS:
@@ -120,49 +198,26 @@ def build(frames_dir, out_dir, tiles_per_frame: int = 4, background_share: float
     coco = {sp: {"info": {"description": "BREE store simulator, SIMULATED", "split": sp}, "images": [], "annotations": [],
                  "categories": [{"id": i, "name": n} for i, n in enumerate(names)]} for sp in SPLITS}
     stats = {sp: {"seeds": set(), "frames": 0, "tiles": 0, "boxes": 0, "kinds": Counter(), "classes": Counter()} for sp in SPLITS}
-    for path, m in loaded:
-        sp = split_of(m["seed"])
-        stem = f"s{m['seed']}_{path.stem}"
-        rng = np.random.default_rng(zlib.crc32(stem.encode()))
-        img, effects = sensor(cv2.imread(str(path.with_suffix(".jpg"))), rng)
-        anns = []
-        for a in m["annotations"]:
-            v = visible_share(a, ref)
-            if keep(a, v):
-                anns.append({**a, "vis": round(v, 3)})
-        st = stats[sp]
-        st["seeds"].add(m["seed"])
+    jobs = [(str(p), str(out), split[p], cls, ref, tiles_per_frame, background_share, max_hard, focus) for p in metas]
+    if workers > 1:
+        from concurrent.futures import ProcessPoolExecutor
+        with ProcessPoolExecutor(workers) as ex:
+            recs = list(ex.map(_frame, jobs, chunksize=8))
+    else:
+        recs = [_frame(j) for j in jobs]
+    for rec in recs:
+        sp, st = rec["sp"], stats[rec["sp"]]
+        st["seeds"].add(rec["seed"])
         st["frames"] += 1
-        if sp == "test":
-            cv2.imwrite(str(out / "test_frames" / f"{stem}.jpg"), img, [cv2.IMWRITE_JPEG_QUALITY, 95])
-            (out / "test_frames" / f"{stem}.json").write_text(json.dumps(
-                {"seed": m["seed"], "camera": m["camera"], "width": m["width"], "height": m["height"], "effects": effects,
-                 "params": m["params"], "annotations": anns}))
-        tiles = [(x, y, tile_labels(anns, x, y)) for y in tile_origins(m["height"]) for x in tile_origins(m["width"])]
-        hard = [t for t in tiles if any(a["kind"] in ("hand", "counter") for a, _ in t[2])]     # item in hand: always kept
-        rest = [t for t in tiles if t not in hard and t[2]]
-        pyr = random.Random(zlib.crc32(stem.encode()))
-        pyr.shuffle(rest)
-        chosen = hard + rest[:max(0, tiles_per_frame - len(hard))]
-        empty = [t for t in tiles if not t[2]]
-        if empty and pyr.random() < background_share * tiles_per_frame:
-            chosen.append(pyr.choice(empty))
-        for x, y, labs in chosen:
-            name = f"{stem}_{x}_{y}"
-            crop = img[y:y + TILE, x:x + TILE]
-            h, w = crop.shape[:2]
-            cv2.imwrite(str(out / "images" / sp / f"{name}.jpg"), crop, [cv2.IMWRITE_JPEG_QUALITY, 95])
-            lines = []
+        for name, w, h, labs in rec["tiles"]:
             img_id = len(coco[sp]["images"])
             coco[sp]["images"].append({"id": img_id, "file_name": f"{name}.jpg", "width": w, "height": h})
-            for a, (bx0, by0, bx1, by1) in labs:
-                lines.append(f"{cls[a['sku']]} {(bx0 + bx1) / 2 / w:.6f} {(by0 + by1) / 2 / h:.6f} {(bx1 - bx0) / w:.6f} {(by1 - by0) / h:.6f}")
-                coco[sp]["annotations"].append({"id": len(coco[sp]["annotations"]), "image_id": img_id, "category_id": cls[a["sku"]],
+            for sku, (bx0, by0, bx1, by1), attrs in labs:
+                coco[sp]["annotations"].append({"id": len(coco[sp]["annotations"]), "image_id": img_id, "category_id": cls[sku],
                                                 "bbox": [bx0, by0, bx1 - bx0, by1 - by0], "area": (bx1 - bx0) * (by1 - by0), "iscrowd": 0,
-                                                "attributes": {"kind": a["kind"], "px_eff": a["px_eff"], "vis": a["vis"]}})
-                st["kinds"][a["kind"]] += 1
-                st["classes"][a["sku"]] += 1
-            (out / "labels" / sp / f"{name}.txt").write_text("\n".join(lines))
+                                                "attributes": attrs})
+                st["kinds"][attrs["kind"]] += 1
+                st["classes"][sku] += 1
             st["tiles"] += 1
             st["boxes"] += len(labs)
     for sp in SPLITS:
@@ -171,10 +226,11 @@ def build(frames_dir, out_dir, tiles_per_frame: int = 4, background_share: float
                                    "train: images/train\nval: images/val\ntest: images/test\nnames:\n" + "".join(f"  {i}: {n}\n" for i, n in enumerate(names)))
     seeds = {sp: sorted(stats[sp]["seeds"]) for sp in SPLITS}
     assert not (set(seeds["train"]) & set(seeds["val"]) or set(seeds["train"]) & set(seeds["test"]) or set(seeds["val"]) & set(seeds["test"])), "seed leak between splits"
-    meta = {"source": str(frames_dir), "data": "SIMULATED (browser store simulator copy)", "tile": TILE, "overlap": OVERLAP,
+    meta = {"source": [str(d) for d in dirs] if len(dirs) > 1 else str(frames_dir), "data": "SIMULATED (browser store simulator copy)", "tile": TILE, "overlap": OVERLAP,
             "simulator": json.loads(sim_copy.read_text()) if sim_copy.exists() else "not recorded (rendered before 2026-10-05)",
             "label_rule": {"min_visible_px": MIN_VIS_PX, "min_side_px": MIN_SIDE, "min_visible_share": MIN_VIS},
-            "visible_share_reference": ref, "skus": skus,
+            "visible_share_reference": ref, "skus": skus, "classes": names,
+            "split_rule": "hash of the seed (split_of)" if heldout_from is None else f"seeds from {heldout_from} up are the held-out test split",
             "splits": {sp: {"seeds": seeds[sp], "frames": stats[sp]["frames"], "tiles": stats[sp]["tiles"], "boxes": stats[sp]["boxes"],
                             "boxes_by_kind": dict(stats[sp]["kinds"]), "boxes_by_class": dict(sorted(stats[sp]["classes"].items()))} for sp in SPLITS}}
     (out / "meta.json").write_text(json.dumps(meta, indent=1))
@@ -222,12 +278,17 @@ def manifest_to_yolo(manifest_path, out, val_share: float = 0.2, pseudo: bool = 
 
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--frames", default="data/synth/frames")
+    ap.add_argument("--frames", nargs="+", default=["data/synth/frames"], help="one or more rendered frame folders")
     ap.add_argument("--out", default="data/synth/sku")
     ap.add_argument("--tiles-per-frame", type=int, default=4, help="labelled tiles kept per frame (tiles with an item in a hand are always kept)")
     ap.add_argument("--limit", type=int, default=None, help="only the first N frames (smoke test)")
+    ap.add_argument("--heldout-from", type=int, default=None, help="seeds from here up are the test split (default: split by a hash of the seed)")
+    ap.add_argument("--max-hard", type=int, default=None, help="at most this many grid tiles with a hand or a held item per frame")
+    ap.add_argument("--focus", type=int, default=0, help="extra crops per frame at a random offset around a held item or a raised hand")
+    ap.add_argument("--workers", type=int, default=1)
+    ap.add_argument("--stride", type=int, default=1, help="use every Nth frame (captures 0.3 s apart look alike)")
     a = ap.parse_args(argv)
-    meta = build(a.frames, a.out, a.tiles_per_frame, limit=a.limit)
+    meta = build(a.frames, a.out, a.tiles_per_frame, limit=a.limit, heldout_from=a.heldout_from, max_hard=a.max_hard, focus=a.focus, workers=a.workers, stride=a.stride)
     for sp, s in meta["splits"].items():
         print(f"{sp}: {len(s['seeds'])} seeds, {s['frames']} frames, {s['tiles']} tiles, {s['boxes']} boxes, by kind {s['boxes_by_kind']}")
     print(f"wrote {a.out}/data.yaml, coco_*.json, meta.json, test_frames/")

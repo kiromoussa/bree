@@ -1,0 +1,3118 @@
+{
+ "data": "SIMULATED (browser store simulator copy); not real footage",
+ "dataset": {
+  "train": {
+   "seeds": [
+    2000,
+    2001,
+    2002,
+    2003,
+    2005,
+    2006,
+    2007,
+    2008,
+    2009,
+    2011,
+    2012,
+    2013,
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025,
+    2026,
+    2028,
+    2029,
+    2030,
+    2031,
+    2032,
+    2034,
+    2035,
+    2036,
+    2037,
+    2039,
+    2040,
+    2041
+   ],
+   "frames": 1764,
+   "tiles": 5845,
+   "boxes": 87397,
+   "boxes_by_kind": {
+    "shelf": 53225,
+    "backstock": 25467,
+    "body_hand": 5186,
+    "hand": 2778,
+    "counter": 741
+   }
+  },
+  "val": {
+   "seeds": [
+    2004,
+    2010,
+    2027,
+    2033,
+    2038
+   ],
+   "frames": 210,
+   "tiles": 680,
+   "boxes": 9394,
+   "boxes_by_kind": {
+    "shelf": 5137,
+    "body_hand": 590,
+    "backstock": 3296,
+    "counter": 74,
+    "hand": 297
+   }
+  },
+  "test": {
+   "seeds": [
+    3000,
+    3001,
+    3002,
+    3003,
+    3004,
+    3005,
+    3006,
+    3007,
+    3008,
+    3009
+   ],
+   "frames": 484,
+   "tiles": 1617,
+   "boxes": 22156,
+   "boxes_by_kind": {
+    "shelf": 13870,
+    "backstock": 5879,
+    "body_hand": 1396,
+    "hand": 829,
+    "counter": 182
+   }
+  }
+ },
+ "weights": {
+  "sim_sku": {
+   "file": "/Users/kiromoussa/bree-vision/data/synth/weights/sim_sku.pt",
+   "training": {
+    "data_note": "SIMULATED store frames only",
+    "base_weights": "yolo26n.pt",
+    "data": "data/synth/sku/data.yaml",
+    "classes": 33,
+    "train_images": 13596,
+    "imgsz": 640,
+    "epochs": 6,
+    "batch": 32,
+    "device": "mps",
+    "train_wall_s": 19250.5,
+    "train_wall_min": 320.8,
+    "validated_every_epoch": false,
+    "val_split_at_end": {
+     "metrics/mAP50(B)": 0.9734,
+     "metrics/mAP50-95(B)": 0.8838
+    },
+    "augmentation": {
+     "hsv_h": 0.01,
+     "hsv_s": 0.4,
+     "hsv_v": 0.35,
+     "fliplr": 0.0,
+     "flipud": 0.0,
+     "scale": 0.25,
+     "translate": 0.1,
+     "mosaic": 0.5,
+     "close_mosaic": 2,
+     "erasing": 0.0
+    },
+    "run_dir": "/Users/kiromoussa/bree-vision/data/synth/runs/sim_sku",
+    "weights": "/Users/kiromoussa/bree-vision/data/synth/weights/sim_sku.pt"
+   },
+   "counts": {
+    "frames": 484,
+    "item_predictions": 53339,
+    "item_box_precision": 0.9023,
+    "hand_predictions": 0,
+    "hand_box_precision_iou30": null
+   },
+   "in_hand_by_px": [
+    {
+     "px": "0-10",
+     "lo": 0,
+     "n": 0,
+     "found": 0,
+     "sku_right": 0,
+     "found_rate": null,
+     "sku_right_rate": null,
+     "sku_right_of_found": null
+    },
+    {
+     "px": "10-15",
+     "lo": 10,
+     "n": 0,
+     "found": 0,
+     "sku_right": 0,
+     "found_rate": null,
+     "sku_right_rate": null,
+     "sku_right_of_found": null
+    },
+    {
+     "px": "15-20",
+     "lo": 15,
+     "n": 0,
+     "found": 0,
+     "sku_right": 0,
+     "found_rate": null,
+     "sku_right_rate": null,
+     "sku_right_of_found": null
+    },
+    {
+     "px": "20-25",
+     "lo": 20,
+     "n": 0,
+     "found": 0,
+     "sku_right": 0,
+     "found_rate": null,
+     "sku_right_rate": null,
+     "sku_right_of_found": null
+    },
+    {
+     "px": "25-30",
+     "lo": 25,
+     "n": 3,
+     "found": 1,
+     "sku_right": 1,
+     "found_rate": 0.3333,
+     "sku_right_rate": 0.3333,
+     "sku_right_of_found": 1.0
+    },
+    {
+     "px": "30-40",
+     "lo": 30,
+     "n": 17,
+     "found": 11,
+     "sku_right": 6,
+     "found_rate": 0.6471,
+     "sku_right_rate": 0.3529,
+     "sku_right_of_found": 0.5455
+    },
+    {
+     "px": "40-60",
+     "lo": 40,
+     "n": 122,
+     "found": 76,
+     "sku_right": 68,
+     "found_rate": 0.623,
+     "sku_right_rate": 0.5574,
+     "sku_right_of_found": 0.8947
+    },
+    {
+     "px": "60-100",
+     "lo": 60,
+     "n": 148,
+     "found": 134,
+     "sku_right": 124,
+     "found_rate": 0.9054,
+     "sku_right_rate": 0.8378,
+     "sku_right_of_found": 0.9254
+    },
+    {
+     "px": "100+",
+     "lo": 100,
+     "n": 61,
+     "found": 42,
+     "sku_right": 36,
+     "found_rate": 0.6885,
+     "sku_right_rate": 0.5902,
+     "sku_right_of_found": 0.8571
+    }
+   ],
+   "in_hand_20px_plus": {
+    "found": {
+     "n": 351,
+     "k": 264,
+     "rate": 0.7521
+    },
+    "sku_right": {
+     "n": 351,
+     "k": 235,
+     "rate": 0.6695
+    },
+    "by_camera_kind": {
+     "checkout": {
+      "n": 87,
+      "k": 63,
+      "rate": 0.7241
+     },
+     "cooler": {
+      "n": 40,
+      "k": 27,
+      "rate": 0.675
+     },
+     "shelf": {
+      "n": 224,
+      "k": 145,
+      "rate": 0.6473
+     }
+    },
+    "by_visible_share": {
+     "25 to 50%": {
+      "n": 107,
+      "k": 55,
+      "rate": 0.514
+     },
+     "50 to 80%": {
+      "n": 158,
+      "k": 119,
+      "rate": 0.7532
+     },
+     "80%+": {
+      "n": 86,
+      "k": 61,
+      "rate": 0.7093
+     }
+    }
+   },
+   "in_hand_variant_confusion": {
+    "aldermoor_gold/aldermoor_menthol": {
+     "columns": [
+      "aldermoor_gold",
+      "aldermoor_menthol",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "aldermoor_gold": [
+       0,
+       0,
+       0,
+       0
+      ],
+      "aldermoor_menthol": [
+       0,
+       0,
+       0,
+       0
+      ]
+     },
+     "found": 0,
+     "sku_right": 0,
+     "confused_within_family": 0,
+     "confused_within_family_rate": null
+    },
+    "arcwave_original/arcwave_tropical/arcwave_berry": {
+     "columns": [
+      "arcwave_original",
+      "arcwave_tropical",
+      "arcwave_berry",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "arcwave_original": [
+       3,
+       0,
+       0,
+       0,
+       1
+      ],
+      "arcwave_tropical": [
+       0,
+       9,
+       0,
+       3,
+       3
+      ],
+      "arcwave_berry": [
+       0,
+       0,
+       4,
+       0,
+       1
+      ]
+     },
+     "found": 19,
+     "sku_right": 16,
+     "confused_within_family": 0,
+     "confused_within_family_rate": 0.0
+    },
+    "cocoa_crest/peanut_pilot/caramel_crest": {
+     "columns": [
+      "cocoa_crest",
+      "peanut_pilot",
+      "caramel_crest",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "cocoa_crest": [
+       20,
+       0,
+       3,
+       2,
+       7
+      ],
+      "peanut_pilot": [
+       0,
+       45,
+       1,
+       1,
+       11
+      ],
+      "caramel_crest": [
+       0,
+       0,
+       30,
+       3,
+       10
+      ]
+     },
+     "found": 105,
+     "sku_right": 95,
+     "confused_within_family": 4,
+     "confused_within_family_rate": 0.0381
+    },
+    "crunchly_classic/crunchly_sco/crunchly_bbq/sierra_nacho/sierra_ranch": {
+     "columns": [
+      "crunchly_classic",
+      "crunchly_sco",
+      "crunchly_bbq",
+      "sierra_nacho",
+      "sierra_ranch",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "crunchly_classic": [
+       4,
+       0,
+       0,
+       0,
+       0,
+       0,
+       1
+      ],
+      "crunchly_sco": [
+       0,
+       8,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "crunchly_bbq": [
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       3
+      ],
+      "sierra_nacho": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "sierra_ranch": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ]
+     },
+     "found": 13,
+     "sku_right": 13,
+     "confused_within_family": 0,
+     "confused_within_family_rate": 0.0
+    },
+    "fizzo_cola/fizzo_zero/fizzo_cherry/lumen_citrus": {
+     "columns": [
+      "fizzo_cola",
+      "fizzo_zero",
+      "fizzo_cherry",
+      "lumen_citrus",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "fizzo_cola": [
+       2,
+       0,
+       0,
+       0,
+       0,
+       1
+      ],
+      "fizzo_zero": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "fizzo_cherry": [
+       0,
+       0,
+       4,
+       0,
+       1,
+       1
+      ],
+      "lumen_citrus": [
+       0,
+       0,
+       0,
+       7,
+       4,
+       2
+      ]
+     },
+     "found": 18,
+     "sku_right": 13,
+     "confused_within_family": 0,
+     "confused_within_family_rate": 0.0
+    },
+    "orchard_lemon/orchard_peach": {
+     "columns": [
+      "orchard_lemon",
+      "orchard_peach",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "orchard_lemon": [
+       0,
+       0,
+       0,
+       0
+      ],
+      "orchard_peach": [
+       1,
+       0,
+       0,
+       0
+      ]
+     },
+     "found": 1,
+     "sku_right": 0,
+     "confused_within_family": 1,
+     "confused_within_family_rate": 1.0
+    },
+    "pacer_glacier/pacer_orange/pacer_punch": {
+     "columns": [
+      "pacer_glacier",
+      "pacer_orange",
+      "pacer_punch",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "pacer_glacier": [
+       1,
+       0,
+       0,
+       1,
+       6
+      ],
+      "pacer_orange": [
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "pacer_punch": [
+       0,
+       0,
+       0,
+       0,
+       0
+      ]
+     },
+     "found": 2,
+     "sku_right": 1,
+     "confused_within_family": 0,
+     "confused_within_family_rate": 0.0
+    },
+    "relieva_ibu/relieva_aceta": {
+     "columns": [
+      "relieva_ibu",
+      "relieva_aceta",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "relieva_ibu": [
+       13,
+       0,
+       1,
+       2
+      ],
+      "relieva_aceta": [
+       0,
+       12,
+       1,
+       10
+      ]
+     },
+     "found": 27,
+     "sku_right": 25,
+     "confused_within_family": 0,
+     "confused_within_family_rate": 0.0
+    },
+    "ridgeline_original/ridgeline_teriyaki": {
+     "columns": [
+      "ridgeline_original",
+      "ridgeline_teriyaki",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "ridgeline_original": [
+       3,
+       0,
+       0,
+       4
+      ],
+      "ridgeline_teriyaki": [
+       0,
+       8,
+       1,
+       3
+      ]
+     },
+     "found": 12,
+     "sku_right": 11,
+     "confused_within_family": 0,
+     "confused_within_family_rate": 0.0
+    },
+    "torqueline_5w30/torqueline_10w30": {
+     "columns": [
+      "torqueline_5w30",
+      "torqueline_10w30",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "torqueline_5w30": [
+       2,
+       1,
+       0,
+       0
+      ],
+      "torqueline_10w30": [
+       0,
+       8,
+       2,
+       5
+      ]
+     },
+     "found": 13,
+     "sku_right": 10,
+     "confused_within_family": 1,
+     "confused_within_family_rate": 0.0769
+    },
+    "voltlink_usbc/voltlink_micro": {
+     "columns": [
+      "voltlink_usbc",
+      "voltlink_micro",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "voltlink_usbc": [
+       9,
+       0,
+       1,
+       1
+      ],
+      "voltlink_micro": [
+       0,
+       4,
+       0,
+       2
+      ]
+     },
+     "found": 14,
+     "sku_right": 13,
+     "confused_within_family": 0,
+     "confused_within_family_rate": 0.0
+    }
+   },
+   "groups_20px_plus": {
+    "in_hand": {
+     "n": 351,
+     "k": 235,
+     "rate": 0.6695
+    },
+    "on_counter": {
+     "n": 88,
+     "k": 58,
+     "rate": 0.6591
+    },
+    "shelf_front_clear": {
+     "n": 12405,
+     "k": 12144,
+     "rate": 0.979
+    },
+    "shelf_front_partly_hidden": {
+     "n": 19252,
+     "k": 18418,
+     "rate": 0.9567
+    },
+    "backstock": {
+     "n": 12240,
+     "k": 11041,
+     "rate": 0.902
+    }
+   },
+   "hand_recall_reaching": {
+    "iou50": {
+     "n": 301,
+     "k": 0,
+     "rate": 0.0
+    },
+    "iou30": {
+     "n": 301,
+     "k": 0,
+     "rate": 0.0
+    },
+    "centre": {
+     "n": 301,
+     "k": 0,
+     "rate": 0.0
+    }
+   },
+   "hand_recall_reaching_by_short_side": {
+    "5-15 px": {
+     "n": 12,
+     "k": 0,
+     "rate": 0.0
+    },
+    "15-30 px": {
+     "n": 36,
+     "k": 0,
+     "rate": 0.0
+    },
+    "30-60 px": {
+     "n": 68,
+     "k": 0,
+     "rate": 0.0
+    },
+    "60+ px": {
+     "n": 185,
+     "k": 0,
+     "rate": 0.0
+    }
+   },
+   "hand_recall_all_labelled": {
+    "iou50": {
+     "n": 995,
+     "k": 0,
+     "rate": 0.0
+    },
+    "iou30": {
+     "n": 995,
+     "k": 0,
+     "rate": 0.0
+    },
+    "centre": {
+     "n": 995,
+     "k": 0,
+     "rate": 0.0
+    }
+   },
+   "speed": {
+    "mps": {
+     "ms_per_640_tile": 10.3,
+     "tiles_per_s": 96.9,
+     "ms_per_frame": 51.0,
+     "frame": "1520x2688",
+     "tiles_per_frame": 15,
+     "frames_per_s": 19.59
+    },
+    "cpu": {
+     "ms_per_640_tile": 72.8,
+     "tiles_per_s": 13.7,
+     "ms_per_frame": 555.7,
+     "frame": "1520x2688",
+     "tiles_per_frame": 15,
+     "frames_per_s": 1.8
+    }
+   }
+  },
+  "sim_sku_hands_v2": {
+   "file": "/Users/kiromoussa/bree-vision/data/synth/weights/sim_sku_hands_v2.pt",
+   "training": {
+    "data_note": "SIMULATED store frames only: sim_sku.pt fine-tuned on reach and held-item frames, hand class added",
+    "base_weights": "sim_sku.pt",
+    "data": "data/synth/hands/sku/data.yaml",
+    "classes": 34,
+    "class_names": [
+     "fizzo_cola",
+     "fizzo_zero",
+     "fizzo_cherry",
+     "lumen_citrus",
+     "arcwave_original",
+     "arcwave_tropical",
+     "arcwave_berry",
+     "clearwell_water",
+     "orchard_lemon",
+     "orchard_peach",
+     "pacer_glacier",
+     "pacer_orange",
+     "pacer_punch",
+     "crunchly_classic",
+     "crunchly_sco",
+     "crunchly_bbq",
+     "sierra_nacho",
+     "sierra_ranch",
+     "ridgeline_original",
+     "ridgeline_teriyaki",
+     "oatfield_cookies",
+     "morning_hoops",
+     "torqueline_5w30",
+     "torqueline_10w30",
+     "relieva_ibu",
+     "relieva_aceta",
+     "voltlink_usbc",
+     "voltlink_micro",
+     "cocoa_crest",
+     "peanut_pilot",
+     "caramel_crest",
+     "aldermoor_gold",
+     "aldermoor_menthol",
+     "hand"
+    ],
+    "train_images": 5788,
+    "imgsz": 640,
+    "epochs": 2,
+    "batch": 16,
+    "device": "mps",
+    "train_wall_s": 932.0,
+    "train_wall_min": 15.5,
+    "validated_every_epoch": false,
+    "val_split_at_end": {
+     "metrics/mAP50(B)": 0.9491,
+     "metrics/mAP50-95(B)": 0.8302
+    },
+    "augmentation": {
+     "hsv_h": 0.01,
+     "hsv_s": 0.4,
+     "hsv_v": 0.35,
+     "fliplr": 0.0,
+     "flipud": 0.0,
+     "scale": 0.25,
+     "translate": 0.1,
+     "mosaic": 0.5,
+     "close_mosaic": 2,
+     "erasing": 0.0,
+     "lr0": 0.001,
+     "optimizer": "AdamW"
+    },
+    "run_dir": "/Users/kiromoussa/bree-vision/data/synth/runs/sim_sku_hands_v2",
+    "weights": "data/synth/weights/sim_sku_hands_v2.pt"
+   },
+   "counts": {
+    "frames": 484,
+    "item_predictions": 55574,
+    "item_box_precision": 0.8862,
+    "hand_predictions": 848,
+    "hand_box_precision_iou30": 0.8066
+   },
+   "in_hand_by_px": [
+    {
+     "px": "0-10",
+     "lo": 0,
+     "n": 0,
+     "found": 0,
+     "sku_right": 0,
+     "found_rate": null,
+     "sku_right_rate": null,
+     "sku_right_of_found": null
+    },
+    {
+     "px": "10-15",
+     "lo": 10,
+     "n": 0,
+     "found": 0,
+     "sku_right": 0,
+     "found_rate": null,
+     "sku_right_rate": null,
+     "sku_right_of_found": null
+    },
+    {
+     "px": "15-20",
+     "lo": 15,
+     "n": 0,
+     "found": 0,
+     "sku_right": 0,
+     "found_rate": null,
+     "sku_right_rate": null,
+     "sku_right_of_found": null
+    },
+    {
+     "px": "20-25",
+     "lo": 20,
+     "n": 0,
+     "found": 0,
+     "sku_right": 0,
+     "found_rate": null,
+     "sku_right_rate": null,
+     "sku_right_of_found": null
+    },
+    {
+     "px": "25-30",
+     "lo": 25,
+     "n": 3,
+     "found": 2,
+     "sku_right": 2,
+     "found_rate": 0.6667,
+     "sku_right_rate": 0.6667,
+     "sku_right_of_found": 1.0
+    },
+    {
+     "px": "30-40",
+     "lo": 30,
+     "n": 17,
+     "found": 9,
+     "sku_right": 9,
+     "found_rate": 0.5294,
+     "sku_right_rate": 0.5294,
+     "sku_right_of_found": 1.0
+    },
+    {
+     "px": "40-60",
+     "lo": 40,
+     "n": 122,
+     "found": 98,
+     "sku_right": 93,
+     "found_rate": 0.8033,
+     "sku_right_rate": 0.7623,
+     "sku_right_of_found": 0.949
+    },
+    {
+     "px": "60-100",
+     "lo": 60,
+     "n": 148,
+     "found": 128,
+     "sku_right": 124,
+     "found_rate": 0.8649,
+     "sku_right_rate": 0.8378,
+     "sku_right_of_found": 0.9688
+    },
+    {
+     "px": "100+",
+     "lo": 100,
+     "n": 61,
+     "found": 40,
+     "sku_right": 32,
+     "found_rate": 0.6557,
+     "sku_right_rate": 0.5246,
+     "sku_right_of_found": 0.8
+    }
+   ],
+   "in_hand_20px_plus": {
+    "found": {
+     "n": 351,
+     "k": 277,
+     "rate": 0.7892
+    },
+    "sku_right": {
+     "n": 351,
+     "k": 260,
+     "rate": 0.7407
+    },
+    "by_camera_kind": {
+     "checkout": {
+      "n": 87,
+      "k": 70,
+      "rate": 0.8046
+     },
+     "cooler": {
+      "n": 40,
+      "k": 33,
+      "rate": 0.825
+     },
+     "shelf": {
+      "n": 224,
+      "k": 157,
+      "rate": 0.7009
+     }
+    },
+    "by_visible_share": {
+     "25 to 50%": {
+      "n": 107,
+      "k": 58,
+      "rate": 0.5421
+     },
+     "50 to 80%": {
+      "n": 158,
+      "k": 128,
+      "rate": 0.8101
+     },
+     "80%+": {
+      "n": 86,
+      "k": 74,
+      "rate": 0.8605
+     }
+    }
+   },
+   "in_hand_variant_confusion": {
+    "aldermoor_gold/aldermoor_menthol": {
+     "columns": [
+      "aldermoor_gold",
+      "aldermoor_menthol",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "aldermoor_gold": [
+       0,
+       0,
+       0,
+       0
+      ],
+      "aldermoor_menthol": [
+       0,
+       0,
+       0,
+       0
+      ]
+     },
+     "found": 0,
+     "sku_right": 0,
+     "confused_within_family": 0,
+     "confused_within_family_rate": null
+    },
+    "arcwave_original/arcwave_tropical/arcwave_berry": {
+     "columns": [
+      "arcwave_original",
+      "arcwave_tropical",
+      "arcwave_berry",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "arcwave_original": [
+       4,
+       0,
+       0,
+       0,
+       0
+      ],
+      "arcwave_tropical": [
+       0,
+       14,
+       0,
+       0,
+       1
+      ],
+      "arcwave_berry": [
+       0,
+       0,
+       5,
+       0,
+       0
+      ]
+     },
+     "found": 23,
+     "sku_right": 23,
+     "confused_within_family": 0,
+     "confused_within_family_rate": 0.0
+    },
+    "cocoa_crest/peanut_pilot/caramel_crest": {
+     "columns": [
+      "cocoa_crest",
+      "peanut_pilot",
+      "caramel_crest",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "cocoa_crest": [
+       26,
+       0,
+       0,
+       0,
+       6
+      ],
+      "peanut_pilot": [
+       0,
+       44,
+       1,
+       1,
+       12
+      ],
+      "caramel_crest": [
+       0,
+       0,
+       37,
+       0,
+       6
+      ]
+     },
+     "found": 109,
+     "sku_right": 107,
+     "confused_within_family": 1,
+     "confused_within_family_rate": 0.0092
+    },
+    "crunchly_classic/crunchly_sco/crunchly_bbq/sierra_nacho/sierra_ranch": {
+     "columns": [
+      "crunchly_classic",
+      "crunchly_sco",
+      "crunchly_bbq",
+      "sierra_nacho",
+      "sierra_ranch",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "crunchly_classic": [
+       4,
+       0,
+       0,
+       0,
+       0,
+       0,
+       1
+      ],
+      "crunchly_sco": [
+       0,
+       8,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "crunchly_bbq": [
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       3
+      ],
+      "sierra_nacho": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "sierra_ranch": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ]
+     },
+     "found": 13,
+     "sku_right": 13,
+     "confused_within_family": 0,
+     "confused_within_family_rate": 0.0
+    },
+    "fizzo_cola/fizzo_zero/fizzo_cherry/lumen_citrus": {
+     "columns": [
+      "fizzo_cola",
+      "fizzo_zero",
+      "fizzo_cherry",
+      "lumen_citrus",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "fizzo_cola": [
+       3,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "fizzo_zero": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "fizzo_cherry": [
+       0,
+       0,
+       3,
+       0,
+       1,
+       2
+      ],
+      "lumen_citrus": [
+       0,
+       0,
+       0,
+       7,
+       6,
+       0
+      ]
+     },
+     "found": 20,
+     "sku_right": 13,
+     "confused_within_family": 0,
+     "confused_within_family_rate": 0.0
+    },
+    "orchard_lemon/orchard_peach": {
+     "columns": [
+      "orchard_lemon",
+      "orchard_peach",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "orchard_lemon": [
+       0,
+       0,
+       0,
+       0
+      ],
+      "orchard_peach": [
+       0,
+       1,
+       0,
+       0
+      ]
+     },
+     "found": 1,
+     "sku_right": 1,
+     "confused_within_family": 0,
+     "confused_within_family_rate": 0.0
+    },
+    "pacer_glacier/pacer_orange/pacer_punch": {
+     "columns": [
+      "pacer_glacier",
+      "pacer_orange",
+      "pacer_punch",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "pacer_glacier": [
+       3,
+       0,
+       0,
+       1,
+       4
+      ],
+      "pacer_orange": [
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "pacer_punch": [
+       0,
+       0,
+       0,
+       0,
+       0
+      ]
+     },
+     "found": 4,
+     "sku_right": 3,
+     "confused_within_family": 0,
+     "confused_within_family_rate": 0.0
+    },
+    "relieva_ibu/relieva_aceta": {
+     "columns": [
+      "relieva_ibu",
+      "relieva_aceta",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "relieva_ibu": [
+       8,
+       0,
+       0,
+       8
+      ],
+      "relieva_aceta": [
+       0,
+       15,
+       2,
+       6
+      ]
+     },
+     "found": 25,
+     "sku_right": 23,
+     "confused_within_family": 0,
+     "confused_within_family_rate": 0.0
+    },
+    "ridgeline_original/ridgeline_teriyaki": {
+     "columns": [
+      "ridgeline_original",
+      "ridgeline_teriyaki",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "ridgeline_original": [
+       4,
+       0,
+       0,
+       3
+      ],
+      "ridgeline_teriyaki": [
+       1,
+       9,
+       0,
+       2
+      ]
+     },
+     "found": 14,
+     "sku_right": 13,
+     "confused_within_family": 1,
+     "confused_within_family_rate": 0.0714
+    },
+    "torqueline_5w30/torqueline_10w30": {
+     "columns": [
+      "torqueline_5w30",
+      "torqueline_10w30",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "torqueline_5w30": [
+       3,
+       0,
+       0,
+       0
+      ],
+      "torqueline_10w30": [
+       0,
+       9,
+       0,
+       6
+      ]
+     },
+     "found": 12,
+     "sku_right": 12,
+     "confused_within_family": 0,
+     "confused_within_family_rate": 0.0
+    },
+    "voltlink_usbc/voltlink_micro": {
+     "columns": [
+      "voltlink_usbc",
+      "voltlink_micro",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "voltlink_usbc": [
+       9,
+       0,
+       1,
+       1
+      ],
+      "voltlink_micro": [
+       0,
+       4,
+       0,
+       2
+      ]
+     },
+     "found": 14,
+     "sku_right": 13,
+     "confused_within_family": 0,
+     "confused_within_family_rate": 0.0
+    }
+   },
+   "groups_20px_plus": {
+    "in_hand": {
+     "n": 351,
+     "k": 260,
+     "rate": 0.7407
+    },
+    "on_counter": {
+     "n": 88,
+     "k": 62,
+     "rate": 0.7045
+    },
+    "shelf_front_clear": {
+     "n": 12405,
+     "k": 12233,
+     "rate": 0.9861
+    },
+    "shelf_front_partly_hidden": {
+     "n": 19252,
+     "k": 18675,
+     "rate": 0.97
+    },
+    "backstock": {
+     "n": 12240,
+     "k": 11412,
+     "rate": 0.9324
+    }
+   },
+   "hand_recall_reaching": {
+    "iou50": {
+     "n": 301,
+     "k": 171,
+     "rate": 0.5681
+    },
+    "iou30": {
+     "n": 301,
+     "k": 184,
+     "rate": 0.6113
+    },
+    "centre": {
+     "n": 301,
+     "k": 197,
+     "rate": 0.6545
+    }
+   },
+   "hand_recall_reaching_by_short_side": {
+    "5-15 px": {
+     "n": 12,
+     "k": 0,
+     "rate": 0.0
+    },
+    "15-30 px": {
+     "n": 36,
+     "k": 1,
+     "rate": 0.0278
+    },
+    "30-60 px": {
+     "n": 68,
+     "k": 24,
+     "rate": 0.3529
+    },
+    "60+ px": {
+     "n": 185,
+     "k": 146,
+     "rate": 0.7892
+    }
+   },
+   "hand_recall_all_labelled": {
+    "iou50": {
+     "n": 995,
+     "k": 636,
+     "rate": 0.6392
+    },
+    "iou30": {
+     "n": 995,
+     "k": 661,
+     "rate": 0.6643
+    },
+    "centre": {
+     "n": 995,
+     "k": 701,
+     "rate": 0.7045
+    }
+   },
+   "tiles": {
+    "map50": 0.9488,
+    "map50_95": 0.8206,
+    "per_class": [
+     {
+      "name": "fizzo_cola",
+      "ap50": 0.9754,
+      "ap50_95": 0.8646
+     },
+     {
+      "name": "fizzo_zero",
+      "ap50": 0.9565,
+      "ap50_95": 0.7958
+     },
+     {
+      "name": "fizzo_cherry",
+      "ap50": 0.9574,
+      "ap50_95": 0.8216
+     },
+     {
+      "name": "lumen_citrus",
+      "ap50": 0.943,
+      "ap50_95": 0.7833
+     },
+     {
+      "name": "arcwave_original",
+      "ap50": 0.9671,
+      "ap50_95": 0.8523
+     },
+     {
+      "name": "arcwave_tropical",
+      "ap50": 0.9662,
+      "ap50_95": 0.8515
+     },
+     {
+      "name": "arcwave_berry",
+      "ap50": 0.975,
+      "ap50_95": 0.847
+     },
+     {
+      "name": "clearwell_water",
+      "ap50": 0.9558,
+      "ap50_95": 0.759
+     },
+     {
+      "name": "orchard_lemon",
+      "ap50": 0.93,
+      "ap50_95": 0.8418
+     },
+     {
+      "name": "orchard_peach",
+      "ap50": 0.955,
+      "ap50_95": 0.8462
+     },
+     {
+      "name": "pacer_glacier",
+      "ap50": 0.9097,
+      "ap50_95": 0.7384
+     },
+     {
+      "name": "pacer_orange",
+      "ap50": 0.9739,
+      "ap50_95": 0.866
+     },
+     {
+      "name": "pacer_punch",
+      "ap50": 0.9513,
+      "ap50_95": 0.8287
+     },
+     {
+      "name": "crunchly_classic",
+      "ap50": 0.9469,
+      "ap50_95": 0.8398
+     },
+     {
+      "name": "crunchly_sco",
+      "ap50": 0.9577,
+      "ap50_95": 0.8799
+     },
+     {
+      "name": "crunchly_bbq",
+      "ap50": 0.9668,
+      "ap50_95": 0.8694
+     },
+     {
+      "name": "sierra_nacho",
+      "ap50": 0.9504,
+      "ap50_95": 0.8561
+     },
+     {
+      "name": "sierra_ranch",
+      "ap50": 0.9703,
+      "ap50_95": 0.8909
+     },
+     {
+      "name": "ridgeline_original",
+      "ap50": 0.9592,
+      "ap50_95": 0.8476
+     },
+     {
+      "name": "ridgeline_teriyaki",
+      "ap50": 0.9711,
+      "ap50_95": 0.8678
+     },
+     {
+      "name": "oatfield_cookies",
+      "ap50": 0.9276,
+      "ap50_95": 0.8338
+     },
+     {
+      "name": "morning_hoops",
+      "ap50": 0.9192,
+      "ap50_95": 0.766
+     },
+     {
+      "name": "torqueline_5w30",
+      "ap50": 0.9551,
+      "ap50_95": 0.8121
+     },
+     {
+      "name": "torqueline_10w30",
+      "ap50": 0.9353,
+      "ap50_95": 0.7916
+     },
+     {
+      "name": "relieva_ibu",
+      "ap50": 0.9599,
+      "ap50_95": 0.8338
+     },
+     {
+      "name": "relieva_aceta",
+      "ap50": 0.9521,
+      "ap50_95": 0.8158
+     },
+     {
+      "name": "voltlink_usbc",
+      "ap50": 0.9669,
+      "ap50_95": 0.8676
+     },
+     {
+      "name": "voltlink_micro",
+      "ap50": 0.9529,
+      "ap50_95": 0.831
+     },
+     {
+      "name": "cocoa_crest",
+      "ap50": 0.967,
+      "ap50_95": 0.8123
+     },
+     {
+      "name": "peanut_pilot",
+      "ap50": 0.9588,
+      "ap50_95": 0.7938
+     },
+     {
+      "name": "caramel_crest",
+      "ap50": 0.9605,
+      "ap50_95": 0.7888
+     },
+     {
+      "name": "aldermoor_gold",
+      "ap50": 0.9773,
+      "ap50_95": 0.8558
+     },
+     {
+      "name": "aldermoor_menthol",
+      "ap50": 0.9861,
+      "ap50_95": 0.8618
+     },
+     {
+      "name": "hand",
+      "ap50": 0.702,
+      "ap50_95": 0.4871
+     }
+    ]
+   },
+   "speed": {
+    "mps": {
+     "ms_per_640_tile": 7.9,
+     "tiles_per_s": 126.4,
+     "ms_per_frame": 47.8,
+     "frame": "1520x2688",
+     "tiles_per_frame": 15,
+     "frames_per_s": 20.9
+    },
+    "cpu": {
+     "ms_per_640_tile": 56.8,
+     "tiles_per_s": 17.6,
+     "ms_per_frame": 694.5,
+     "frame": "1520x2688",
+     "tiles_per_frame": 15,
+     "frames_per_s": 1.44
+    }
+   }
+  },
+  "sim_sku_hands_v3": {
+   "file": "/Users/kiromoussa/bree-vision/data/synth/weights/sim_sku_hands_v3.pt",
+   "training": {
+    "data_note": "SIMULATED store frames only: sim_sku_hands_v2.pt trained 3 more epochs on twice the frames of the same scenes, more crops around held items and reaching hands",
+    "base_weights": "sim_sku_hands_v2.pt",
+    "data": "data/synth/hands/sku_x2/data.yaml",
+    "classes": 34,
+    "class_names": [
+     "fizzo_cola",
+     "fizzo_zero",
+     "fizzo_cherry",
+     "lumen_citrus",
+     "arcwave_original",
+     "arcwave_tropical",
+     "arcwave_berry",
+     "clearwell_water",
+     "orchard_lemon",
+     "orchard_peach",
+     "pacer_glacier",
+     "pacer_orange",
+     "pacer_punch",
+     "crunchly_classic",
+     "crunchly_sco",
+     "crunchly_bbq",
+     "sierra_nacho",
+     "sierra_ranch",
+     "ridgeline_original",
+     "ridgeline_teriyaki",
+     "oatfield_cookies",
+     "morning_hoops",
+     "torqueline_5w30",
+     "torqueline_10w30",
+     "relieva_ibu",
+     "relieva_aceta",
+     "voltlink_usbc",
+     "voltlink_micro",
+     "cocoa_crest",
+     "peanut_pilot",
+     "caramel_crest",
+     "aldermoor_gold",
+     "aldermoor_menthol",
+     "hand"
+    ],
+    "train_images": 12064,
+    "imgsz": 640,
+    "epochs": 3,
+    "batch": 16,
+    "device": "mps",
+    "train_wall_s": 2639.2,
+    "train_wall_min": 44.0,
+    "validated_every_epoch": false,
+    "val_split_at_end": {
+     "metrics/mAP50(B)": 0.969,
+     "metrics/mAP50-95(B)": 0.8683
+    },
+    "augmentation": {
+     "hsv_h": 0.01,
+     "hsv_s": 0.4,
+     "hsv_v": 0.35,
+     "fliplr": 0.0,
+     "flipud": 0.0,
+     "scale": 0.25,
+     "translate": 0.1,
+     "mosaic": 0.5,
+     "close_mosaic": 2,
+     "erasing": 0.0,
+     "lr0": 0.001,
+     "optimizer": "AdamW"
+    },
+    "run_dir": "/Users/kiromoussa/bree-vision/data/synth/runs/sim_sku_hands_v3",
+    "weights": "data/synth/weights/sim_sku_hands_v3.pt"
+   },
+   "counts": {
+    "frames": 484,
+    "item_predictions": 55820,
+    "item_box_precision": 0.8896,
+    "hand_predictions": 1028,
+    "hand_box_precision_iou30": 0.8123
+   },
+   "in_hand_by_px": [
+    {
+     "px": "0-10",
+     "lo": 0,
+     "n": 0,
+     "found": 0,
+     "sku_right": 0,
+     "found_rate": null,
+     "sku_right_rate": null,
+     "sku_right_of_found": null
+    },
+    {
+     "px": "10-15",
+     "lo": 10,
+     "n": 0,
+     "found": 0,
+     "sku_right": 0,
+     "found_rate": null,
+     "sku_right_rate": null,
+     "sku_right_of_found": null
+    },
+    {
+     "px": "15-20",
+     "lo": 15,
+     "n": 0,
+     "found": 0,
+     "sku_right": 0,
+     "found_rate": null,
+     "sku_right_rate": null,
+     "sku_right_of_found": null
+    },
+    {
+     "px": "20-25",
+     "lo": 20,
+     "n": 0,
+     "found": 0,
+     "sku_right": 0,
+     "found_rate": null,
+     "sku_right_rate": null,
+     "sku_right_of_found": null
+    },
+    {
+     "px": "25-30",
+     "lo": 25,
+     "n": 3,
+     "found": 2,
+     "sku_right": 1,
+     "found_rate": 0.6667,
+     "sku_right_rate": 0.3333,
+     "sku_right_of_found": 0.5
+    },
+    {
+     "px": "30-40",
+     "lo": 30,
+     "n": 17,
+     "found": 12,
+     "sku_right": 12,
+     "found_rate": 0.7059,
+     "sku_right_rate": 0.7059,
+     "sku_right_of_found": 1.0
+    },
+    {
+     "px": "40-60",
+     "lo": 40,
+     "n": 122,
+     "found": 111,
+     "sku_right": 107,
+     "found_rate": 0.9098,
+     "sku_right_rate": 0.877,
+     "sku_right_of_found": 0.964
+    },
+    {
+     "px": "60-100",
+     "lo": 60,
+     "n": 148,
+     "found": 140,
+     "sku_right": 139,
+     "found_rate": 0.9459,
+     "sku_right_rate": 0.9392,
+     "sku_right_of_found": 0.9929
+    },
+    {
+     "px": "100+",
+     "lo": 100,
+     "n": 61,
+     "found": 53,
+     "sku_right": 48,
+     "found_rate": 0.8689,
+     "sku_right_rate": 0.7869,
+     "sku_right_of_found": 0.9057
+    }
+   ],
+   "in_hand_20px_plus": {
+    "found": {
+     "n": 351,
+     "k": 318,
+     "rate": 0.906
+    },
+    "sku_right": {
+     "n": 351,
+     "k": 307,
+     "rate": 0.8746
+    },
+    "by_camera_kind": {
+     "checkout": {
+      "n": 87,
+      "k": 80,
+      "rate": 0.9195
+     },
+     "cooler": {
+      "n": 40,
+      "k": 34,
+      "rate": 0.85
+     },
+     "shelf": {
+      "n": 224,
+      "k": 193,
+      "rate": 0.8616
+     }
+    },
+    "by_visible_share": {
+     "25 to 50%": {
+      "n": 107,
+      "k": 78,
+      "rate": 0.729
+     },
+     "50 to 80%": {
+      "n": 158,
+      "k": 146,
+      "rate": 0.9241
+     },
+     "80%+": {
+      "n": 86,
+      "k": 83,
+      "rate": 0.9651
+     }
+    }
+   },
+   "in_hand_variant_confusion": {
+    "aldermoor_gold/aldermoor_menthol": {
+     "columns": [
+      "aldermoor_gold",
+      "aldermoor_menthol",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "aldermoor_gold": [
+       0,
+       0,
+       0,
+       0
+      ],
+      "aldermoor_menthol": [
+       0,
+       0,
+       0,
+       0
+      ]
+     },
+     "found": 0,
+     "sku_right": 0,
+     "confused_within_family": 0,
+     "confused_within_family_rate": null
+    },
+    "arcwave_original/arcwave_tropical/arcwave_berry": {
+     "columns": [
+      "arcwave_original",
+      "arcwave_tropical",
+      "arcwave_berry",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "arcwave_original": [
+       4,
+       0,
+       0,
+       0,
+       0
+      ],
+      "arcwave_tropical": [
+       0,
+       12,
+       0,
+       2,
+       1
+      ],
+      "arcwave_berry": [
+       0,
+       0,
+       5,
+       0,
+       0
+      ]
+     },
+     "found": 23,
+     "sku_right": 21,
+     "confused_within_family": 0,
+     "confused_within_family_rate": 0.0
+    },
+    "cocoa_crest/peanut_pilot/caramel_crest": {
+     "columns": [
+      "cocoa_crest",
+      "peanut_pilot",
+      "caramel_crest",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "cocoa_crest": [
+       28,
+       0,
+       1,
+       0,
+       3
+      ],
+      "peanut_pilot": [
+       0,
+       53,
+       2,
+       0,
+       3
+      ],
+      "caramel_crest": [
+       0,
+       0,
+       39,
+       0,
+       4
+      ]
+     },
+     "found": 123,
+     "sku_right": 120,
+     "confused_within_family": 3,
+     "confused_within_family_rate": 0.0244
+    },
+    "crunchly_classic/crunchly_sco/crunchly_bbq/sierra_nacho/sierra_ranch": {
+     "columns": [
+      "crunchly_classic",
+      "crunchly_sco",
+      "crunchly_bbq",
+      "sierra_nacho",
+      "sierra_ranch",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "crunchly_classic": [
+       4,
+       0,
+       0,
+       0,
+       0,
+       0,
+       1
+      ],
+      "crunchly_sco": [
+       0,
+       8,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "crunchly_bbq": [
+       0,
+       0,
+       3,
+       0,
+       0,
+       0,
+       1
+      ],
+      "sierra_nacho": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "sierra_ranch": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ]
+     },
+     "found": 15,
+     "sku_right": 15,
+     "confused_within_family": 0,
+     "confused_within_family_rate": 0.0
+    },
+    "fizzo_cola/fizzo_zero/fizzo_cherry/lumen_citrus": {
+     "columns": [
+      "fizzo_cola",
+      "fizzo_zero",
+      "fizzo_cherry",
+      "lumen_citrus",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "fizzo_cola": [
+       3,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "fizzo_zero": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "fizzo_cherry": [
+       0,
+       0,
+       5,
+       0,
+       1,
+       0
+      ],
+      "lumen_citrus": [
+       0,
+       0,
+       0,
+       13,
+       0,
+       0
+      ]
+     },
+     "found": 22,
+     "sku_right": 21,
+     "confused_within_family": 0,
+     "confused_within_family_rate": 0.0
+    },
+    "orchard_lemon/orchard_peach": {
+     "columns": [
+      "orchard_lemon",
+      "orchard_peach",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "orchard_lemon": [
+       0,
+       0,
+       0,
+       0
+      ],
+      "orchard_peach": [
+       0,
+       1,
+       0,
+       0
+      ]
+     },
+     "found": 1,
+     "sku_right": 1,
+     "confused_within_family": 0,
+     "confused_within_family_rate": 0.0
+    },
+    "pacer_glacier/pacer_orange/pacer_punch": {
+     "columns": [
+      "pacer_glacier",
+      "pacer_orange",
+      "pacer_punch",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "pacer_glacier": [
+       6,
+       0,
+       0,
+       1,
+       1
+      ],
+      "pacer_orange": [
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "pacer_punch": [
+       0,
+       0,
+       0,
+       0,
+       0
+      ]
+     },
+     "found": 7,
+     "sku_right": 6,
+     "confused_within_family": 0,
+     "confused_within_family_rate": 0.0
+    },
+    "relieva_ibu/relieva_aceta": {
+     "columns": [
+      "relieva_ibu",
+      "relieva_aceta",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "relieva_ibu": [
+       13,
+       1,
+       0,
+       2
+      ],
+      "relieva_aceta": [
+       2,
+       18,
+       0,
+       3
+      ]
+     },
+     "found": 34,
+     "sku_right": 31,
+     "confused_within_family": 3,
+     "confused_within_family_rate": 0.0882
+    },
+    "ridgeline_original/ridgeline_teriyaki": {
+     "columns": [
+      "ridgeline_original",
+      "ridgeline_teriyaki",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "ridgeline_original": [
+       6,
+       0,
+       0,
+       1
+      ],
+      "ridgeline_teriyaki": [
+       0,
+       12,
+       0,
+       0
+      ]
+     },
+     "found": 18,
+     "sku_right": 18,
+     "confused_within_family": 0,
+     "confused_within_family_rate": 0.0
+    },
+    "torqueline_5w30/torqueline_10w30": {
+     "columns": [
+      "torqueline_5w30",
+      "torqueline_10w30",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "torqueline_5w30": [
+       3,
+       0,
+       0,
+       0
+      ],
+      "torqueline_10w30": [
+       0,
+       11,
+       0,
+       4
+      ]
+     },
+     "found": 14,
+     "sku_right": 14,
+     "confused_within_family": 0,
+     "confused_within_family_rate": 0.0
+    },
+    "voltlink_usbc/voltlink_micro": {
+     "columns": [
+      "voltlink_usbc",
+      "voltlink_micro",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "voltlink_usbc": [
+       10,
+       0,
+       0,
+       1
+      ],
+      "voltlink_micro": [
+       0,
+       4,
+       0,
+       2
+      ]
+     },
+     "found": 14,
+     "sku_right": 14,
+     "confused_within_family": 0,
+     "confused_within_family_rate": 0.0
+    }
+   },
+   "groups_20px_plus": {
+    "in_hand": {
+     "n": 351,
+     "k": 307,
+     "rate": 0.8746
+    },
+    "on_counter": {
+     "n": 88,
+     "k": 67,
+     "rate": 0.7614
+    },
+    "shelf_front_clear": {
+     "n": 12405,
+     "k": 12275,
+     "rate": 0.9895
+    },
+    "shelf_front_partly_hidden": {
+     "n": 19252,
+     "k": 18829,
+     "rate": 0.978
+    },
+    "backstock": {
+     "n": 12240,
+     "k": 11666,
+     "rate": 0.9531
+    }
+   },
+   "hand_recall_reaching": {
+    "iou50": {
+     "n": 301,
+     "k": 230,
+     "rate": 0.7641
+    },
+    "iou30": {
+     "n": 301,
+     "k": 241,
+     "rate": 0.8007
+    },
+    "centre": {
+     "n": 301,
+     "k": 251,
+     "rate": 0.8339
+    }
+   },
+   "hand_recall_reaching_by_short_side": {
+    "5-15 px": {
+     "n": 12,
+     "k": 0,
+     "rate": 0.0
+    },
+    "15-30 px": {
+     "n": 36,
+     "k": 11,
+     "rate": 0.3056
+    },
+    "30-60 px": {
+     "n": 68,
+     "k": 44,
+     "rate": 0.6471
+    },
+    "60+ px": {
+     "n": 185,
+     "k": 175,
+     "rate": 0.9459
+    }
+   },
+   "hand_recall_all_labelled": {
+    "iou50": {
+     "n": 995,
+     "k": 785,
+     "rate": 0.7889
+    },
+    "iou30": {
+     "n": 995,
+     "k": 809,
+     "rate": 0.8131
+    },
+    "centre": {
+     "n": 995,
+     "k": 829,
+     "rate": 0.8332
+    }
+   },
+   "tiles": {
+    "map50": 0.9725,
+    "map50_95": 0.8723,
+    "per_class": [
+     {
+      "name": "fizzo_cola",
+      "ap50": 0.9834,
+      "ap50_95": 0.9032
+     },
+     {
+      "name": "fizzo_zero",
+      "ap50": 0.9817,
+      "ap50_95": 0.8443
+     },
+     {
+      "name": "fizzo_cherry",
+      "ap50": 0.98,
+      "ap50_95": 0.8797
+     },
+     {
+      "name": "lumen_citrus",
+      "ap50": 0.9776,
+      "ap50_95": 0.8436
+     },
+     {
+      "name": "arcwave_original",
+      "ap50": 0.9843,
+      "ap50_95": 0.8941
+     },
+     {
+      "name": "arcwave_tropical",
+      "ap50": 0.9832,
+      "ap50_95": 0.902
+     },
+     {
+      "name": "arcwave_berry",
+      "ap50": 0.9868,
+      "ap50_95": 0.8945
+     },
+     {
+      "name": "clearwell_water",
+      "ap50": 0.9806,
+      "ap50_95": 0.8316
+     },
+     {
+      "name": "orchard_lemon",
+      "ap50": 0.9648,
+      "ap50_95": 0.8952
+     },
+     {
+      "name": "orchard_peach",
+      "ap50": 0.9869,
+      "ap50_95": 0.9068
+     },
+     {
+      "name": "pacer_glacier",
+      "ap50": 0.9602,
+      "ap50_95": 0.8342
+     },
+     {
+      "name": "pacer_orange",
+      "ap50": 0.988,
+      "ap50_95": 0.9199
+     },
+     {
+      "name": "pacer_punch",
+      "ap50": 0.9704,
+      "ap50_95": 0.8774
+     },
+     {
+      "name": "crunchly_classic",
+      "ap50": 0.9578,
+      "ap50_95": 0.8763
+     },
+     {
+      "name": "crunchly_sco",
+      "ap50": 0.979,
+      "ap50_95": 0.9227
+     },
+     {
+      "name": "crunchly_bbq",
+      "ap50": 0.9786,
+      "ap50_95": 0.9136
+     },
+     {
+      "name": "sierra_nacho",
+      "ap50": 0.9638,
+      "ap50_95": 0.8908
+     },
+     {
+      "name": "sierra_ranch",
+      "ap50": 0.9718,
+      "ap50_95": 0.9159
+     },
+     {
+      "name": "ridgeline_original",
+      "ap50": 0.9776,
+      "ap50_95": 0.9063
+     },
+     {
+      "name": "ridgeline_teriyaki",
+      "ap50": 0.981,
+      "ap50_95": 0.9104
+     },
+     {
+      "name": "oatfield_cookies",
+      "ap50": 0.9559,
+      "ap50_95": 0.8741
+     },
+     {
+      "name": "morning_hoops",
+      "ap50": 0.9661,
+      "ap50_95": 0.8715
+     },
+     {
+      "name": "torqueline_5w30",
+      "ap50": 0.978,
+      "ap50_95": 0.8775
+     },
+     {
+      "name": "torqueline_10w30",
+      "ap50": 0.9568,
+      "ap50_95": 0.8408
+     },
+     {
+      "name": "relieva_ibu",
+      "ap50": 0.9737,
+      "ap50_95": 0.8728
+     },
+     {
+      "name": "relieva_aceta",
+      "ap50": 0.9722,
+      "ap50_95": 0.8724
+     },
+     {
+      "name": "voltlink_usbc",
+      "ap50": 0.9833,
+      "ap50_95": 0.9174
+     },
+     {
+      "name": "voltlink_micro",
+      "ap50": 0.9716,
+      "ap50_95": 0.8762
+     },
+     {
+      "name": "cocoa_crest",
+      "ap50": 0.9849,
+      "ap50_95": 0.8592
+     },
+     {
+      "name": "peanut_pilot",
+      "ap50": 0.9842,
+      "ap50_95": 0.8478
+     },
+     {
+      "name": "caramel_crest",
+      "ap50": 0.9805,
+      "ap50_95": 0.8342
+     },
+     {
+      "name": "aldermoor_gold",
+      "ap50": 0.9842,
+      "ap50_95": 0.8503
+     },
+     {
+      "name": "aldermoor_menthol",
+      "ap50": 0.988,
+      "ap50_95": 0.8543
+     },
+     {
+      "name": "hand",
+      "ap50": 0.8483,
+      "ap50_95": 0.6454
+     }
+    ]
+   },
+   "speed": {
+    "mps": {
+     "ms_per_640_tile": 11.8,
+     "tiles_per_s": 84.4,
+     "ms_per_frame": 51.4,
+     "frame": "1520x2688",
+     "tiles_per_frame": 15,
+     "frames_per_s": 19.46
+    },
+    "cpu": {
+     "ms_per_640_tile": 65.5,
+     "tiles_per_s": 15.3,
+     "ms_per_frame": 543.8,
+     "frame": "1520x2688",
+     "tiles_per_frame": 15,
+     "frames_per_s": 1.84
+    }
+   }
+  },
+  "sim_sku_hands_v3 + second look": {
+   "file": "/Users/kiromoussa/bree-vision/data/synth/weights/sim_sku_hands_v3.pt",
+   "counts": {
+    "frames": 484,
+    "item_predictions": 56022,
+    "item_box_precision": 0.8876,
+    "hand_predictions": 1075,
+    "hand_box_precision_iou30": 0.8019
+   },
+   "in_hand_by_px": [
+    {
+     "px": "0-10",
+     "lo": 0,
+     "n": 0,
+     "found": 0,
+     "sku_right": 0,
+     "found_rate": null,
+     "sku_right_rate": null,
+     "sku_right_of_found": null
+    },
+    {
+     "px": "10-15",
+     "lo": 10,
+     "n": 0,
+     "found": 0,
+     "sku_right": 0,
+     "found_rate": null,
+     "sku_right_rate": null,
+     "sku_right_of_found": null
+    },
+    {
+     "px": "15-20",
+     "lo": 15,
+     "n": 0,
+     "found": 0,
+     "sku_right": 0,
+     "found_rate": null,
+     "sku_right_rate": null,
+     "sku_right_of_found": null
+    },
+    {
+     "px": "20-25",
+     "lo": 20,
+     "n": 0,
+     "found": 0,
+     "sku_right": 0,
+     "found_rate": null,
+     "sku_right_rate": null,
+     "sku_right_of_found": null
+    },
+    {
+     "px": "25-30",
+     "lo": 25,
+     "n": 3,
+     "found": 3,
+     "sku_right": 1,
+     "found_rate": 1.0,
+     "sku_right_rate": 0.3333,
+     "sku_right_of_found": 0.3333
+    },
+    {
+     "px": "30-40",
+     "lo": 30,
+     "n": 17,
+     "found": 12,
+     "sku_right": 12,
+     "found_rate": 0.7059,
+     "sku_right_rate": 0.7059,
+     "sku_right_of_found": 1.0
+    },
+    {
+     "px": "40-60",
+     "lo": 40,
+     "n": 122,
+     "found": 114,
+     "sku_right": 109,
+     "found_rate": 0.9344,
+     "sku_right_rate": 0.8934,
+     "sku_right_of_found": 0.9561
+    },
+    {
+     "px": "60-100",
+     "lo": 60,
+     "n": 148,
+     "found": 141,
+     "sku_right": 140,
+     "found_rate": 0.9527,
+     "sku_right_rate": 0.9459,
+     "sku_right_of_found": 0.9929
+    },
+    {
+     "px": "100+",
+     "lo": 100,
+     "n": 61,
+     "found": 52,
+     "sku_right": 48,
+     "found_rate": 0.8525,
+     "sku_right_rate": 0.7869,
+     "sku_right_of_found": 0.9231
+    }
+   ],
+   "in_hand_20px_plus": {
+    "found": {
+     "n": 351,
+     "k": 322,
+     "rate": 0.9174
+    },
+    "sku_right": {
+     "n": 351,
+     "k": 310,
+     "rate": 0.8832
+    },
+    "by_camera_kind": {
+     "checkout": {
+      "n": 87,
+      "k": 80,
+      "rate": 0.9195
+     },
+     "cooler": {
+      "n": 40,
+      "k": 34,
+      "rate": 0.85
+     },
+     "shelf": {
+      "n": 224,
+      "k": 196,
+      "rate": 0.875
+     }
+    },
+    "by_visible_share": {
+     "25 to 50%": {
+      "n": 107,
+      "k": 81,
+      "rate": 0.757
+     },
+     "50 to 80%": {
+      "n": 158,
+      "k": 147,
+      "rate": 0.9304
+     },
+     "80%+": {
+      "n": 86,
+      "k": 82,
+      "rate": 0.9535
+     }
+    }
+   },
+   "in_hand_variant_confusion": {
+    "aldermoor_gold/aldermoor_menthol": {
+     "columns": [
+      "aldermoor_gold",
+      "aldermoor_menthol",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "aldermoor_gold": [
+       0,
+       0,
+       0,
+       0
+      ],
+      "aldermoor_menthol": [
+       0,
+       0,
+       0,
+       0
+      ]
+     },
+     "found": 0,
+     "sku_right": 0,
+     "confused_within_family": 0,
+     "confused_within_family_rate": null
+    },
+    "arcwave_original/arcwave_tropical/arcwave_berry": {
+     "columns": [
+      "arcwave_original",
+      "arcwave_tropical",
+      "arcwave_berry",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "arcwave_original": [
+       4,
+       0,
+       0,
+       0,
+       0
+      ],
+      "arcwave_tropical": [
+       0,
+       12,
+       0,
+       3,
+       0
+      ],
+      "arcwave_berry": [
+       0,
+       0,
+       5,
+       0,
+       0
+      ]
+     },
+     "found": 24,
+     "sku_right": 21,
+     "confused_within_family": 0,
+     "confused_within_family_rate": 0.0
+    },
+    "cocoa_crest/peanut_pilot/caramel_crest": {
+     "columns": [
+      "cocoa_crest",
+      "peanut_pilot",
+      "caramel_crest",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "cocoa_crest": [
+       28,
+       0,
+       1,
+       0,
+       3
+      ],
+      "peanut_pilot": [
+       0,
+       55,
+       0,
+       0,
+       3
+      ],
+      "caramel_crest": [
+       0,
+       0,
+       39,
+       1,
+       3
+      ]
+     },
+     "found": 124,
+     "sku_right": 122,
+     "confused_within_family": 1,
+     "confused_within_family_rate": 0.0081
+    },
+    "crunchly_classic/crunchly_sco/crunchly_bbq/sierra_nacho/sierra_ranch": {
+     "columns": [
+      "crunchly_classic",
+      "crunchly_sco",
+      "crunchly_bbq",
+      "sierra_nacho",
+      "sierra_ranch",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "crunchly_classic": [
+       3,
+       0,
+       0,
+       0,
+       0,
+       0,
+       2
+      ],
+      "crunchly_sco": [
+       0,
+       7,
+       0,
+       0,
+       0,
+       0,
+       1
+      ],
+      "crunchly_bbq": [
+       0,
+       0,
+       4,
+       0,
+       0,
+       0,
+       0
+      ],
+      "sierra_nacho": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "sierra_ranch": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ]
+     },
+     "found": 14,
+     "sku_right": 14,
+     "confused_within_family": 0,
+     "confused_within_family_rate": 0.0
+    },
+    "fizzo_cola/fizzo_zero/fizzo_cherry/lumen_citrus": {
+     "columns": [
+      "fizzo_cola",
+      "fizzo_zero",
+      "fizzo_cherry",
+      "lumen_citrus",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "fizzo_cola": [
+       3,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "fizzo_zero": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "fizzo_cherry": [
+       0,
+       0,
+       5,
+       0,
+       1,
+       0
+      ],
+      "lumen_citrus": [
+       0,
+       0,
+       0,
+       13,
+       0,
+       0
+      ]
+     },
+     "found": 22,
+     "sku_right": 21,
+     "confused_within_family": 0,
+     "confused_within_family_rate": 0.0
+    },
+    "orchard_lemon/orchard_peach": {
+     "columns": [
+      "orchard_lemon",
+      "orchard_peach",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "orchard_lemon": [
+       0,
+       0,
+       0,
+       0
+      ],
+      "orchard_peach": [
+       0,
+       1,
+       0,
+       0
+      ]
+     },
+     "found": 1,
+     "sku_right": 1,
+     "confused_within_family": 0,
+     "confused_within_family_rate": 0.0
+    },
+    "pacer_glacier/pacer_orange/pacer_punch": {
+     "columns": [
+      "pacer_glacier",
+      "pacer_orange",
+      "pacer_punch",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "pacer_glacier": [
+       6,
+       0,
+       0,
+       1,
+       1
+      ],
+      "pacer_orange": [
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "pacer_punch": [
+       0,
+       0,
+       0,
+       0,
+       0
+      ]
+     },
+     "found": 7,
+     "sku_right": 6,
+     "confused_within_family": 0,
+     "confused_within_family_rate": 0.0
+    },
+    "relieva_ibu/relieva_aceta": {
+     "columns": [
+      "relieva_ibu",
+      "relieva_aceta",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "relieva_ibu": [
+       13,
+       1,
+       0,
+       2
+      ],
+      "relieva_aceta": [
+       2,
+       18,
+       1,
+       2
+      ]
+     },
+     "found": 35,
+     "sku_right": 31,
+     "confused_within_family": 3,
+     "confused_within_family_rate": 0.0857
+    },
+    "ridgeline_original/ridgeline_teriyaki": {
+     "columns": [
+      "ridgeline_original",
+      "ridgeline_teriyaki",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "ridgeline_original": [
+       7,
+       0,
+       0,
+       0
+      ],
+      "ridgeline_teriyaki": [
+       0,
+       12,
+       0,
+       0
+      ]
+     },
+     "found": 19,
+     "sku_right": 19,
+     "confused_within_family": 0,
+     "confused_within_family_rate": 0.0
+    },
+    "torqueline_5w30/torqueline_10w30": {
+     "columns": [
+      "torqueline_5w30",
+      "torqueline_10w30",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "torqueline_5w30": [
+       3,
+       0,
+       0,
+       0
+      ],
+      "torqueline_10w30": [
+       0,
+       11,
+       0,
+       4
+      ]
+     },
+     "found": 14,
+     "sku_right": 14,
+     "confused_within_family": 0,
+     "confused_within_family_rate": 0.0
+    },
+    "voltlink_usbc/voltlink_micro": {
+     "columns": [
+      "voltlink_usbc",
+      "voltlink_micro",
+      "other",
+      "missed"
+     ],
+     "rows": {
+      "voltlink_usbc": [
+       11,
+       0,
+       0,
+       0
+      ],
+      "voltlink_micro": [
+       0,
+       4,
+       0,
+       2
+      ]
+     },
+     "found": 15,
+     "sku_right": 15,
+     "confused_within_family": 0,
+     "confused_within_family_rate": 0.0
+    }
+   },
+   "groups_20px_plus": {
+    "in_hand": {
+     "n": 351,
+     "k": 310,
+     "rate": 0.8832
+    },
+    "on_counter": {
+     "n": 88,
+     "k": 68,
+     "rate": 0.7727
+    },
+    "shelf_front_clear": {
+     "n": 12405,
+     "k": 12280,
+     "rate": 0.9899
+    },
+    "shelf_front_partly_hidden": {
+     "n": 19252,
+     "k": 18861,
+     "rate": 0.9797
+    },
+    "backstock": {
+     "n": 12240,
+     "k": 11689,
+     "rate": 0.955
+    }
+   },
+   "hand_recall_reaching": {
+    "iou50": {
+     "n": 301,
+     "k": 238,
+     "rate": 0.7907
+    },
+    "iou30": {
+     "n": 301,
+     "k": 246,
+     "rate": 0.8173
+    },
+    "centre": {
+     "n": 301,
+     "k": 255,
+     "rate": 0.8472
+    }
+   },
+   "hand_recall_reaching_by_short_side": {
+    "5-15 px": {
+     "n": 12,
+     "k": 1,
+     "rate": 0.0833
+    },
+    "15-30 px": {
+     "n": 36,
+     "k": 13,
+     "rate": 0.3611
+    },
+    "30-60 px": {
+     "n": 68,
+     "k": 47,
+     "rate": 0.6912
+    },
+    "60+ px": {
+     "n": 185,
+     "k": 177,
+     "rate": 0.9568
+    }
+   },
+   "hand_recall_all_labelled": {
+    "iou50": {
+     "n": 995,
+     "k": 802,
+     "rate": 0.806
+    },
+    "iou30": {
+     "n": 995,
+     "k": 820,
+     "rate": 0.8241
+    },
+    "centre": {
+     "n": 995,
+     "k": 839,
+     "rate": 0.8432
+    }
+   }
+  }
+ },
+ "conf": 0.25,
+ "acceptance": {
+  "sim_sku: in_hand_sku_right_20px": "NOT met: 0.6695 against 0.85",
+  "sim_sku: hand_recall_reach": "NOT met: 0.0 against 0.9",
+  "sim_sku_hands_v2: in_hand_sku_right_20px": "NOT met: 0.7407 against 0.85",
+  "sim_sku_hands_v2: hand_recall_reach": "NOT met: 0.5681 against 0.9",
+  "sim_sku_hands_v3: in_hand_sku_right_20px": "met: 0.8746 against 0.85",
+  "sim_sku_hands_v3: hand_recall_reach": "NOT met: 0.7641 against 0.9",
+  "sim_sku_hands_v3 + second look: in_hand_sku_right_20px": "met: 0.8832 against 0.85",
+  "sim_sku_hands_v3 + second look: hand_recall_reach": "NOT met: 0.7907 against 0.9"
+ }
+}

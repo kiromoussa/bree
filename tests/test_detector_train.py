@@ -115,12 +115,15 @@ def test_backend_runs_products_around_people_only():
     class Sku:
         names = {0: "fizzo_cola", 1: "not_in_store"}
 
-        def __call__(self, image, rois=None):
+        def detect(self, image, rois=None):
             self.rois = rois
-            return np.array([[150, 150, 170, 190], [160, 160, 180, 200]], np.float32), np.array([0.8, 0.7], np.float32), np.array([0, 1])
+            return (np.array([[150, 150, 170, 190], [160, 160, 180, 200]], np.float32), np.array([0.8, 0.7], np.float32), np.array([0, 1])), \
+                (np.array([[140, 180, 160, 200]], np.float32), np.array([0.6], np.float32))
 
     sku = Sku()
-    persons, products = SimSkuBackend(Base(), sku, {"fizzo_cola": "fizzo_cola"})(np.zeros((480, 640, 3), np.uint8))
+    backend = SimSkuBackend(Base(), sku, {"fizzo_cola": "fizzo_cola"})
+    persons, products = backend(np.zeros((480, 640, 3), np.uint8))
+    assert backend.last_hands[0].tolist() == [[140, 180, 160, 200]]
     assert len(persons) == 1 and products.labels == ["fizzo_cola"] and sku.rois.tolist() == [[75, 50, 225, 350]]
 
     class Nobody(Base):

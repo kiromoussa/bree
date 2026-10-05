@@ -1,0 +1,734 @@
+{
+  "cameras_layout": "/Users/kiromoussa/bree-vision/tests/fixtures/calib_layout.json",
+  "store_layout": "/Users/kiromoussa/bree-vision/tests/fixtures/calib_layout.json",
+  "synthetic": true,
+  "calibration": {
+    "what": "SYNTHETIC marks: each layout camera calibrated from up to 12 marks it sees (floor grid, fixture corners, shelf edges), Gaussian click noise",
+    "seed": 0,
+    "rows": {
+      "click_1px_lens_known": {
+        "cameras": 45,
+        "calibrated": 45,
+        "not_calibrated": [],
+        "reprojection_rms_px": {
+          "n": 45,
+          "median": 1.1666,
+          "p90": 1.4473,
+          "max": 1.6076
+        },
+        "position_error_m": {
+          "n": 45,
+          "median": 0.0024,
+          "p90": 0.0094,
+          "max": 0.0182
+        },
+        "rotation_error_deg": {
+          "n": 45,
+          "median": 0.0405,
+          "p90": 0.1192,
+          "max": 0.1919
+        },
+        "hfov_error_pct": {
+          "n": 45,
+          "median": 0.0,
+          "p90": 0.0,
+          "max": 0.0
+        },
+        "floor_leave_one_out_m": {
+          "n": 19,
+          "median": 0.0379,
+          "p90": 0.7568,
+          "max": 3.2468
+        }
+      },
+      "click_1px_focal_estimated": {
+        "cameras": 45,
+        "calibrated": 45,
+        "not_calibrated": [],
+        "reprojection_rms_px": {
+          "n": 45,
+          "median": 1.1431,
+          "p90": 1.4088,
+          "max": 1.5892
+        },
+        "position_error_m": {
+          "n": 45,
+          "median": 0.0079,
+          "p90": 0.019,
+          "max": 0.0402
+        },
+        "rotation_error_deg": {
+          "n": 45,
+          "median": 0.0526,
+          "p90": 0.1303,
+          "max": 0.2713
+        },
+        "hfov_error_pct": {
+          "n": 45,
+          "median": 0.1849,
+          "p90": 0.4485,
+          "max": 0.9032
+        },
+        "floor_leave_one_out_m": {
+          "n": 19,
+          "median": 0.0379,
+          "p90": 0.7568,
+          "max": 3.2468
+        }
+      },
+      "click_2px_lens_known": {
+        "cameras": 45,
+        "calibrated": 45,
+        "not_calibrated": [],
+        "reprojection_rms_px": {
+          "n": 45,
+          "median": 2.333,
+          "p90": 2.8946,
+          "max": 3.2152
+        },
+        "position_error_m": {
+          "n": 45,
+          "median": 0.0047,
+          "p90": 0.0188,
+          "max": 0.0365
+        },
+        "rotation_error_deg": {
+          "n": 45,
+          "median": 0.0811,
+          "p90": 0.2376,
+          "max": 0.3859
+        },
+        "hfov_error_pct": {
+          "n": 45,
+          "median": 0.0,
+          "p90": 0.0,
+          "max": 0.0
+        },
+        "floor_leave_one_out_m": {
+          "n": 19,
+          "median": 0.0788,
+          "p90": 1.1888,
+          "max": 20.2085
+        }
+      },
+      "click_2px_focal_estimated": {
+        "cameras": 45,
+        "calibrated": 45,
+        "not_calibrated": [],
+        "reprojection_rms_px": {
+          "n": 45,
+          "median": 2.2855,
+          "p90": 2.8175,
+          "max": 3.1784
+        },
+        "position_error_m": {
+          "n": 45,
+          "median": 0.0158,
+          "p90": 0.038,
+          "max": 0.081
+        },
+        "rotation_error_deg": {
+          "n": 45,
+          "median": 0.1054,
+          "p90": 0.2605,
+          "max": 0.5472
+        },
+        "hfov_error_pct": {
+          "n": 45,
+          "median": 0.3708,
+          "p90": 0.8979,
+          "max": 1.8098
+        },
+        "floor_leave_one_out_m": {
+          "n": 19,
+          "median": 0.0788,
+          "p90": 1.1888,
+          "max": 20.2085
+        }
+      },
+      "click_5px_lens_known": {
+        "cameras": 45,
+        "calibrated": 45,
+        "not_calibrated": [],
+        "reprojection_rms_px": {
+          "n": 45,
+          "median": 5.8312,
+          "p90": 7.2368,
+          "max": 8.0379
+        },
+        "position_error_m": {
+          "n": 45,
+          "median": 0.0118,
+          "p90": 0.0469,
+          "max": 0.0911
+        },
+        "rotation_error_deg": {
+          "n": 45,
+          "median": 0.2036,
+          "p90": 0.5847,
+          "max": 0.9806
+        },
+        "hfov_error_pct": {
+          "n": 45,
+          "median": 0.0,
+          "p90": 0.0,
+          "max": 0.0
+        },
+        "floor_leave_one_out_m": {
+          "n": 19,
+          "median": 0.2512,
+          "p90": 1.1313,
+          "max": 392.544
+        }
+      },
+      "click_5px_focal_estimated": {
+        "cameras": 45,
+        "calibrated": 45,
+        "not_calibrated": [],
+        "reprojection_rms_px": {
+          "n": 45,
+          "median": 5.709,
+          "p90": 7.0435,
+          "max": 7.946
+        },
+        "position_error_m": {
+          "n": 45,
+          "median": 0.0397,
+          "p90": 0.0954,
+          "max": 0.2055
+        },
+        "rotation_error_deg": {
+          "n": 45,
+          "median": 0.2638,
+          "p90": 0.6505,
+          "max": 1.4041
+        },
+        "hfov_error_pct": {
+          "n": 45,
+          "median": 0.9326,
+          "p90": 2.2504,
+          "max": 4.5491
+        },
+        "floor_leave_one_out_m": {
+          "n": 19,
+          "median": 0.2512,
+          "p90": 1.1313,
+          "max": 392.544
+        }
+      }
+    }
+  },
+  "slots": {
+    "what": "SYNTHETIC reaches, one per slot; item cameras of the layout; fixtures block, bodies do not",
+    "seed": 0,
+    "coverage": {
+      "slots": 2349,
+      "item_cameras": 41,
+      "seen_by_0": 5,
+      "seen_by_1": 785,
+      "seen_by_2_or_more": 1559
+    },
+    "rows": {
+      "pixel 0.29 px, pointing 0.1 deg (the simulator's defaults)": {
+        "slots_with_a_view": 2344,
+        "slots_two_view": 1559,
+        "cameras_not_calibrated": [],
+        "two_view_exact": 0.7979,
+        "two_view_right_sku": 0.9974,
+        "two_view_plain_nearest_exact": 0.7992,
+        "one_view_hand_exact_same_slots": 0.5997,
+        "one_view_hand_right_sku_same_slots": 0.9801,
+        "one_view_item_exact_same_slots": 0.9885,
+        "one_view_item_right_sku_same_slots": 0.9897,
+        "deployed_exact_all_seen_slots": 0.7581,
+        "deployed_right_sku_all_seen_slots": 0.9936,
+        "one_view_hand_exact_all_seen_slots": 0.6263,
+        "one_view_item_exact_all_seen_slots": 0.9923,
+        "two_view_error_m": {
+          "n": 1559,
+          "median": 0.0616,
+          "p90": 0.1009,
+          "max": 0.2408
+        },
+        "two_view_predicted_sigma_m": {
+          "n": 1559,
+          "median": 0.035,
+          "p90": 0.093,
+          "max": 0.362
+        }
+      },
+      "pixel 2 px, perfect calibration": {
+        "slots_with_a_view": 2344,
+        "slots_two_view": 1559,
+        "cameras_not_calibrated": [],
+        "two_view_exact": 0.8403,
+        "two_view_right_sku": 1.0,
+        "two_view_plain_nearest_exact": 0.8416,
+        "one_view_hand_exact_same_slots": 0.6023,
+        "one_view_hand_right_sku_same_slots": 0.982,
+        "one_view_item_exact_same_slots": 0.9929,
+        "one_view_item_right_sku_same_slots": 0.9929,
+        "deployed_exact_all_seen_slots": 0.791,
+        "deployed_right_sku_all_seen_slots": 0.9953,
+        "one_view_hand_exact_all_seen_slots": 0.6327,
+        "one_view_item_exact_all_seen_slots": 0.9953,
+        "two_view_error_m": {
+          "n": 1559,
+          "median": 0.0604,
+          "p90": 0.0952,
+          "max": 0.1985
+        },
+        "two_view_predicted_sigma_m": {
+          "n": 1559,
+          "median": 0.012,
+          "p90": 0.028,
+          "max": 0.077
+        }
+      },
+      "pixel 5 px, perfect calibration": {
+        "slots_with_a_view": 2344,
+        "slots_two_view": 1559,
+        "cameras_not_calibrated": [],
+        "two_view_exact": 0.728,
+        "two_view_right_sku": 0.9987,
+        "two_view_plain_nearest_exact": 0.6908,
+        "one_view_hand_exact_same_slots": 0.5953,
+        "one_view_hand_right_sku_same_slots": 0.9808,
+        "one_view_item_exact_same_slots": 0.991,
+        "one_view_item_right_sku_same_slots": 0.9929,
+        "deployed_exact_all_seen_slots": 0.7108,
+        "deployed_right_sku_all_seen_slots": 0.9945,
+        "one_view_hand_exact_all_seen_slots": 0.6224,
+        "one_view_item_exact_all_seen_slots": 0.994,
+        "two_view_error_m": {
+          "n": 1559,
+          "median": 0.07,
+          "p90": 0.1277,
+          "max": 0.4182
+        },
+        "two_view_predicted_sigma_m": {
+          "n": 1559,
+          "median": 0.03,
+          "p90": 0.071,
+          "max": 0.184
+        }
+      },
+      "pixel 5 px, calibration 1 cm / 0.1 deg": {
+        "slots_with_a_view": 2344,
+        "slots_two_view": 1559,
+        "cameras_not_calibrated": [],
+        "two_view_exact": 0.6671,
+        "two_view_right_sku": 0.9929,
+        "two_view_plain_nearest_exact": 0.5606,
+        "one_view_hand_exact_same_slots": 0.5407,
+        "one_view_hand_right_sku_same_slots": 0.9756,
+        "one_view_item_exact_same_slots": 0.8704,
+        "one_view_item_right_sku_same_slots": 0.991,
+        "deployed_exact_all_seen_slots": 0.6625,
+        "deployed_right_sku_all_seen_slots": 0.9889,
+        "one_view_hand_exact_all_seen_slots": 0.5785,
+        "one_view_item_exact_all_seen_slots": 0.9006,
+        "two_view_error_m": {
+          "n": 1559,
+          "median": 0.0814,
+          "p90": 0.1945,
+          "max": 0.6497
+        },
+        "two_view_predicted_sigma_m": {
+          "n": 1559,
+          "median": 0.069,
+          "p90": 0.175,
+          "max": 0.43
+        }
+      },
+      "pixel 5 px, calibration 2 cm / 0.2 deg (default model)": {
+        "slots_with_a_view": 2344,
+        "slots_two_view": 1559,
+        "cameras_not_calibrated": [],
+        "two_view_exact": 0.56,
+        "two_view_right_sku": 0.9872,
+        "two_view_plain_nearest_exact": 0.3855,
+        "one_view_hand_exact_same_slots": 0.4625,
+        "one_view_hand_right_sku_same_slots": 0.9692,
+        "one_view_item_exact_same_slots": 0.6376,
+        "one_view_item_right_sku_same_slots": 0.9872,
+        "deployed_exact_all_seen_slots": 0.567,
+        "deployed_right_sku_all_seen_slots": 0.9829,
+        "one_view_hand_exact_all_seen_slots": 0.5021,
+        "one_view_item_exact_all_seen_slots": 0.7044,
+        "two_view_error_m": {
+          "n": 1559,
+          "median": 0.1062,
+          "p90": 0.2953,
+          "max": 0.8617
+        },
+        "two_view_predicted_sigma_m": {
+          "n": 1559,
+          "median": 0.129,
+          "p90": 0.329,
+          "max": 0.746
+        }
+      },
+      "pixel 5 px, calibration 5 cm / 0.5 deg": {
+        "slots_with_a_view": 2344,
+        "slots_two_view": 1559,
+        "cameras_not_calibrated": [],
+        "two_view_exact": 0.3284,
+        "two_view_right_sku": 0.9557,
+        "two_view_plain_nearest_exact": 0.1418,
+        "one_view_hand_exact_same_slots": 0.2681,
+        "one_view_hand_right_sku_same_slots": 0.9012,
+        "one_view_item_exact_same_slots": 0.2739,
+        "one_view_item_right_sku_same_slots": 0.9237,
+        "deployed_exact_all_seen_slots": 0.343,
+        "deployed_right_sku_all_seen_slots": 0.9403,
+        "one_view_hand_exact_all_seen_slots": 0.3029,
+        "one_view_item_exact_all_seen_slots": 0.3434,
+        "two_view_error_m": {
+          "n": 1559,
+          "median": 0.197,
+          "p90": 0.6335,
+          "max": 1.6337
+        },
+        "two_view_predicted_sigma_m": {
+          "n": 1559,
+          "median": 0.312,
+          "p90": 0.7742,
+          "max": 1.576
+        }
+      },
+      "pixel 10 px, calibration 2 cm / 0.2 deg": {
+        "slots_with_a_view": 2344,
+        "slots_two_view": 1559,
+        "cameras_not_calibrated": [],
+        "two_view_exact": 0.5343,
+        "two_view_right_sku": 0.9846,
+        "two_view_plain_nearest_exact": 0.3765,
+        "one_view_hand_exact_same_slots": 0.4394,
+        "one_view_hand_right_sku_same_slots": 0.9647,
+        "one_view_item_exact_same_slots": 0.6228,
+        "one_view_item_right_sku_same_slots": 0.9846,
+        "deployed_exact_all_seen_slots": 0.5367,
+        "deployed_right_sku_all_seen_slots": 0.9799,
+        "one_view_hand_exact_all_seen_slots": 0.4735,
+        "one_view_item_exact_all_seen_slots": 0.6694,
+        "two_view_error_m": {
+          "n": 1559,
+          "median": 0.1123,
+          "p90": 0.3492,
+          "max": 1.3903
+        },
+        "two_view_predicted_sigma_m": {
+          "n": 1559,
+          "median": 0.138,
+          "p90": 0.346,
+          "max": 0.772
+        }
+      },
+      "pixel 20 px, calibration 2 cm / 0.2 deg": {
+        "slots_with_a_view": 2344,
+        "slots_two_view": 1556,
+        "cameras_not_calibrated": [],
+        "two_view_exact": 0.4781,
+        "two_view_right_sku": 0.9794,
+        "two_view_plain_nearest_exact": 0.2924,
+        "one_view_hand_exact_same_slots": 0.3888,
+        "one_view_hand_right_sku_same_slots": 0.9422,
+        "one_view_item_exact_same_slots": 0.545,
+        "one_view_item_right_sku_same_slots": 0.9807,
+        "deployed_exact_all_seen_slots": 0.468,
+        "deployed_right_sku_all_seen_slots": 0.9646,
+        "one_view_hand_exact_all_seen_slots": 0.4087,
+        "one_view_item_exact_all_seen_slots": 0.5691,
+        "two_view_error_m": {
+          "n": 1556,
+          "median": 0.1427,
+          "p90": 0.5204,
+          "max": 2.6309
+        },
+        "two_view_predicted_sigma_m": {
+          "n": 1556,
+          "median": 0.173,
+          "p90": 0.421,
+          "max": 1.003
+        }
+      },
+      "pixel 5 px, cameras calibrated by the tool (2 px clicks, 12 marks)": {
+        "slots_with_a_view": 2344,
+        "slots_two_view": 1559,
+        "cameras_not_calibrated": [],
+        "two_view_exact": 0.7024,
+        "two_view_right_sku": 0.9968,
+        "two_view_plain_nearest_exact": 0.6966,
+        "one_view_hand_exact_same_slots": 0.5747,
+        "one_view_hand_right_sku_same_slots": 0.9788,
+        "one_view_item_exact_same_slots": 0.9865,
+        "one_view_item_right_sku_same_slots": 0.9929,
+        "deployed_exact_all_seen_slots": 0.6852,
+        "deployed_right_sku_all_seen_slots": 0.9945,
+        "one_view_hand_exact_all_seen_slots": 0.6003,
+        "one_view_item_exact_all_seen_slots": 0.9906,
+        "two_view_error_m": {
+          "n": 1559,
+          "median": 0.0678,
+          "p90": 0.1345,
+          "max": 0.5595
+        },
+        "two_view_predicted_sigma_m": {
+          "n": 1559,
+          "median": 0.13,
+          "p90": 0.3294,
+          "max": 0.995
+        }
+      }
+    }
+  },
+  "identity_2_cameras": {
+    "what": "SYNTHETIC shoppers under the layout's overhead cameras; identity logic only",
+    "cameras": [
+      "TRACK-1",
+      "TRACK-2"
+    ],
+    "door_cameras": [
+      "TRACK-1",
+      "TRACK-2"
+    ],
+    "episodes": 200,
+    "seed": 0,
+    "click_px": 2.0,
+    "foot_px": 4.0,
+    "rows": {
+      "off": {
+        "shoppers": 683,
+        "tracks": 6123,
+        "handoffs_live": 3347,
+        "handoffs_live_ok": 2044,
+        "handoffs_gap": 2093,
+        "handoffs_gap_ok": 451,
+        "false_merges": 776,
+        "false_merges_silent": 776,
+        "splits": 2815,
+        "clean_visits": 1,
+        "visits_uncertain": 0,
+        "shoppers_never_seen": 0,
+        "exits_ok": 612,
+        "exits_wrong": 53,
+        "left_inside_at_end": 0,
+        "handoff_success": 0.4586,
+        "handoff_live_success": 0.6107,
+        "handoff_gap_success": 0.2155,
+        "clean_visit_rate": 0.0015,
+        "closed_world": {}
+      },
+      "reid": {
+        "shoppers": 683,
+        "tracks": 6123,
+        "handoffs_live": 3347,
+        "handoffs_live_ok": 3047,
+        "handoffs_gap": 2093,
+        "handoffs_gap_ok": 1854,
+        "false_merges": 246,
+        "false_merges_silent": 246,
+        "splits": 435,
+        "clean_visits": 283,
+        "visits_uncertain": 0,
+        "shoppers_never_seen": 0,
+        "exits_ok": 659,
+        "exits_wrong": 22,
+        "left_inside_at_end": 0,
+        "handoff_success": 0.9009,
+        "handoff_live_success": 0.9104,
+        "handoff_gap_success": 0.8858,
+        "clean_visit_rate": 0.4143,
+        "closed_world": {}
+      },
+      "closed_world": {
+        "shoppers": 683,
+        "tracks": 6123,
+        "handoffs_live": 3347,
+        "handoffs_live_ok": 3149,
+        "handoffs_gap": 2093,
+        "handoffs_gap_ok": 1361,
+        "false_merges": 904,
+        "false_merges_silent": 62,
+        "splits": 699,
+        "clean_visits": 146,
+        "visits_uncertain": 672,
+        "shoppers_never_seen": 0,
+        "exits_ok": 640,
+        "exits_wrong": 0,
+        "left_inside_at_end": 63,
+        "handoff_success": 0.829,
+        "handoff_live_success": 0.9408,
+        "handoff_gap_success": 0.6503,
+        "clean_visit_rate": 0.2138,
+        "closed_world": {
+          "births_entrance": 662,
+          "handoffs_live": 3586,
+          "assigned_lost": 1828,
+          "uncertain_marks": 4332,
+          "exits": 640,
+          "births_missed_entry": 47,
+          "second_box_frames_ignored": 2,
+          "exits_vetoed": 2
+        }
+      },
+      "closed_world_reid": {
+        "shoppers": 683,
+        "tracks": 6123,
+        "handoffs_live": 3347,
+        "handoffs_live_ok": 3296,
+        "handoffs_gap": 2093,
+        "handoffs_gap_ok": 1930,
+        "false_merges": 190,
+        "false_merges_silent": 3,
+        "splits": 173,
+        "clean_visits": 517,
+        "visits_uncertain": 239,
+        "shoppers_never_seen": 0,
+        "exits_ok": 642,
+        "exits_wrong": 0,
+        "left_inside_at_end": 61,
+        "handoff_success": 0.9607,
+        "handoff_live_success": 0.9848,
+        "handoff_gap_success": 0.9221,
+        "clean_visit_rate": 0.757,
+        "closed_world": {
+          "births_entrance": 674,
+          "handoffs_live": 3570,
+          "assigned_lost": 1846,
+          "exits": 642,
+          "uncertain_marks": 928,
+          "births_missed_entry": 33,
+          "second_box_frames_ignored": 3
+        }
+      }
+    }
+  },
+  "identity_4_cameras": {
+    "what": "SYNTHETIC shoppers under the layout's overhead cameras; identity logic only",
+    "cameras": [
+      "TRACK-1",
+      "TRACK-2",
+      "TRACK-3",
+      "TRACK-4"
+    ],
+    "door_cameras": [
+      "TRACK-1",
+      "TRACK-2"
+    ],
+    "episodes": 200,
+    "seed": 0,
+    "click_px": 2.0,
+    "foot_px": 4.0,
+    "rows": {
+      "off": {
+        "shoppers": 703,
+        "tracks": 8505,
+        "handoffs_live": 5830,
+        "handoffs_live_ok": 3589,
+        "handoffs_gap": 1972,
+        "handoffs_gap_ok": 367,
+        "false_merges": 1370,
+        "false_merges_silent": 1370,
+        "splits": 3500,
+        "clean_visits": 0,
+        "visits_uncertain": 0,
+        "shoppers_never_seen": 0,
+        "exits_ok": 602,
+        "exits_wrong": 80,
+        "left_inside_at_end": 0,
+        "handoff_success": 0.507,
+        "handoff_live_success": 0.6156,
+        "handoff_gap_success": 0.1861,
+        "clean_visit_rate": 0.0,
+        "closed_world": {}
+      },
+      "reid": {
+        "shoppers": 703,
+        "tracks": 8505,
+        "handoffs_live": 5830,
+        "handoffs_live_ok": 5251,
+        "handoffs_gap": 1972,
+        "handoffs_gap_ok": 1741,
+        "false_merges": 426,
+        "false_merges_silent": 426,
+        "splits": 566,
+        "clean_visits": 220,
+        "visits_uncertain": 0,
+        "shoppers_never_seen": 0,
+        "exits_ok": 669,
+        "exits_wrong": 32,
+        "left_inside_at_end": 0,
+        "handoff_success": 0.8962,
+        "handoff_live_success": 0.9007,
+        "handoff_gap_success": 0.8829,
+        "clean_visit_rate": 0.3129,
+        "closed_world": {}
+      },
+      "closed_world": {
+        "shoppers": 703,
+        "tracks": 8505,
+        "handoffs_live": 5830,
+        "handoffs_live_ok": 5503,
+        "handoffs_gap": 1972,
+        "handoffs_gap_ok": 1242,
+        "false_merges": 1008,
+        "false_merges_silent": 70,
+        "splits": 806,
+        "clean_visits": 135,
+        "visits_uncertain": 700,
+        "shoppers_never_seen": 0,
+        "exits_ok": 658,
+        "exits_wrong": 0,
+        "left_inside_at_end": 72,
+        "handoff_success": 0.8645,
+        "handoff_live_success": 0.9439,
+        "handoff_gap_success": 0.6298,
+        "clean_visit_rate": 0.192,
+        "closed_world": {
+          "births_entrance": 682,
+          "handoffs_live": 5894,
+          "assigned_lost": 1859,
+          "uncertain_marks": 6296,
+          "births_missed_entry": 70,
+          "exits": 658,
+          "second_box_frames_ignored": 37,
+          "exits_vetoed": 3
+        }
+      },
+      "closed_world_reid": {
+        "shoppers": 703,
+        "tracks": 8505,
+        "handoffs_live": 5830,
+        "handoffs_live_ok": 5760,
+        "handoffs_gap": 1972,
+        "handoffs_gap_ok": 1814,
+        "false_merges": 196,
+        "false_merges_silent": 19,
+        "splits": 181,
+        "clean_visits": 535,
+        "visits_uncertain": 237,
+        "shoppers_never_seen": 0,
+        "exits_ok": 659,
+        "exits_wrong": 0,
+        "left_inside_at_end": 67,
+        "handoff_success": 0.9708,
+        "handoff_live_success": 0.988,
+        "handoff_gap_success": 0.9199,
+        "clean_visit_rate": 0.761,
+        "closed_world": {
+          "births_entrance": 694,
+          "handoffs_live": 5893,
+          "assigned_lost": 1877,
+          "exits": 659,
+          "uncertain_marks": 1231,
+          "births_missed_entry": 41,
+          "second_box_frames_ignored": 26,
+          "exits_vetoed": 2
+        }
+      }
+    }
+  },
+  "wall_s": 190.1
+}

@@ -265,7 +265,10 @@ def test_pipeline_writes_the_downgrade_reason_to_ledger_log(tmp_path):
 # ------------------------------------------------------------------ scope, regression guard
 
 
-def test_multi_camera_stores_fall_back_to_the_floor_plan_handoff(tmp_path):
+def test_multi_camera_stores_run_one_store_wide_pool(tmp_path):
+    """Several cameras: no per-camera closed world (a person walking in from another camera's area is not
+    someone lost here). The pool lives in MultiCamIdentity (tests/test_multicam_closed_world.py);
+    `closed_world: false` in the handoff settings keeps the plain floor-plan handoff."""
     import yaml
     from bree.track.multicam import StoreEvents
     cfg = yaml.safe_load((ROOT / "configs" / "store_gas_station_small.yaml").read_text())
@@ -275,8 +278,12 @@ def test_multi_camera_stores_fall_back_to_the_floor_plan_handoff(tmp_path):
     store = load_store_config(tmp_path / "s.yaml")
     assert EventEngine(store).r.closed_world and EventEngine(store)._floor is not None    # one camera: on, floor metres
     se = StoreEvents({"a": store, "b": store})
-    assert not any(e.r.closed_world for e in se.engines.values())
-    assert all("single-camera" in e.log[0] for e in se.engines.values())
+    assert not any(e.r.closed_world or e.r.stitch_dist for e in se.engines.values())
+    assert se.identity.closed_world and set(se.identity.entry) == {"a", "b"}
+    assert all("store-wide" in e.log[0] for e in se.engines.values())
+    se = StoreEvents({"a": store, "b": store}, {"closed_world": False})
+    assert not se.identity.closed_world and not any(e.r.closed_world for e in se.engines.values())
+    assert all(e.r.stitch_dist > 0 for e in se.engines.values())
 
 
 def test_scripted_store_does_not_regress():

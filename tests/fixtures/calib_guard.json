@@ -1,0 +1,199 @@
+{
+ "episodes": 25,
+ "seed": 0,
+ "calibration": {
+  "cameras": 45,
+  "calibrated": 45,
+  "not_calibrated": [],
+  "reprojection_rms_px": {
+   "n": 45,
+   "median": 2.333,
+   "p90": 2.8946,
+   "max": 3.2152
+  },
+  "position_error_m": {
+   "n": 45,
+   "median": 0.0047,
+   "p90": 0.0188,
+   "max": 0.0365
+  },
+  "rotation_error_deg": {
+   "n": 45,
+   "median": 0.0811,
+   "p90": 0.2376,
+   "max": 0.3859
+  },
+  "hfov_error_pct": {
+   "n": 45,
+   "median": 0.0,
+   "p90": 0.0,
+   "max": 0.0
+  },
+  "floor_leave_one_out_m": {
+   "n": 19,
+   "median": 0.0788,
+   "p90": 1.1888,
+   "max": 20.2085
+  }
+ },
+ "slots": {
+  "slots_with_a_view": 2344,
+  "slots_two_view": 1559,
+  "cameras_not_calibrated": [],
+  "two_view_exact": 0.56,
+  "two_view_right_sku": 0.9872,
+  "two_view_plain_nearest_exact": 0.3855,
+  "one_view_hand_exact_same_slots": 0.4625,
+  "one_view_hand_right_sku_same_slots": 0.9692,
+  "one_view_item_exact_same_slots": 0.6376,
+  "one_view_item_right_sku_same_slots": 0.9872,
+  "deployed_exact_all_seen_slots": 0.567,
+  "deployed_right_sku_all_seen_slots": 0.9829,
+  "one_view_hand_exact_all_seen_slots": 0.5021,
+  "one_view_item_exact_all_seen_slots": 0.7044,
+  "two_view_error_m": {
+   "n": 1559,
+   "median": 0.1062,
+   "p90": 0.2953,
+   "max": 0.8617
+  },
+  "two_view_predicted_sigma_m": {
+   "n": 1559,
+   "median": 0.129,
+   "p90": 0.329,
+   "max": 0.746
+  }
+ },
+ "identity_2_cameras": {
+  "off": {
+   "shoppers": 93,
+   "tracks": 848,
+   "handoffs_live": 482,
+   "handoffs_live_ok": 292,
+   "handoffs_gap": 273,
+   "handoffs_gap_ok": 54,
+   "false_merges": 122,
+   "false_merges_silent": 122,
+   "splits": 383,
+   "clean_visits": 0,
+   "visits_uncertain": 0,
+   "exits_ok": 81,
+   "exits_wrong": 6,
+   "handoff_success": 0.4583
+  },
+  "reid": {
+   "shoppers": 93,
+   "tracks": 848,
+   "handoffs_live": 482,
+   "handoffs_live_ok": 445,
+   "handoffs_gap": 273,
+   "handoffs_gap_ok": 252,
+   "false_merges": 18,
+   "false_merges_silent": 18,
+   "splits": 50,
+   "clean_visits": 44,
+   "visits_uncertain": 0,
+   "exits_ok": 91,
+   "exits_wrong": 1,
+   "handoff_success": 0.9232
+  },
+  "closed_world": {
+   "shoppers": 93,
+   "tracks": 848,
+   "handoffs_live": 482,
+   "handoffs_live_ok": 450,
+   "handoffs_gap": 273,
+   "handoffs_gap_ok": 170,
+   "false_merges": 130,
+   "false_merges_silent": 8,
+   "splits": 99,
+   "clean_visits": 19,
+   "visits_uncertain": 93,
+   "exits_ok": 85,
+   "exits_wrong": 0,
+   "handoff_success": 0.8212
+  },
+  "closed_world_reid": {
+   "shoppers": 93,
+   "tracks": 848,
+   "handoffs_live": 482,
+   "handoffs_live_ok": 475,
+   "handoffs_gap": 273,
+   "handoffs_gap_ok": 251,
+   "false_merges": 24,
+   "false_merges_silent": 0,
+   "splits": 23,
+   "clean_visits": 71,
+   "visits_uncertain": 30,
+   "exits_ok": 85,
+   "exits_wrong": 0,
+   "handoff_success": 0.9616
+  }
+ },
+ "identity_4_cameras": {
+  "off": {
+   "shoppers": 90,
+   "tracks": 1182,
+   "handoffs_live": 817,
+   "handoffs_live_ok": 490,
+   "handoffs_gap": 275,
+   "handoffs_gap_ok": 51,
+   "false_merges": 196,
+   "false_merges_silent": 196,
+   "splits": 494,
+   "clean_visits": 0,
+   "visits_uncertain": 0,
+   "exits_ok": 79,
+   "exits_wrong": 5,
+   "handoff_success": 0.4954
+  },
+  "reid": {
+   "shoppers": 90,
+   "tracks": 1182,
+   "handoffs_live": 817,
+   "handoffs_live_ok": 733,
+   "handoffs_gap": 275,
+   "handoffs_gap_ok": 241,
+   "false_merges": 59,
+   "false_merges_silent": 59,
+   "splits": 87,
+   "clean_visits": 19,
+   "visits_uncertain": 0,
+   "exits_ok": 81,
+   "exits_wrong": 5,
+   "handoff_success": 0.8919
+  },
+  "closed_world": {
+   "shoppers": 90,
+   "tracks": 1182,
+   "handoffs_live": 817,
+   "handoffs_live_ok": 757,
+   "handoffs_gap": 275,
+   "handoffs_gap_ok": 167,
+   "false_merges": 154,
+   "false_merges_silent": 14,
+   "splits": 125,
+   "clean_visits": 10,
+   "visits_uncertain": 90,
+   "exits_ok": 83,
+   "exits_wrong": 0,
+   "handoff_success": 0.8462
+  },
+  "closed_world_reid": {
+   "shoppers": 90,
+   "tracks": 1182,
+   "handoffs_live": 817,
+   "handoffs_live_ok": 802,
+   "handoffs_gap": 275,
+   "handoffs_gap_ok": 252,
+   "false_merges": 31,
+   "false_merges_silent": 2,
+   "splits": 31,
+   "clean_visits": 62,
+   "visits_uncertain": 32,
+   "exits_ok": 83,
+   "exits_wrong": 0,
+   "handoff_success": 0.9652
+  }
+ }
+}

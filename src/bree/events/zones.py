@@ -69,6 +69,9 @@ class StoreConfig:
     # Multi-camera stores only: 4+ [x_px, y_px, x_m, y_m] marks (a pixel in this camera and the
     # same spot on the shared store floor plan, metres). None = single camera.
     floor_points: list | None = None
+    # `camera.calibration`, the block scripts/calibrate.py writes (full pose). Used by the multi-camera
+    # handoff (floor mapping from the pose) and the 3D slot of a pick. None = floor_points only.
+    calibration: dict | None = None
 
     def floor_homography(self) -> np.ndarray:
         from bree.track.multicam import homography
@@ -115,6 +118,7 @@ def load_store_config(path: str | Path) -> StoreConfig:
         ledger=raw.get("ledger", {}),
         product_classes=raw.get("product_classes", {}),
         floor_points=cam.get("floor_points"),
+        calibration=cam.get("calibration"),
     )
 
 

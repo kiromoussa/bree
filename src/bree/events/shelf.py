@@ -147,7 +147,7 @@ def confirm_puts(shelf: list[dict], assocs: list[Assoc], slots: dict, margin: fl
                 keep[i] = False         # 0 of 6 such events matched an act on the TRAIN-seed clips (make shelf-eval)
                 a.why += "; slot watch alone (no pixel change, no item in a hand): not passed to the ledger"
             elif ev.get("source") == "shelf_diff" and pay_xz is not None and at is not None and float(np.hypot(at[0] - pay_xz[0], at[2] - pay_xz[1])) <= pay_reach_m:
-                keep[i] = False         # 0 of 5 such events matched an act on the TRAIN-seed clips, 3 of 3 further along the counter did
+                keep[i] = False         # 0 of 5 such events matched an act on the TRAIN-seed clips, 2 of 2 further along the counter did
                 a.why += "; pixels changed within reach of where the payer stands and no item was seen in a hand (the payer, or goods on the counter): not passed to the ledger"
             elif at is not None and i not in back:
                 out_by.setdefault(a.person_id, []).append((at, i))

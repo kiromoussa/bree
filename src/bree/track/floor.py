@@ -401,6 +401,8 @@ class FloorTracker:
             if not mine:                              # while a meeting is open the long-term colour is left alone
                 k.app, k.app_n = (0 if k.app is None else k.app) + looks[id(k)], k.app_n + 1
         for m in list(self.meetings):
+            if not any(q is m for q in self.meetings):
+                continue                              # dropped a moment ago: one of its two was just swapped by another meeting
             a, b = m["a"], m["b"]
             if len(m["fa"]) >= c.app_frames and len(m["fb"]) >= c.app_frames:
                 fa, fb = np.sum(m["fa"], axis=0), np.sum(m["fb"], axis=0)

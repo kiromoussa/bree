@@ -167,3 +167,15 @@ def test_a_picture_that_changed_everywhere_is_reported_and_a_new_reference_is_ta
     assert [s["status"] for s in sd.status] == ["unreliable", "reference_reset"]
     assert unreliable_windows(sd.status) == {"cam": [(1.0, 2.0)]}
     assert play(sd, other, 30) == [] and len(sd.status) == 2         # the new picture is the shelf now
+
+
+def test_a_swap_put_right_while_one_of_the_two_has_another_meeting_open_does_not_crash():
+    from bree.track.floor import Track
+    tr = FloorTracker(OVER, door_xz=[0.0, 4.0])
+    hist = lambda k: np.eye(52)[[k, k + 1]] * 5.0      # noqa: E731  a clothing colour: 2 x 52 histogram sums
+    a, b, c = (Track(i + 1, np.array([float(i), 2.0, 0.0, 0.0]), 0.0, 9.0, state="live", app=hist(10 * i), app_n=5) for i in range(3))
+    n = tr.cfg.app_frames
+    tr.meetings = [{"t0": 1.0, "a": a, "b": b, "fa": [hist(10)] * n, "fb": [hist(0)] * n, "marks": []},      # a now looks like b: swapped
+                   {"t0": 1.0, "a": a, "b": c, "fa": [], "fb": [], "marks": []}]
+    tr._colours(1.0 + tr.cfg.app_wait_s + 1.0, {})
+    assert (a.id, b.id) == (2, 1) and tr.meetings == [] and tr.counts.get("swaps_put_right") == 1

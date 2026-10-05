@@ -274,7 +274,7 @@ def test_reid_does_not_regress_on_mot16():
     position-only guard measured in the same run."""
     from bree.eval import reid_bench as B
     if not all((B.MOT / s / "gt/gt.txt").exists() for s in B.QUICK_SEQS) or not (ROOT / "models/yolo26s.pt").exists():
-        pytest.skip("MOT16 or model weights not present (make data / make setup)")
+        pytest.skip("MOT16 or model weights not present (data/mot16: see data/README.md, fetched by make data; weights: make setup)")
     ref = json.loads((ROOT / "tests/fixtures/reid_guard.json").read_text())
     res = B.run(quick=True, toy=False)
     on, off = res["tracking"]["guard_reid"], res["tracking"]["guard"]

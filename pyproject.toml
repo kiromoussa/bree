@@ -31,6 +31,7 @@ export = [
 ]
 dev = [
     "pytest==9.1.1",
+    "motmetrics==1.4.0",      # make reid-bench, make bench, the MOT16 guard in make test (bree/eval/reid_bench.py)
 ]
 
 [project.scripts]

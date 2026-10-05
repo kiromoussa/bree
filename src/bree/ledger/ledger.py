@@ -33,6 +33,7 @@ rests on that identity is capped at "review" and the reason goes into the audit 
 from __future__ import annotations
 
 import itertools
+import math
 from collections import Counter
 from dataclasses import dataclass, field
 from typing import Iterable
@@ -54,6 +55,9 @@ class LedgerConfig:
     w_no_register: float = 0.15      # person never went to the register
     ambiguous_factor: float = 0.5    # crowded pick: someone else may have taken it
     no_receipt_factor: float = 0.6   # went to the register but no receipt matched: likely a POS gap
+    # A paid item nobody saw them take stands for one unpaid pick that was seen: most likely one product
+    # under two names (vision misread it). That pick's score is multiplied by this. Concealed items never.
+    misread_factor: float = 0.5
     min_conceal_conf: float = 0.3    # conceal detections below this are ignored
     conceal_conf_ref: float = 0.6    # w_conceal is scaled by min(1, conceal_conf / this)
     # "alert" needs corroboration: at least one unpaid item that was concealed or seen in hand
@@ -75,6 +79,10 @@ class LedgerConfig:
     group_window_s: float = 4.0      # people entering within this window may be one party
     cooler_tap_window_s: float = 20.0  # a tap is matched to a pick at that cooler within this window
     register_slack_s: float = 3.0    # POS timestamp may fall just outside the dwell interval
+    # The receipt reaches us this long (shortest, longest) after its payer was served: the sale closes and the
+    # receipt prints after the customer has turned away, and the next one in line is often already at the counter.
+    # A property of the store's POS feed, measured once per store. (0, 0): the receipt is stamped while they stand there.
+    pos_lag_s: tuple[float, float] = (0.0, 0.0)
     payment_expiry_s: float = 300.0  # unmatched payments are dropped (and logged) after this
     # A receipt that reaches us after the decision (batched POS export, network lag) can still
     # lower it if it arrives within this long after the exit. 0 = never retract.
@@ -120,6 +128,7 @@ class PersonRecord:
     unpaid: list[BasketItem] = field(default_factory=list)    # filled at reconciliation
     surplus: Counter = field(default_factory=Counter)         # paid-but-not-seen, by category
     group: list[int] = field(default_factory=list)
+    party: list[int] | None = None                            # who they walk with, when the tracker says (ENTER meta "party"); None: go by entry time
     t_last: float = 0.0                                       # last event time (stale-track pruning)
     identity_uncertain: tuple[str, float] | None = None       # (why, until): engine could not tell this person from another
     log: list[str] = field(default_factory=list)              # human-readable audit trail
@@ -185,6 +194,8 @@ class Ledger:
 
         if ev.type == EventType.ENTER:
             p.t_enter = min(p.t_enter, ev.t)
+            if "party" in ev.meta:
+                p.party = list(ev.meta["party"])
             if ev.meta.get("missed_entry"):
                 p.log.append(f"{ev.t:7.1f}s first seen inside the store (entry not seen)")
         elif ev.type == EventType.PICK:
@@ -381,45 +392,51 @@ class Ledger:
                 if dts and min(dts) <= self.cfg.cooler_tap_window_s:
                     ranked.append((-self._receipt_overlap(p, receipt), min(dts), p.person_id))
             return min(ranked)[2] if ranked else None
-        # Register: one of the people at the register when the POS closed the sale.
-        # Ranking, in order:
-        #   1. receipt matches their basket: most receipt items found among their unpaid
+        # Register: one of the people at the register when the payer was served (the receipt
+        # time less the POS lag). Ranking, in order:
+        #   1. standing there at that time (vs. only within the slack)
+        #   2. receipt matches their basket: most receipt items found among their unpaid
         #      picks (the receipt says "soda + candy"; the person holding soda + candy paid)
-        #   2. standing there at that exact time (vs. only within the slack)
         #   3. hasn't already paid during this visit
         #   4. got to the counter first
+        # Time before content: baskets come from vision and have wrong and missing items, and a
+        # thief's unpaid item must not pull in the receipt of the next customer who bought the same.
         s = self.cfg.register_slack_s
+        lo, hi = pay.t - max(self.cfg.pos_lag_s), pay.t - min(self.cfg.pos_lag_s)     # when the payer was being served
+
+        def served(v: RegisterVisit, slack: float = 0.0) -> bool:
+            return v.t_start - slack <= hi and lo <= (float("inf") if v.t_end is None else v.t_end) + slack
         ranked = []
-        for p in self._recent(pay.t - s):
+        for p in self._recent(lo - s):
             for v in p.register_visits:
-                if v.zone == zone and v.contains(pay.t, s):
-                    overlap = self._receipt_overlap(p, receipt)
-                    ranked.append((-overlap, not v.contains(pay.t), v.n_payments > 0, v.t_start, p.person_id, v))
+                if v.zone == zone and served(v, s):
+                    overlap = self._receipt_overlap(p, receipt, pay.t)
+                    ranked.append((not served(v), -overlap, v.n_payments > 0, v.t_start, p.person_id, v))
         if not ranked:
             return None
         best = min(ranked, key=lambda r: r[:5])
-        if best[0] == 0 and sum(receipt.values()) > 0:
-            # The receipt matches nobody's picks. Only credit it if exactly one person is at the
-            # counter and they have no unpaid picks at all (vision missed their picks). Otherwise
-            # don't guess: it stays unassigned and is claimed at reconciliation (basket match,
-            # then visit time).
-            alone = len({r[4] for r in ranked}) == 1
-            payer = self.people[best[4]]
-            if not (alone and not self._receipt_party_unpaid(payer)):
+        if best[1] == 0 and sum(receipt.values()) > 0:
+            # The receipt matches none of the best candidate's picks. Credit it only if they were
+            # the one person at the counter then (vision missed or misnamed their picks; the
+            # unmatched paid items are weighed at reconciliation). Otherwise don't guess: it stays
+            # unassigned and is claimed at reconciliation (basket match, then visit time).
+            there = {r[4] for r in ranked if r[0] == best[0]}
+            if len(there) != 1 or (best[0] and self._receipt_party_unpaid(self.people[best[4]], pay.t)):
                 return None
         best[5].n_payments += 1
         return best[4]
 
-    def _receipt_party_unpaid(self, p: PersonRecord) -> Counter:
-        """Unpaid picks (by category) of p's party: p + people who came in with p."""
+    def _receipt_party_unpaid(self, p: PersonRecord, before: float = float("inf")) -> Counter:
+        """Unpaid picks (by category) of p's party: p + people who came in with p. `before`: only
+        picks made by then (a receipt cannot list an item taken after it was printed)."""
         party = [p] + self._group_mates(p)
-        return Counter(it.category for q in party for it in q.basket) - \
+        return Counter(it.category for q in party for it in q.basket if it.t_pick <= before) - \
             Counter(li.category for q in party for li in q.paid)
 
-    def _receipt_overlap(self, p: PersonRecord, receipt: Counter) -> int:
+    def _receipt_overlap(self, p: PersonRecord, receipt: Counter, before: float = float("inf")) -> int:
         """How many receipt items are among the unpaid picks of p's party
         (one person often pays for the group)."""
-        return sum((receipt & self._receipt_party_unpaid(p)).values())
+        return sum((receipt & self._receipt_party_unpaid(p, before)).values())
 
     def _expire_payments(self) -> None:
         keep = []
@@ -433,7 +450,10 @@ class Ledger:
     # --------------------------------------------------------- reconciliation
 
     def _group_mates(self, p: PersonRecord) -> list[PersonRecord]:
-        """People who came in with p (entered within group_window_s)."""
+        """People who came in with p: the ones the tracker saw walking with them, else (no such
+        information) whoever entered within group_window_s."""
+        if p.party is not None:
+            return [self.people[i] for i in p.party if i != p.person_id and i in self.people]
         w = self.cfg.group_window_s
         return [q for q in self._recent(p.t_enter - w)
                 if q.person_id != p.person_id and abs(q.t_enter - p.t_enter) <= w]
@@ -619,6 +639,14 @@ class Ledger:
             reasons += why
             items.append(UnpaidItem(item.category, item.sku, item.t_pick, item.zone, item.confidence,
                                     item.concealed, item.held_at_exit, item.ambiguous_with, round(s, 3)))
+        # each paid-but-not-seen item explains one open unpaid pick, the weakest ones first
+        open_ = sorted((i for i, (_, it) in enumerate(unpaid_owned) if not it.concealed and not it.held_at_exit), key=lambda i: scores[i])
+        for i in open_[:sum(surplus.values())]:
+            scores[i] *= self.cfg.misread_factor
+            items[i].score = round(scores[i], 3)
+            reasons.append(f"{items[i].category}: a paid item did not match the basket, this pick may be that item under another name")
+        best_owner = unpaid_owned[max(range(len(scores)), key=scores.__getitem__)][0]
+        miss = math.prod(1.0 - x for x in scores)
         if not visited:
             reasons.append("never went to the register; no payment matched")
         elif not paid:

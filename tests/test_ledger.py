@@ -478,3 +478,46 @@ def test_late_receipt_after_window_is_ignored():
     ev = [enter(0, 1), pick(5, 1, "candy"), conceal(6, 1, "candy"), *visit(20, 30, 1), leave(35, 1)]
     assert [a.tier for a in ledger().replay(ev, [late(pos(25, "SNICKERS"), 35 + 301)])] == ["review"]
     assert [a.tier for a in ledger(late_receipt_window_s=0).replay(ev, [late(pos(25, "SNICKERS"), 95)])] == ["review"]
+
+
+# ---- the receipt arrives after its payer has left (POS lag), parties named by the tracker, misread products
+
+def test_receipt_that_prints_late_goes_to_who_was_served_not_to_the_next_in_line():
+    """Person 1 pays and leaves; the receipt prints 4 s later, when person 2 (same product, not paying) stands there."""
+    evs = [enter(0, 1), enter(5.5, 2), pick(5, 1, "soda"), pick(7, 2, "soda"), *visit(10, 15, 1), *visit(16, 22, 2), leave(17, 1), leave(24, 2)]
+    pay = [Payment(t=19.0, terminal="pos_1", items=[LineItem(sku="COKE")])]
+    old, new = ledger(), ledger(pos_lag_s=(1.5, 4.5))
+    old.replay(evs, pay), new.replay(evs, pay)
+    assert not old.people[1].paid and old.people[2].paid          # read as stamped on the spot, the receipt clears the wrong person
+    assert new.people[1].paid and not new.people[2].paid and not new.people[1].unpaid and new.people[2].unpaid
+
+
+def test_a_receipt_cannot_pay_for_an_item_taken_after_it_printed():
+    lg = ledger()
+    for e in [enter(0, 1), enter(0, 2), pick(3, 1, "candy"), *visit(8, 12, 1), *visit(8, 20, 2)]:
+        lg.on_event(e)
+    lg.on_payment(Payment(t=11.0, terminal="pos_1", items=[LineItem(sku="SNICKERS")]))
+    lg.on_event(pick(14, 2, "candy"))                 # person 2 takes the same product from the counter afterwards
+    assert [li.category for li in lg.people[1].paid] == ["candy"] and not lg.people[2].paid
+
+
+def test_party_from_the_tracker_replaces_the_entry_window():
+    """Two strangers come in together; one pays for their own item, the other walks out with theirs."""
+    def run(meta):
+        evs = [Event(E.ENTER, 0, 1, meta=meta), Event(E.ENTER, 1, 2, meta=meta), pick(5, 1, "soda"), pick(6, 2, "candy"),
+               *visit(10, 15, 1), leave(17, 1), leave(18, 2)]
+        return ledger().replay(evs, [Payment(t=14.0, terminal="pos_1", items=[LineItem(sku="COKE")])])
+    assert [a.group for a in run({})] == [[1, 2]]                      # no tracker information: pooled by entry time
+    alone = run({"party": []})
+    assert [(a.person_id, a.group) for a in alone] == [(2, [])]
+
+
+def test_a_paid_item_nobody_saw_taken_explains_one_unpaid_pick():
+    """Vision called the soda a candy bar: the receipt says soda. One mismatch is not a review, a second unpaid item is."""
+    def run(*extra):
+        evs = [enter(0, 1), pick(5, 1, "candy", conf=1.0), *extra, *visit(10, 15, 1), leave(17, 1)]
+        return ledger().replay(evs, [Payment(t=14.0, terminal="pos_1", items=[LineItem(sku="COKE")])])
+    assert run() == []
+    assert [a.tier for a in run(pick(7, 1, "chips", conf=1.0))] == ["review"]
+    assert [a.tier for a in ledger(misread_factor=1.0).replay(
+        [enter(0, 1), pick(5, 1, "candy", conf=1.0), *visit(10, 15, 1), leave(17, 1)], [Payment(t=14.0, terminal="pos_1", items=[LineItem(sku="COKE")])])] == ["review"]

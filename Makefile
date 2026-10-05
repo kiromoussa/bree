@@ -6,7 +6,7 @@ STORE   ?= configs/store_gas_station_small.yaml
 .PHONY: setup hw test test-fast demo demo-toy bench reid-bench sim sim-eval sim-fixture data export dashboard clean \
         calibrate calib-check calib-bench edge-test edge-measure edge-hub review review-report review-demo \
         sku-data sku-train sku-eval sku-clip sku-clip-door sim-eval-sku sku-finetune e2e-sim gc \
-        assoc-dev assoc-door assoc-scripted assoc-test bench-clips bench-dev bench-smoke bench-test hands-data hands-eval \
+        assoc-dev assoc-door assoc-scripted assoc-test bench-clips bench-dev bench-smoke bench-test bench-train bench-whatif hands-data hands-eval \
         hands-train plates-bench plates-bench-quick plates-purge plates-test shelf-clips shelf-eval shelf-eval-tune shelf-robust shelf-test
 
 setup:            ## create venv, install pinned deps (CPU torch unless CUDA is present), fetch weights
@@ -147,6 +147,7 @@ clean:
 
 # ---- fixed benchmark on SIMULATED clips (scripts/bench, src/bree/sim/bench.py) ----
 BENCH_JOBS ?= 2
+WHATIF ?= base
 BENCH_ARGS ?=
 
 bench-clips:      ## render the DEV and TEST clips of the fixed benchmark (10 to 45 min per clip depending on load; skips clips already rendered, retries a clip when Chrome closes). Needs Chrome, node, ffmpeg, BREE_PLAYWRIGHT
@@ -158,6 +159,12 @@ bench-dev:        ## SIMULATED benchmark, DEV split (6 clips): bree.shelf.store 
 
 bench-test:       ## SIMULATED benchmark, TEST split: final numbers only, never for tuning -> results/bench_test.json and .md
 	$(PY) -m bree.sim.bench test --jobs $(BENCH_JOBS) $(BENCH_ARGS)
+
+bench-train:      ## SIMULATED, second tuning set: the same pipeline and scorer on the rendered TRAIN-seed clips (make shelf-clips: 9 clips, harder scenes) -> results/bench_train.json and .md
+	$(PY) -m bree.sim.bench train --jobs $(BENCH_JOBS) $(BENCH_ARGS)
+
+bench-whatif:     ## SIMULATED: tracking, association and ledger again on the stored events of bench-dev and bench-train with other settings, e.g. WHATIF='reach6 --reach {"within_s":6}' (never TEST)
+	$(PY) scripts/bench/whatif.py $(WHATIF)
 
 bench-smoke:      ## one DEV clip, 60 frames per camera: proves the command runs, writes nothing to results/
 	$(PY) -m bree.sim.bench dev --smoke

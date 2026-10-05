@@ -64,8 +64,9 @@ def manifest() -> dict:
 def clip_dirs(split: str, only: list[int] | None = None) -> list[Path]:
     m = manifest()
     seeds = m["splits"][split]["seeds"]
-    if not isinstance(seeds, list):
-        raise SystemExit(f"{split} is a reserved seed range, not a rendered split")
+    if not isinstance(seeds, list):      # train: a seed range; the clips rendered so far (make shelf-clips) are a second tuning set
+        lo, hi = (int(v) for v in seeds.split(":"))
+        seeds = sorted(s for d in (ROOT / m["root"] / split).glob("clip_*") if d.name[5:].isdigit() and lo <= (s := int(d.name[5:])) < hi and (d / "truth").is_dir())
     return [ROOT / m["root"] / split / f"clip_{s}" for s in seeds if not only or s in only]
 
 
@@ -482,7 +483,7 @@ def _one(args) -> None:
 
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("split", nargs="?", choices=["dev", "test"])
+    ap.add_argument("split", nargs="?", choices=["dev", "test", "train"])
     ap.add_argument("--clips", help="comma separated seeds (default: the whole split)")
     ap.add_argument("--jobs", type=int, default=2, help="clips run at the same time")
     ap.add_argument("--out", help="default: out/bench/<split>")

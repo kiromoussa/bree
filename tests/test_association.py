@@ -212,3 +212,47 @@ def test_engine_flag_turns_the_single_view_pick_rule_off():
     assert [e.type for e in eng._without_picks(evs)] == [EventType.CONCEAL]
     eng.r = EngineRules()
     assert len(eng._without_picks(evs)) == 3
+
+
+# ---------------------------------------------------------------- which shelf events reach the ledger
+
+def test_slot_watch_alone_is_not_a_pick_and_an_unconfirmed_put_is_not_a_put_back():
+    far = next(s for s in LAY["slots"] if s["id"] == "G1R-S1-14")         # 6 facings along: not where the item came from
+    evs = [shelf(SLOT, 5.6, cue="slot_state"), shelf(SLOT, 6.0), shelf(far, 7.0, kind="put")]
+    events, assocs = store_events(evs, [visit(1, pay=False)], LAY)
+    assert [e.type for e in events if e.type in (EventType.PICK, EventType.PUT_BACK)] == [EventType.PICK]
+    assert "slot watch alone" in assocs[0].why and "put not confirmed" in assocs[2].why
+    events, _ = store_events([evs[1], {**evs[2], "source": "both"}], [visit(1, pay=False)], LAY)      # the item was seen in the hand going in
+    assert [e.type for e in events if e.type in (EventType.PICK, EventType.PUT_BACK)] == [EventType.PICK, EventType.PUT_BACK]
+
+
+def test_a_put_back_where_they_took_it_returns_that_item_whatever_it_is_called():
+    events, _ = store_events([shelf(SLOT, 6.0), shelf(SLOT, 7.0, kind="put", sku_id="another_name")], [visit(1, pay=False)], LAY)
+    assert [e.sku for e in events if e.type == EventType.PUT_BACK] == [SLOT["skuId"]]
+    assert not run_ledger(events, [], LAY)[0]
+
+
+def test_a_put_that_fits_two_people_goes_to_the_one_who_took_from_there():
+    a, b = person(1, 1.1, 0.0), person(2, 1.1, 0.25)
+    for first in (1, 2):                              # whoever the geometry prefers, the taker gets the put
+        taker = person(first, 1.1, 0.0, t1=5.0)       # stood alone at the shelf for the take
+        took = dict(shelf(SLOT, 3.0))
+        _, assocs = store_events([took, shelf(SLOT, 12.0, kind="put", source="both")], [a, b] if first == 1 else [b, a], LAY)
+        assert assocs[1].person_id == assocs[0].person_id, (first, assocs[1].why, taker.id)
+
+
+def test_a_count_above_one_is_one_pick():
+    events, _ = store_events([shelf(SLOT, 6.0, count=2)], [visit(1, pay=False)], LAY)
+    assert sum(e.type == EventType.PICK for e in events) == 1
+
+
+def test_a_party_walks_together_strangers_who_enter_together_do_not():
+    from bree.events.shelf import parties
+    walk = lambda pid, dz, split: ScriptedTrack(pid, Path2D([(0.0, 0.0, 6.5 + dz), (4.0, 1.7, 3.5 + dz), (30.0, (9.0 if split else 1.7), 3.5 + dz)]),      # noqa: E731
+                                                np.random.default_rng(pid), sigma_m=0.02, gap_p=0.0)
+    def paths(*ts):
+        for p in ts:
+            p.path = [(round(t, 1), *p.at(t)[0]) for t in np.arange(0.0, 30.0, 0.1)]
+        return list(ts)
+    assert parties(paths(walk(1, 0.0, False), walk(2, 0.5, False))) == {1: [2], 2: [1]}
+    assert parties(paths(walk(1, 0.0, False), walk(2, 0.5, True))) == {1: [], 2: []}

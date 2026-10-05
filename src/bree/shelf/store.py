@@ -25,6 +25,9 @@ from bree.track.associate import associate
 from bree.track.people import PEOPLE_KINDS, appearance, frames, person_detector
 
 SKU_WEIGHTS = "sim_sku_hands_v3"      # items + the hand class; better than sim_sku on the held-out seeds (docs: hand detector)
+# The register feed of the simulated clips stamps a receipt 1.5 to 4.5 s after the payment (scripts/bench/render_clip.mjs:
+# the sale closes, the receipt prints). A real store measures this once for its POS and sets it in the ledger settings.
+POS_LAG_S = (1.5, 4.5)
 
 
 def _jsonl(p: Path) -> list[dict]:
@@ -40,19 +43,20 @@ def one_act_per_reach(acts: list[dict], who: list, within_s: float = 4.0, within
     read more than once: by one camera at two facings, or by two cameras that put it at slots too far apart to be fused
     (45 of 60 false takes on DEV were such repeats of a true take). Events of one kind, by one shopper, this close in
     time and place are one act: the best-evidenced one is kept (two cues, then an item seen in the hand for more frames,
-    then more cameras) with the earliest time. Two shoppers at neighbouring cooler doors stay two acts.
+    then more cameras) with the earliest time. Two shoppers at neighbouring cooler doors stay two acts. The distance
+    is along the floor: one reach read at two shelf heights of one bay (two cameras, or a cooler door) is one act.
     ponytail: one shopper taking two different products from the same metre of shelf within 4 s becomes one take; split
     by the hand track or the count once a clip has that."""
     rank = lambda e: (e.get("cue") == "both_cues", e["source"] == "both", e.get("detector_frames") or 0, len(e.get("cameras") or []), e.get("sku_conf") or 0.0)      # noqa: E731
     out: list[dict] = []
     for e, pid in sorted(zip(acts, who), key=lambda x: x[0]["t"]):
         g = next((g for g in reversed(out) if pid is not None and g["by"] == pid and g["kind"] == e["kind"] and e["t"] - g["t"] <= within_s
-                  and e.get("point_3d") is not None and g.get("point_3d") is not None and math.dist(g["point_3d"], e["point_3d"]) <= within_m), None)
+                  and e.get("point_3d") is not None and g.get("point_3d") is not None and math.dist(g["point_3d"][::2], e["point_3d"][::2]) <= within_m), None)
         if g is None:
-            out.append({**e, "by": pid, "repeats": 0})
+            out.append({**e, "by": pid, "repeats": e.get("repeats", 0)})
         else:
             best = e if rank(e) > rank(g) else g
-            g.update({**best, "t": g["t"], "t_start": min(g["t_start"], e["t_start"]), "by": pid, "repeats": g["repeats"] + 1,
+            g.update({**best, "t": g["t"], "t_start": min(g["t_start"], e["t_start"]), "by": pid, "repeats": g["repeats"] + e.get("repeats", 0) + 1,
                       "cameras": sorted(set(g.get("cameras") or []) | set(e.get("cameras") or []))})
     return out
 
@@ -88,9 +92,13 @@ def rejoin(clip: Path, out: Path, review: bool = True, floor=None, assoc=None, j
     shelf = _jsonl(pipe / "shelf_events.jsonl")
     tracker, ids = track_people(cams, layout, boxes, fps, floor)
     acts = fuse_views(shelf, layout)
-    acts = one_act_per_reach(acts, [a.person_id for a in associate(acts, tracker.people(), layout, cams=cams, cfg=assoc)], **(reach or {}))
+    for _ in range(3):         # merging repeats changes who fits what is left (two reads of one reach can go to two people), so look again
+        n = len(acts)
+        acts = one_act_per_reach(acts, [a.person_id for a in associate(acts, tracker.people(), layout, cams=cams, cfg=assoc)], **(reach or {}))
+        if len(acts) == n:
+            break
     events, assocs = store_events(acts, tracker.people(), layout, cams=cams, assoc_cfg=assoc, **(join or {}))
-    alerts, book = run_ledger(events, load_payments(clip / "register.jsonl"), layout, **(ledger or {}))
+    alerts, book = run_ledger(events, load_payments(clip / "register.jsonl"), layout, **{"pos_lag_s": POS_LAG_S, **(ledger or {})})
     write_run(out, events, alerts, boxes, ids, fps)
     _dump(pipe / "store_shelf_events.jsonl", [{**{k: v for k, v in g.items() if k != "views"}, "person_id": a.person_id, "uncertain": a.uncertain, "why": a.why}
                                               for g, a in zip(acts, assocs)])

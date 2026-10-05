@@ -38,7 +38,7 @@ def _dump(p: Path, rows) -> None:
     p.write_text("".join(json.dumps(r, default=str) + "\n" for r in rows))
 
 
-def one_act_per_reach(acts: list[dict], who: list, within_s: float = 4.0, within_m: float = 1.0) -> list[dict]:
+def one_act_per_reach(acts: list[dict], who: list, within_s: float = 4.0, within_m: float = 1.0, from_last: bool = False) -> list[dict]:
     """Fused shelf events and the shopper each was attached to -> one event per reach. One reach into a shelf is often
     read more than once: by one camera at two facings, or by two cameras that put it at slots too far apart to be fused
     (45 of 60 false takes on DEV were such repeats of a true take). Events of one kind, by one shopper, this close in
@@ -46,18 +46,22 @@ def one_act_per_reach(acts: list[dict], who: list, within_s: float = 4.0, within
     then more cameras) with the earliest time. Two shoppers at neighbouring cooler doors stay two acts. The distance
     is along the floor: one reach read at two shelf heights of one bay (two cameras, or a cooler door) is one act.
     ponytail: one shopper taking two different products from the same metre of shelf within 4 s becomes one take; split
-    by the hand track or the count once a clip has that."""
+    by the hand track or the count once a clip has that.
+    from_last: measure the 4 s from the latest reading of the act instead of its first. Off: measured in round 3 it
+    removes one review of an honest shopper on DEV and loses one flagged theft on the TRAIN-seed clips."""
     rank = lambda e: (e.get("cue") == "both_cues", e["source"] == "both", e.get("detector_frames") or 0, len(e.get("cameras") or []), e.get("sku_conf") or 0.0)      # noqa: E731
     out: list[dict] = []
     for e, pid in sorted(zip(acts, who), key=lambda x: x[0]["t"]):
-        g = next((g for g in reversed(out) if pid is not None and g["by"] == pid and g["kind"] == e["kind"] and e["t"] - g["t"] <= within_s
+        g = next((g for g in reversed(out) if pid is not None and g["by"] == pid and g["kind"] == e["kind"] and e["t"] - g["t_last" if from_last else "t"] <= within_s
                   and e.get("point_3d") is not None and g.get("point_3d") is not None and math.dist(g["point_3d"][::2], e["point_3d"][::2]) <= within_m), None)
         if g is None:
-            out.append({**e, "by": pid, "repeats": e.get("repeats", 0)})
+            out.append({**e, "by": pid, "repeats": e.get("repeats", 0), "t_last": e.get("t_last", e["t"])})
         else:
             best = e if rank(e) > rank(g) else g
-            g.update({**best, "t": g["t"], "t_start": min(g["t_start"], e["t_start"]), "by": pid, "repeats": g["repeats"] + e.get("repeats", 0) + 1,
-                      "cameras": sorted(set(g.get("cameras") or []) | set(e.get("cameras") or []))})
+            g.update({**best, "t": g["t"], "t_last": max(g["t_last"], e.get("t_last", e["t"])), "t_start": min(g["t_start"], e["t_start"]), "by": pid, "repeats": g["repeats"] + e.get("repeats", 0) + 1,
+                      "cameras": sorted(set(g.get("cameras") or []) | set(e.get("cameras") or [])),
+                      **{k: sorted({*(g.get(k) or []), *(e.get(k) or [])}) for k in ("eids", "undoes") if g.get(k) or e.get(k)},
+                      "read_as": {**(g.get("read_as") or {}), **(e.get("read_as") or {})}, "item_in": bool(g.get("item_in") or e.get("item_in"))})
     return out
 
 

@@ -4,6 +4,7 @@ and the ledger with other settings and score again. Nothing before tracking is r
     .venv/bin/python scripts/bench/whatif.py base                                  # dev and train as the code stands
     .venv/bin/python scripts/bench/whatif.py reach6 --reach '{"within_s": 6}'      # bree.shelf.store.one_act_per_reach
     --assoc '{"max_unseen_s": 3}'  --ledger '{"misread_factor": 1.0}'  --join '{"register_dwell_s": 2}'  --splits dev
+    --join '{"put_returns": "none"}' (or "both")  --reach '{"from_last": true}'       # the round 3 choices
 
 Never give it the test split: it is for tuning. Output: out/bench/whatif/<name>/<split>/ and one line per split.
 """

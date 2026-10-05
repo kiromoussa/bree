@@ -90,8 +90,14 @@ def _doubt(person, t: float) -> dict:
     return {}
 
 
-def confirm_puts(shelf: list[dict], assocs: list[Assoc], slots: dict, margin: float, same_place_m: float = 0.25) -> tuple[list[bool], dict[int, int]]:
-    """Which shelf events may reach the ledger, and which take each put returns: (keep[i], {put index: take index}).
+def confirm_puts(shelf: list[dict], assocs: list[Assoc], slots: dict, margin: float, same_place_m: float = 0.25, put_returns: str = "in") -> tuple[list[bool], dict[int, list[int]]]:
+    """Which shelf events may reach the ledger, and which takes each put returns: (keep[i], {put index: [take index]}).
+    A put of the pixel comparison names the reading it undoes ("undoes": that camera saw that place go back to the
+    picture from before its own take, because the item is back or because an arm that had covered the slot went
+    away). It takes that reading out of the act it was merged into. An act with no reading left is returned, by
+    whoever was given the take. An act other cameras still read stands, under the name one of them gave it, unless
+    the item was seen going into the slot (`put_returns` "in": the put's "item_in"; "both": any item in a hand near
+    it; "none": never), which returns the act whatever the other cameras say. Puts without that link:
     Takes: all but those of the slot watch alone. Puts: about 6 put events in 10 match no act (4 of 23 with one cue on
     the TRAIN-seed clips), so a put counts when the item was seen in the hand going in (source "both") or when it lands
     where this person took something that is still out (same or neighbouring facing). Who puts it back is the one who
@@ -99,6 +105,9 @@ def confirm_puts(shelf: list[dict], assocs: list[Assoc], slots: dict, margin: fl
     `assocs` in place for those."""
     out_by: dict[int, list[tuple[np.ndarray, int]]] = {}          # person -> (where from, take index) of what they still hold
     keep, pair = [True] * len(shelf), {}
+    left = {i: set(ev.get("eids") or []) for i, ev in enumerate(shelf) if ev["kind"] == "take"}      # readings of each take not undone yet
+    of = {x: i for i, names in left.items() for x in names}
+    back: set[int] = set()         # takes returned through such a link
 
     def held(pid, at) -> int | None:
         return next((k for k, (q, _) in enumerate(out_by.get(pid, [])) if at is not None and float(np.linalg.norm(q - at)) <= same_place_m), None)
@@ -106,13 +115,37 @@ def confirm_puts(shelf: list[dict], assocs: list[Assoc], slots: dict, margin: fl
         ev, a = shelf[i], assocs[i]
         face = (slots.get(ev.get("slot_id")) or {}).get("face")
         at = np.asarray(face, float) if face is not None else None
+        hit = sorted({of[x] for x in ev.get("undoes") or [] if x in of}) if ev["kind"] == "put" else []
+        if hit:
+            for x in ev["undoes"]:
+                if x in of:
+                    left[of[x]].discard(x)
+            strong = bool(ev.get("item_in")) if put_returns == "in" else ev.get("source") == "both" if put_returns == "both" else False
+            for k in hit:
+                rest = [shelf[k]["read_as"][x] for x in sorted(left[k]) if x in (shelf[k].get("read_as") or {})]
+                if rest and not strong and shelf[k].get("slot_id") not in {r[0] for r in rest}:
+                    sid, sku = max(rest, key=lambda r: (r[2], r[3]))[:2]       # the act keeps a name a remaining reading gave it
+                    shelf[k].update(slot_id=sid, sku_id=sku, **({"point_3d": list(slots[sid]["face"])} if sid in slots else {}))
+            done = [k for k in hit if (strong or not left[k]) and k not in back and assocs[k].person_id is not None
+                    and not (shelf[k].get("cue") == "slot_state" and shelf[k].get("source") != "both")]
+            back.update(done)
+            for k in done:
+                held_k = out_by.get(assocs[k].person_id, [])
+                held_k[:] = [h for h in held_k if h[1] != k]
+            if done:
+                pair[i] = done
+                a.why += "; undoes the take at " + ", ".join(f"{float(shelf[k]['t']):.1f}s" for k in done) + " (the camera that read it saw the place as before)"
+            else:
+                keep[i] = False
+                a.why += "; undoes one camera's reading of a take that is still read elsewhere, or that nobody was given: not passed to the ledger"
+            continue
         if a.person_id is None:
             continue
         if ev["kind"] == "take":
             if ev.get("cue") == "slot_state" and ev.get("source") != "both":
                 keep[i] = False         # 0 of 6 such events matched an act on the TRAIN-seed clips (make shelf-eval)
                 a.why += "; slot watch alone (no pixel change, no item in a hand): not passed to the ledger"
-            elif at is not None:
+            elif at is not None and i not in back:
                 out_by.setdefault(a.person_id, []).append((at, i))
             continue
         if held(a.person_id, at) is None and a.margin < margin:
@@ -122,7 +155,7 @@ def confirm_puts(shelf: list[dict], assocs: list[Assoc], slots: dict, margin: fl
                 a.person_id, a.cost = rivals[0], dict(a.candidates)[rivals[0]]
         k = held(a.person_id, at)
         if k is not None:
-            pair[i] = out_by[a.person_id].pop(k)[1]
+            pair[i] = [out_by[a.person_id].pop(k)[1]]
         elif ev.get("source") != "both":
             keep[i] = False
             a.why += "; put not confirmed (no item seen in the hand, nothing of theirs out from this place): not passed to the ledger"
@@ -130,13 +163,13 @@ def confirm_puts(shelf: list[dict], assocs: list[Assoc], slots: dict, margin: fl
 
 
 def store_events(shelf: list[dict], people: list, layout: dict, cams: dict | None = None, conceal: list[dict] | None = None,
-                 assoc_cfg: AssocConfig | None = None, register_dwell_s: float = 1.0) -> tuple[list[Event], list[Assoc]]:
+                 assoc_cfg: AssocConfig | None = None, register_dwell_s: float = 1.0, put_returns: str = "in") -> tuple[list[Event], list[Assoc]]:
     """-> (events in time order, the association of each shelf event). Staff identities make no events."""
     acfg = assoc_cfg or AssocConfig()
     slots = slot_index(layout)
     by_id = {p.id: p for p in people}
     assocs = associate(shelf, people, layout, cams=cams, cfg=acfg)
-    keep, pair = confirm_puts(shelf, assocs, slots, acfg.margin)
+    keep, pair = confirm_puts(shelf, assocs, slots, acfg.margin, put_returns=put_returns)
     name = lambda e: e.get("sku_id") or (slots.get(e.get("slot_id")) or {}).get("skuId")      # noqa: E731  the planogram names the product when the camera could not
     events: list[Event] = []
     _, reg = counter_zones(layout)
@@ -154,10 +187,17 @@ def store_events(shelf: list[dict], people: list, layout: dict, cams: dict | Non
             te = p.t_exit if p.t_exit is not None else p.path[-1][0]
             events.append(Event(EventType.EXIT, te, p.id, zone="exit", meta=_doubt(p, te)))
     for i, (ev, a, ok) in enumerate(zip(shelf, assocs, keep)):
-        if a.person_id is None or not ok:
+        if not ok:
+            continue
+        for k in pair.get(i, [])[1:] + ([pair[i][0]] if i in pair and assocs[pair[i][0]].person_id != a.person_id else []):
+            # a put that undoes a take given to somebody else (or more than one take): that item goes back for them
+            events.append(Event(EventType.PUT_BACK, max(float(ev["t"]), float(shelf[k]["t"]) + 0.01), assocs[k].person_id, item=name(shelf[k]) or "unknown",
+                                sku=name(shelf[k]), zone=(slots.get(shelf[k].get("slot_id")) or {}).get("fixtureId"), confidence=0.9,
+                                meta={"shelf": {x: ev.get(x) for x in ("camera_id", "source", "point_3d")}, "undoes": float(shelf[k]["t"])}))
+        if a.person_id is None or (i in pair and assocs[pair[i][0]].person_id != a.person_id):
             continue
         s = slots.get(ev.get("slot_id")) or {}
-        sku = name(shelf[pair[i]]) if i in pair else name(ev)      # a put back where they took it returns that item, whatever name this view gave it
+        sku = name(shelf[pair[i][0]]) if i in pair else name(ev)      # a put back where they took it returns that item, whatever name this view gave it
         rivals = [pid for pid, c in a.candidates if pid != a.person_id and c <= (a.cost or 0.0) + acfg.margin]
         doubt = _doubt(by_id[a.person_id], float(ev["t"]))
         meta = {"slot": {"id": ev.get("slot_id"), "fixture": s.get("fixtureId"), "sku": s.get("skuId")},
@@ -167,7 +207,8 @@ def store_events(shelf: list[dict], people: list, layout: dict, cams: dict | Non
         kind = EventType.PICK if ev["kind"] == "take" else EventType.PUT_BACK
         # one event per act: a count above 1 (the slot watch's row positions) was never right on the simulated clips
         # ponytail: two units taken in one reach are read as one; use ev["count"] once a clip set confirms it
-        events.append(Event(kind, float(ev["t"]), a.person_id, item=sku or "unknown", sku=sku, zone=s.get("fixtureId"),
+        t = max(float(ev["t"]), float(shelf[pair[i][0]]["t"]) + 0.01) if i in pair else float(ev["t"])
+        events.append(Event(kind, t, a.person_id, item=sku or "unknown", sku=sku, zone=s.get("fixtureId"),
                             confidence=1.0 if ev.get("source") == "both" else 0.9,
                             candidates=[a.person_id] + rivals if rivals else [], meta=meta))
     for c in conceal or []:

@@ -256,3 +256,21 @@ def test_a_party_walks_together_strangers_who_enter_together_do_not():
         return list(ts)
     assert parties(paths(walk(1, 0.0, False), walk(2, 0.5, False))) == {1: [2], 2: [1]}
     assert parties(paths(walk(1, 0.0, False), walk(2, 0.5, True))) == {1: [], 2: []}
+
+
+def test_a_put_undoes_only_the_reading_it_names():
+    """One reach read by two cameras ("eids" a and b). The first camera sees its place as before again (an arm that
+    covered the slot went away): the take stands, the other camera still reads it. Both cameras see it: returned."""
+    other = next(s for s in LAY["slots"] if s["id"] == "G1R-S1-9")
+    take = shelf(SLOT, 6.0, eids=["a", "b"])
+    kinds = lambda evs: [e.type for e in evs if e.type in (EventType.PICK, EventType.PUT_BACK)]      # noqa: E731
+    events, assocs = store_events([take, shelf(SLOT, 7.0, kind="put", undoes=["a"])], [visit(1, pay=False)], LAY)
+    assert kinds(events) == [EventType.PICK] and "still read elsewhere" in assocs[1].why
+    assert len(run_ledger(events, [], LAY)[0]) == 1
+    # the second camera's put is read at the neighbouring facing and names another product: it still returns this take
+    events, _ = store_events([take, shelf(SLOT, 7.0, kind="put", undoes=["a"]), shelf(other, 7.2, kind="put", undoes=["b"])], [visit(1, pay=False)], LAY)
+    assert kinds(events) == [EventType.PICK, EventType.PUT_BACK] and [e.sku for e in events if e.type == EventType.PUT_BACK] == [SLOT["skuId"]]
+    assert not run_ledger(events, [], LAY)[0]
+    # a put that nobody stands near still returns the take of the shopper who was given it
+    events, _ = store_events([take, shelf(SLOT, 11.0, kind="put", undoes=["a", "b"])], [visit(1, pay=False)], LAY)
+    assert [(e.type, e.person_id) for e in events if e.type == EventType.PUT_BACK] == [(EventType.PUT_BACK, 1)]

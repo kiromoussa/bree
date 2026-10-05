@@ -54,6 +54,12 @@ class LedgerConfig:
     w_held_at_exit: float = 0.2      # item visibly in hand when the person walked out
     w_no_register: float = 0.15      # person never went to the register
     ambiguous_factor: float = 0.5    # crowded pick: someone else may have taken it
+    # The discount ends when every other candidate has been reconciled without paying for an extra one: then the
+    # item is unpaid whoever of them took it (review at most while it is not concealed). False: discount for ever.
+    ambiguous_settles: bool = True
+    # An unpaid pick in doubt (crowded, or on an uncertain identity) is covered by a paid item nobody saw its payer
+    # take, whoever that payer is (receipts given out by visit time land on the wrong one of two people at the counter).
+    doubt_takes_any_extra: bool = True
     no_receipt_factor: float = 0.6   # went to the register but no receipt matched: likely a POS gap
     # A paid item nobody saw them take stands for one unpaid pick that was seen: most likely one product
     # under two names (vision misread it). That pick's score is multiplied by this. Concealed items never.
@@ -511,6 +517,15 @@ class Ledger:
                     q.log.append(f"ambiguous {item.category} attributed to {other} (they paid for an extra)")
                     moved = True
                     break
+            if not moved and self.cfg.doubt_takes_any_extra and (item.ambiguous_with or q.identity_uncertain):
+                # Who took this pick, or who this person is, was in doubt, and somebody else in the store since then
+                # paid for one of these that nobody saw them take: the store was paid for it.
+                r = next((r for r in self.people.values() if r.reconciled and r not in party and r.surplus[item.category] > 0
+                          and r.t_exit is not None and r.t_exit >= item.t_pick), None)
+                if r is not None:
+                    r.surplus[item.category] -= 1
+                    q.log.append(f"{item.category} in doubt (who took it, or who this is): person {r.person_id} paid for one nobody saw them take")
+                    moved = True
             if not moved:
                 still_unpaid.append((q, item))
         # Leftover surplus stays on the payer so a later-exiting crowd candidate can claim it.
@@ -619,8 +634,13 @@ class Ledger:
         elif not paid_any:
             score *= c.no_receipt_factor
         if item.ambiguous_with:
-            score *= c.ambiguous_factor
-            why.append(f"{item.category}: crowded pick, may belong to person(s) {item.ambiguous_with}")
+            # The doubt is who took it. While another candidate's receipts are still to come, the item is discounted.
+            # Once every candidate has been reconciled and none paid for an extra one, it left unpaid with one of them.
+            waiting = [o for o in item.ambiguous_with if (r := self.people.get(o)) is not None and not r.reconciled]
+            if waiting or not c.ambiguous_settles:
+                score *= c.ambiguous_factor
+            why.append(f"{item.category}: crowded pick, may belong to person(s) {item.ambiguous_with}"
+                       + ("" if waiting or not c.ambiguous_settles else " (all have left, none paid for it)"))
         return min(score, 1.0), why
 
     def _assess(self, party: list[PersonRecord], unpaid_owned: list[tuple[PersonRecord, BasketItem]],
@@ -668,6 +688,9 @@ class Ledger:
             tier = "review"
             reasons.append("capped at review: " + ("no concealment or item-in-hand at exit" if not corroborated
                            else f"{unmatched_paid} paid item(s) didn't match the basket (possible misrecognition)"))
+        if tier == "alert" and any(it.ambiguous_with and not it.concealed for _, it in unpaid_owned):
+            tier, eligible = "review", False
+            reasons.append("capped at review: a pick that also fits another person")
         # Never accuse on a guessed identity: the basket may be someone else's.
         unsure = [q for q in party if q.identity_uncertain and (q.t_exit or 0.0) <= q.identity_uncertain[1]]
         if tier == "alert" and unsure:

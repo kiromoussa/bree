@@ -38,7 +38,7 @@ def _dump(p: Path, rows) -> None:
     p.write_text("".join(json.dumps(r, default=str) + "\n" for r in rows))
 
 
-def one_act_per_reach(acts: list[dict], who: list, within_s: float = 4.0, within_m: float = 1.0, from_last: bool = False, standing: bool = False) -> list[dict]:
+def one_act_per_reach(acts: list[dict], who: list, within_s: float = 4.0, within_m: float = 1.0, from_last: bool = False, standing: bool = True) -> list[dict]:
     """Fused shelf events and the shopper each was attached to -> one event per reach. One reach into a shelf is often
     read more than once: by one camera at two facings, or by two cameras that put it at slots too far apart to be fused
     (45 of 60 false takes on DEV were such repeats of a true take). Events of one kind, by one shopper, this close in
@@ -49,8 +49,10 @@ def one_act_per_reach(acts: list[dict], who: list, within_s: float = 4.0, within
     by the hand track or the count once a clip has that.
     from_last: measure the 4 s from the latest reading of the act instead of its first. Off: measured in round 3 it
     removes one review of an honest shopper on DEV and loses one flagged theft on the TRAIN-seed clips.
-    standing: time the act by the readings no put has taken back (see `undone` below). Off: measured in round 4 it
-    removes the same review on DEV, and one flagged theft there, and adds a review on the TRAIN-seed clips."""
+    standing: time the act by the readings no put has taken back (see `undone` below). On since round 5: alone it
+    removed one review of an honest shopper on DEV and lost thefts that had been flagged through a false second take;
+    with the ledger no longer discounting a crowded pick once every candidate has left (LedgerConfig.ambiguous_settles)
+    it removes the review and loses none on DEV (SIMULATED), and trades one flagged theft for another on the TRAIN-seed clips."""
     rank = lambda e: (e.get("cue") == "both_cues", e["source"] == "both", e.get("detector_frames") or 0, len(e.get("cameras") or []), e.get("sku_conf") or 0.0)      # noqa: E731
     out: list[dict] = []
     # standing: a reading its own camera took back (a put names it in "undoes") does not time the act; the act happened

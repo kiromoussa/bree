@@ -254,13 +254,29 @@ def test_crowded_pick_resolved_by_other_candidates_surplus():
 
 
 def test_crowded_pick_unresolved_is_downweighted():
-    L = ledger()
     ev = [enter(0, 1), enter(30, 2), pick(40, 1, "soda", "cooler", conf=0.9, candidates=[1, 2]),
           leave(65, 1, ["soda"]), leave(75, 2)]
-    alerts = L.replay(ev)
+    alerts = ledger(ambiguous_settles=False).replay(ev)
     # (0.45 + 0.2 + 0.15) * 0.5 = 0.40 -> review, not alert
     assert len(alerts) == 1 and alerts[0].tier == "review"
     assert alerts[0].confidence == pytest.approx(0.40)
+    # default: the other candidate has left and paid for no soda, so the soda is unpaid whoever took it. No discount,
+    # still review at most (who took it is not known)
+    alerts = ledger().replay(ev)
+    assert len(alerts) == 1 and alerts[0].tier == "review" and alerts[0].confidence == pytest.approx(0.80)
+    assert any("capped at review: a pick that also fits another person" in r for r in alerts[0].reasons)
+
+
+def test_pick_in_doubt_is_covered_by_anyones_unseen_paid_item():
+    """Vision gives 1 a soda that also fits 2. Person 3, never a candidate, pays for a soda nobody saw them take
+    (the receipt landed on the wrong one of the people at the counter): the store was paid for that soda."""
+    ev = [enter(0, 1), enter(10, 2), enter(20, 3), pick(40, 1, "soda", "cooler", candidates=[1, 2]),
+          *visit(50, 56, 3), leave(60, 3), leave(61, 2), leave(90, 1)]
+    assert ledger().replay(ev, [pos(55, "COKE")]) == []
+    assert len(ledger(doubt_takes_any_extra=False).replay(ev, [pos(55, "COKE")])) == 1
+    # a pick nobody else fits, on a certain identity, is not covered that way
+    sure = [e if e.type != E.PICK else pick(40, 1, "soda", "cooler") for e in ev]
+    assert len(ledger().replay(sure, [pos(55, "COKE")])) == 1
 
 
 def test_crowded_pick_waits_for_other_candidate():

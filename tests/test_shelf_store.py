@@ -218,5 +218,5 @@ def test_far_from_where_they_were_lost_and_in_other_clothes_is_somebody_else_whe
 def test_an_act_can_be_timed_by_the_readings_no_put_took_back():
     ev = lambda t, kind="take", **kw: {"kind": kind, "t": t, "t_start": t, "point_3d": [0.2, 1.0, 0.0], "sku_id": "sku1", "source": "both", "cameras": ["a"], **kw}  # noqa: E731
     acts = [ev(22.4, eids=["a"]), ev(25.9, eids=["b"]), ev(26.6, eids=["c"]), ev(27.6, "put", undoes=["a"])]
-    assert [g["t"] for g in one_act_per_reach(acts, [1, 1, 1, 1]) if g["kind"] == "take"] == [22.4, 26.6]       # 4.2 s after the first reading: a second take
-    assert [g["t"] for g in one_act_per_reach(acts, [1, 1, 1, 1], standing=True) if g["kind"] == "take"] == [25.9]
+    assert [g["t"] for g in one_act_per_reach(acts, [1, 1, 1, 1], standing=False) if g["kind"] == "take"] == [22.4, 26.6]       # 4.2 s after the first reading: a second take
+    assert [g["t"] for g in one_act_per_reach(acts, [1, 1, 1, 1]) if g["kind"] == "take"] == [25.9]

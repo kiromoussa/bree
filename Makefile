@@ -5,7 +5,9 @@ STORE   ?= configs/store_gas_station_small.yaml
 
 .PHONY: setup hw test test-fast demo demo-toy bench reid-bench sim sim-eval sim-fixture data export dashboard clean \
         calibrate calib-check calib-bench edge-test edge-measure edge-hub review review-report review-demo \
-        sku-data sku-train sku-eval sku-clip sku-clip-door sim-eval-sku sku-finetune e2e-sim gc
+        sku-data sku-train sku-eval sku-clip sku-clip-door sim-eval-sku sku-finetune e2e-sim gc \
+        assoc-dev assoc-door assoc-scripted assoc-test bench-clips bench-dev bench-smoke bench-test hands-data hands-eval \
+        hands-train plates-bench plates-bench-quick plates-purge plates-test shelf-clips shelf-eval shelf-eval-tune shelf-robust shelf-test
 
 setup:            ## create venv, install pinned deps (CPU torch unless CUDA is present), fetch weights
 	./scripts/setup.sh
@@ -142,3 +144,86 @@ dashboard:        ## local web dashboard of live alerts + baskets
 
 clean:
 	rm -rf out runs .pytest_cache
+
+# ---- fixed benchmark on SIMULATED clips (scripts/bench, src/bree/sim/bench.py) ----
+BENCH_JOBS ?= 2
+BENCH_ARGS ?=
+
+bench-clips:      ## render the DEV and TEST clips of the fixed benchmark (10 to 45 min per clip depending on load; skips clips already rendered, retries a clip when Chrome closes). Needs Chrome, node, ffmpeg, BREE_PLAYWRIGHT
+	$(PY) scripts/bench/render_split.py dev
+	$(PY) scripts/bench/render_split.py test
+
+bench-dev:        ## SIMULATED benchmark, DEV split (6 clips): bree.shelf.store (shelf events, floor tracks, association, ledger) -> scorecard and per-pick funnel in results/bench_dev.json and .md. BENCH_ARGS=--keep repeats only tracking, association and the ledger
+	$(PY) -m bree.sim.bench dev --jobs $(BENCH_JOBS) $(BENCH_ARGS)
+
+bench-test:       ## SIMULATED benchmark, TEST split: final numbers only, never for tuning -> results/bench_test.json and .md
+	$(PY) -m bree.sim.bench test --jobs $(BENCH_JOBS) $(BENCH_ARGS)
+
+bench-smoke:      ## one DEV clip, 60 frames per camera: proves the command runs, writes nothing to results/
+	$(PY) -m bree.sim.bench dev --smoke
+
+# ---- shelf events without a person box (src/bree/shelf, scripts/shelf). SIMULATED clips, TRAIN seeds only ----
+SHELF_TUNE ?= 4900 4901 4902
+SHELF_HELDOUT ?= 4903 4904 4905 4906 4950 4951
+SHELF_JOBS ?= 3
+
+shelf-clips:      ## render the TRAIN-seed clips of the shelf-event evaluation (about 15 min per clip on an idle laptop, three at a time; skips finished clips). Needs Chrome, node, ffmpeg, BREE_PLAYWRIGHT
+	scripts/shelf/render_train.sh $(SHELF_TUNE) $(SHELF_HELDOUT)
+
+shelf-eval:       ## SIMULATED: shelf events on the six held-out TRAIN-seed clips -> out/shelf/eval_heldout6.json and .md
+	$(PY) scripts/shelf/eval_shelf.py $(SHELF_HELDOUT) --name heldout6 --jobs $(SHELF_JOBS)
+
+shelf-eval-tune:  ## SIMULATED: the same on the clips the rules were tuned on -> out/shelf/eval_tune.json and .md
+	$(PY) scripts/shelf/eval_shelf.py $(SHELF_TUNE) --name tune --jobs $(SHELF_JOBS)
+
+shelf-robust:     ## SIMULATED: pixel comparison on clip 4903 with the picture shifted or the light changed -> out/shelf/robust_4903.md
+	$(PY) scripts/shelf/robust_check.py 4903
+
+shelf-test:       ## unit tests of the shelf-event code (synthetic pictures, no video needed)
+	$(PY) -m pytest tests/test_shelf_events.py tests/test_shelf_store.py -q
+
+# ---- hand and held-item detector (SIMULATED; stream hand-detector) ----
+HANDS        ?= $(SYNTH)/hands
+HANDS_SEEDS  ?= 2000:2042
+HANDS_HELD   ?= 3000:3010
+HANDS_TRAIN   = $(PY) -m bree.train.train --batch 16 --lr0 0.001
+
+hands-data:       ## SIMULATED reach / held item / hand frames from TRAIN-range seeds, held-out seeds apart, then 640 px tiles -> $(HANDS)/sku (held-out frames + first tiles), $(HANDS)/sku_x2 (twice the training frames)
+	node scripts/train/render_hands.mjs --out $(HANDS)/frames --seeds $(HANDS_SEEDS) --p-act 0.5 --p-carry 0.2
+	node scripts/train/render_hands.mjs --out $(HANDS)/heldout_frames --seeds $(HANDS_HELD) --p-act 0.5 --p-carry 0.2
+	$(PY) -m bree.train.dataset --frames $(HANDS)/frames $(HANDS)/heldout_frames --out $(HANDS)/sku --heldout-from 3000 --stride 4 --tiles-per-frame 2 --max-hard 1 --focus 2 --workers 5
+	$(PY) -m bree.train.dataset --frames $(HANDS)/frames --out $(HANDS)/sku_x2 --heldout-from 3000 --stride 2 --tiles-per-frame 2 --max-hard 2 --focus 3 --workers 4
+
+hands-train:      ## sim_sku.pt -> sim_sku_hands_v2.pt (hand class added, 2 epochs) -> sim_sku_hands_v3.pt (3 epochs on sku_x2). sim_sku.pt is not touched
+	$(HANDS_TRAIN) --data $(HANDS)/sku/data.yaml --base $(SYNTH)/weights/sim_sku.pt --epochs 2 --warmup-epochs 0.15 --name sim_sku_hands_v2 --out $(SYNTH)/weights/sim_sku_hands_v2.pt
+	$(HANDS_TRAIN) --data $(HANDS)/sku_x2/data.yaml --base $(SYNTH)/weights/sim_sku_hands_v2.pt --epochs 3 --warmup-epochs 0.1 --name sim_sku_hands_v3 --out $(SYNTH)/weights/sim_sku_hands_v3.pt
+
+hands-eval:       ## held-out simulated frames, old and new weights side by side -> results/hand_detector.json and .md
+	$(PY) -m bree.train.eval_hands --data $(HANDS)/sku --weights sim_sku sim_sku_hands_v2 sim_sku_hands_v3 --second-look 6
+
+assoc-test:       ## SYNTHETIC scripted scenes: association, floor tracker, shelf events to the ledger (no weights needed)
+	$(PY) -m pytest tests/test_association.py -q
+
+assoc-scripted:   ## SYNTHETIC: 200 scripted multi-shopper scenes, right-shopper rate and identity -> results/assoc_scripted.json
+	$(PY) -m bree.track.scenes --scenes 200 --write results/assoc_scripted.json
+
+assoc-door:       ## SIMULATED: identities per shopper on data/synth/clip_5001_door (TRACK-2, TRACK-3) -> results/assoc_door.json
+	$(PY) -m bree.track.floor_bench door --write results/assoc_door.json
+
+assoc-dev:        ## SIMULATED DEV clips: identity, right-shopper rate, and the chain to alerts with the TRUE picks as shelf events -> results/assoc_dev.json
+	$(PY) -m bree.track.floor_bench dev --chain --write results/assoc_dev.json
+
+# ---- fuel drive-off: plate reader, pump zones, retention (src/bree/plates, scripts/plates) ----
+PLATES_DIR ?= out/plates/store
+
+plates-test:        ## drive-off unit tests on SYNTHETIC plates and SCRIPTED timelines (no model weights needed; add -m vision for the open models)
+	$(PY) -m pytest tests/test_plates.py -m "not vision"
+
+plates-bench:       ## SYNTHETIC plate read accuracy by plate width and light, and the drive-off rule on scripted timelines -> results/plates_bench.md, out/plates/bench.json (about 16 min measured on a busy laptop; --scenarios-only reruns the timelines and the vote calibration in about 4)
+	$(PY) scripts/plates/bench.py
+
+plates-bench-quick: ## the same on 2 widths and 2 light levels, a few samples (about 3 min), writes out/plates/quick.md and out/plates/bench_quick.json
+	$(PY) scripts/plates/bench.py --quick --out out/plates/quick.md
+
+plates-purge:       ## delete expired plate records now (also runs on every open, write and lookup of the plate store, and hourly from a running DriveOffMonitor)
+	$(PY) -c "from bree.plates.retention import PlateStore; print(PlateStore('$(PLATES_DIR)').purge())"

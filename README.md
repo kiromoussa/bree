@@ -651,6 +651,377 @@ The recorded run (REPORT.md "End to end on simulated data") caught 0 of 2 simula
 event, because the item cameras rarely give a tracked person and the overhead cameras cannot see the items. The chain runs; the
 recommended layout needs a pick decided across cameras, which is not built.
 
+## One pipeline path for a multi-camera store (`bree.shelf.store`)
+
+This is what `make bench-dev` runs. One call per clip folder (video per camera, `calibration.json`, `layout.json` with
+the planogram, `register.jsonl`):
+
+| step | cameras | module | output |
+|---|---|---|---|
+| shelf events | shelf rail, cooler, counter | `bree.shelf.events` with the `sim_sku_hands_v3` weights | takes and puts per slot, no person box needed |
+| people | overhead, entrance | `bree.track.people`, `bree.track.floor` | one floor track per shopper, with clothing colour to keep two people apart who pass each other |
+| who took it | | `bree.track.associate`, `bree.shelf.store.one_act_per_reach`, `bree.events.shelf` | PICK / PUT_BACK per shopper, one per reach, plus ENTER, PAY (register visit), EXIT |
+| theft at exit | | `bree.ledger` with the register feed | alerts and reviews in `alerts.jsonl`, ingested into a review store (`<out>/review`) |
+
+```
+.venv/bin/python -m bree.shelf.store <clip folder> <out folder>            # everything
+.venv/bin/python -m bree.shelf.store <clip folder> <out folder> --rejoin   # reuse the stored shelf events and person boxes
+make bench-dev                        # SIMULATED DEV clips, about 10 minutes -> results/bench_dev.md
+make bench-dev BENCH_ARGS=--keep      # the same without running the models again (about 20 s of tracking, association, ledger)
+BREE_SKU_WEIGHTS=sim_sku make bench-dev BENCH_ARGS="--name old_weights"    # the first detector instead
+```
+
+The two slow steps keep their output in `<out>/pipeline` (`shelf_events.jsonl`, `people_<camera>.jsonl`). Nothing in
+this path reads ground truth: the bench hands the runner a folder of links without `truth/`.
+
+Limits. No concealment cue is built yet, so every flag is review tier and none is alert tier. The runner replays a
+whole clip (tracks first, then association); a live version has to hold events for a few seconds. The stored person
+boxes carry clothing colour histograms: fine for simulated clips, not to be written to disk in a real store (see
+DECISIONS.md).
+
+## Fixed benchmark (simulated clips)
+
+Everything in this section is SIMULATED (browser store simulator copy). It is the one benchmark every pipeline
+change is measured on.
+
+```
+make bench-clips     # render the DEV and TEST clips once (Chrome, node, ffmpeg, BREE_PLAYWRIGHT)
+make bench-dev       # pipeline on the 6 DEV clips -> results/bench_dev.json and .md (scorecard + per-pick funnel)
+make bench-test      # the 6 TEST clips: final numbers only, never for tuning
+make bench-smoke     # one clip, 60 frames per camera, writes nothing to results/
+```
+
+- Splits are fixed by seed in `scripts/bench/manifest.json`: train 1000 to 4999, dev 7001 to 7006, test 9001 to
+  9006. Training data may only come from train seeds.
+- A clip is 4 to 8 shoppers over about 60 to 90 s on the recommended-3d-45 layout: honest shoppers and thieves,
+  picks at gondolas, in the cooler and at the counter, put-backs, two shoppers at one shelf, register payments.
+  16 to 20 cameras per clip as H.264 video, with calibration, the planogram, the register feed and ground truth.
+- The scorer reports theft recall, alert precision, false alerts and reviews on honest shoppers, pick recall
+  and precision, right SKU rate, time to alert, identities per shopper, and a funnel that says at which stage
+  each true pick was lost. The pipeline never sees the ground truth: it is run on a view of the clip without it.
+- Clip format, commands and the scorer's input contract: `scripts/bench/README.md` and the docstring of
+  `src/bree/sim/bench.py`.
+- The recorded baseline (per-camera engine at 19f51dc) is `results/bench_dev_baseline.md`: 0 of 20 thefts caught, 2 of
+  70 picks, 4.0 identities per shopper. Rerun it with `make bench-dev BENCH_ARGS="--runner bree.sim.bench:run_pipeline --name baseline"`.
+
+## Shelf events without a person box (`src/bree/shelf/`)
+
+Item cameras (shelf rail, cooler, counter) report what left or came back to a shelf without any person box. Each
+record follows the shared shelf event contract (`camera_id, t, t_start, t_end, kind, slot_id, sku_id, sku_conf,
+count, source, hand_px, point_3d, point_sigma_m, evidence`). Inputs are pixels, the camera calibration and the
+planogram (`layout.json`: which slot holds which SKU, slot position and row depth). No ground truth.
+
+Three cues per camera, fused in `bree.shelf.events.ShelfCamera`:
+
+| cue | module | what it reads |
+|---|---|---|
+| pixel comparison | `bree/shelf/diff.py` | a slot-sized patch that differs from the shelf picture and has stopped moving; the slot is the planogram slot whose projected front item it overlaps. Ignores big regions (a body, a cooler door) |
+| slot watch | `bree/shelf/slots.py` | the SKU detector's boxes of stock on the shelf, matched to the predicted box of every row position of a slot: the front moved back by n positions is a take of n units, forward is a put. Works while an arm is still in view. Gondola and counter slots only |
+| item in a hand | `bree/shelf/hand.py` | SKU detections on moving regions that are not shelf stock, and a hand point (the detector's hand class when the weights have one, a skin blob otherwise, or any callable passed as `hand=`). Confirms the SKU of a shelf change |
+
+`source` is `shelf_diff` for one shelf cue alone, `both` when two cues agree or the item was seen in a hand,
+`hand_item` for a held item alone (off by default, see the decisions). Extra fields: `cue`, `slots` (candidate
+slots with weights), `row` (row position before and after), `count` (units, from the row positions).
+
+```python
+from bree.shelf.events import run_clip, fuse_views, ShelfCamera, camera_events
+events = run_clip(clip_dir, jobs=3)              # every item camera of a clip folder, sorted by t
+status = []; run_clip(clip_dir, status=status, evidence_dir="out/shelf/evidence")   # also camera health records and before/after crops
+acts = fuse_views(events, layout)                # one record per act: views of several cameras merged, slot by vote
+cam = ShelfCamera(camera_id, camera, layout, fps, detector=sku_detector)   # live: cam.update(frame) -> events, cam.finish()
+```
+
+```
+.venv/bin/python -m bree.shelf.events data/synth/bench/train/clip_4903 --out shelf_events.jsonl [--fused] [--no-detector] [--evidence DIR] [--status status.jsonl]
+make shelf-clips        # render TRAIN-seed clips 4900 to 4906, 4950, 4951 (SIMULATED)
+make shelf-eval         # six held-out clips -> out/shelf/eval_heldout6.md
+make shelf-robust       # clip 4903 with the picture shifted or the light changed -> out/shelf/robust_4903.md
+make shelf-test
+```
+
+An event is reported about 3 s after the change (the wait for a second cue and for a put that cancels it).
+`point_3d` is the slot's face centre from the planogram (no two-view triangulation); `point_sigma_m` is half the
+slot width (at least 0.03 m). `evidence.before` and `evidence.after` are null unless an evidence folder is given, and
+then only events the pixel comparison saw get crops.
+
+Camera health. The pixel comparison undoes a small shift of the whole picture (up to 12 px at half resolution) and a
+brightness change (gain 0.25 to 4) before comparing. When more than half the picture differs from the reference it
+reads nothing, and once the view has been still for 1 s it takes a new reference. Each camera keeps status records
+(`ShelfCamera.status`, `run_clip(status=[])`, `--status`): `{"camera_id", "t", "kind": "status", "status": ...}` with
+`unreliable`, `reliable`, `reference_reset`, `brightness_changed`, `brightness_back`, `needs_recalibration`.
+`bree.shelf.events.unreliable_windows(status)` gives the spans per camera in which "no shelf event" means nothing.
+Status records are kept apart from the events, so the event stream holds takes and puts only.
+
+For the association step:
+- One camera never reports two takes (or two puts) of the same or the neighbouring facing within 4 s unless the
+  opposite event lies between them. Different cameras still report the same act each: use `fuse_views`.
+- Treat `count` above 1 as unconfirmed. No clip has a multi-unit pick yet.
+- The slot can be the neighbouring facing (7 to 8 cm away), most often with the same SKU. Trust `sku_id` more than
+  `slot_id` and read `slots` (candidates with weights).
+- A put with no earlier take of that slot by the same shopper should not become a PUT_BACK on its own.
+
+## Hand and held-item detector (SIMULATED, stream hand-detector)
+
+A second version of the sim-trained SKU detector for the item cameras (rail, cooler, checkout). Same 33 SKU
+classes plus a `hand` class, trained on frames where an arm is up at a shelf, an item is in a hand, or an item is
+on the counter. It runs on the whole frame, so it does not need a person box. Simulated data only: the hands are
+the block-shaped forearm ends of the simulator's figures.
+
+Weights (all in `data/synth/weights/`, each with a `.json` record of how it was trained):
+
+| name | what |
+|---|---|
+| `sim_sku` | the first detector, 33 SKUs. Still the default. Not changed. |
+| `sim_sku_hands_v2` | `sim_sku` + hand class, 2 epochs on 5,788 tiles (15.5 minutes). Kept for the record. |
+| `sim_sku_hands_v3` | `v2` + 3 epochs on 12,064 tiles (44 minutes). Use this one. |
+
+### Switching
+
+```
+BREE_SKU_WEIGHTS=sim_sku_hands_v3 make sim-eval SIM_BACKEND=sim_sku          # any command that builds the sim_sku backend
+BREE_SKU_WEIGHTS=sim_sku_hands_v3 .venv/bin/python -m bree.sim.bench dev     # the benchmark
+BREE_SKU_WEIGHTS=sim_sku_hands_v3 BREE_SKU_ROI=full ...                      # also run every tile, not only tiles around people
+unset BREE_SKU_WEIGHTS                                                       # back to sim_sku
+```
+
+`BREE_SKU_WEIGHTS` takes a version name from `data/synth/weights/` or a path to a `.pt` file. `BREE_SKU_ROI`
+is `people` (default, the old behaviour) or `full`. With hand weights the backend never reports `hand` as a
+product; the hand boxes of the last frame are on `backend.last_hands`.
+
+### Calling it from code
+
+```python
+from bree.train.backend import SkuDetector
+det = SkuDetector("sim_sku_hands_v3", device="mps", conf=0.25)
+(item_boxes, item_confs, item_cls), (hand_boxes, hand_confs) = det.detect(frame)             # whole frame
+... = det.detect(frame, rois=np.array([[x0, y0, x1, y1]]))        # only tiles touching these boxes
+... = det.detect(frame, second_look=6)      # one more tile centred on each of the 6 best hands
+sku_id = det.names[int(item_cls[i])]        # det.hand_cls is None for weights without the hand class
+items_only = det(frame)                     # the old call, unchanged
+```
+
+Boxes are xyxy in frame pixels. `bree.shelf.hand` already uses `det.detect` and `det.hand_cls`, so the shelf
+event stream picks the hand boxes up as soon as `BREE_SKU_WEIGHTS` names hand weights.
+
+### Reproducing
+
+```
+export BREE_PLAYWRIGHT=/path/to/node_modules/playwright
+make hands-data      # render seeds 2000:2042 (train) and 3000:3010 (held out), cut tiles -> data/synth/hands/sku and sku_x2
+make hands-train     # sim_sku.pt -> sim_sku_hands_v2.pt (2 epochs on sku) -> sim_sku_hands_v3.pt (3 epochs on sku_x2)
+make hands-eval      # old and new weights on the held-out frames -> results/hand_detector.md, .json
+.venv/bin/python -m bree.train.eval_hands --report-only      # rewrite the .md from the saved .json
+.venv/bin/python -m pytest tests/test_hand_detector.py tests/test_detector_train.py -q
+```
+
+The exact commands are in the Makefile. Results: `results/hand_detector.md` and `.json` (held-out simulated
+frames), summary in `report.md` next to them.
+
+## Who took it: store-wide people and shelf events (association stream)
+
+Item cameras (rail, cooler) report shelf events in the shared contract without needing a person box. Three modules
+turn them into the PICK / PUT_BACK events the ledger already reads:
+
+| module | what it does |
+|---|---|
+| `bree.track.people` | person boxes with pose keypoints for the overhead and entrance cameras (the repo's detector plus crop pose, no tracker) |
+| `bree.track.floor` | one tracker on the floor plan over all people cameras: one identity per shopper, closed world (births at the door, hand-back of lost people, second boxes, exits, timeout, uncertain marks) |
+| `bree.track.associate` | attaches each shelf event to the person whose floor position and reach explain it; events close in time are solved together; marks doubt |
+| `bree.events.shelf` | shelf events + people -> ENTER / PICK / PUT_BACK / PAY / EXIT (+ CONCEAL from cues) -> the unchanged ledger with the register feed |
+
+```python
+from bree.events.shelf import track_people, store_events, load_payments, run_ledger, write_run
+tracker, ids = track_people(cams, layout, boxes, fps)        # cams: {id: bree.calib.camera.Camera} of the people cameras
+                                                             # boxes[camera][frame] = [{"bbox", "kpts"}]
+events, assocs = store_events(shelf_events, tracker.people(), layout, cams=cams, conceal=cues)
+alerts, ledger = run_ledger(events, load_payments(clip / "register.jsonl"), layout)
+write_run(out, events, alerts, boxes, ids, fps)              # the files bree.sim.bench scores
+```
+
+- `shelf_events`: the shared contract. `slot_id` or `point_3d` is needed (a slot gives the shelf face and its normal; a
+  bare 3D point is matched by distance only). `sku_id` missing: the planogram's SKU of the slot is used.
+- `cues` (optional): `{"t", "conf", "sku_id"?, and "person_id" or "point_3d"}`, one per concealment seen by an item camera.
+- Each PICK / PUT_BACK carries `sku`, `zone` (the fixture), `meta.slot`, `meta.assoc` (cost, margin, why),
+  `meta.uncertain`, `candidates` (the other people who fit) and `meta.identity_uncertain` (the tracker's doubt about who
+  the person is; the ledger caps that person at review).
+- Per-camera engines for item cameras: set `rules: {picks_from_shelf_events: true}` so the single-view PICK / PUT_BACK
+  rule is off there.
+- Knobs: `bree.track.floor.FloorConfig` (`encounter_m`: two identities this close are both marked uncertain, 0 turns it
+  off), `bree.track.associate.AssocConfig` (`stand_m`, `sigma_*`, `reach_m`, `margin`).
+
+Commands: `make assoc-test`, `make assoc-scripted` (SYNTHETIC), `make assoc-door`, `make assoc-dev` (SIMULATED; person
+boxes are read from the frame logs of a pipeline run, default `out/bench/dev_baseline`, or made with
+`python -m bree.track.people <clip> <out>` and passed with `--boxes`).
+
+## Fuel drive-off (plates)
+
+A vehicle fuels, leaves the pump, and nobody pays. `src/bree/plates/` links a vehicle and its plate to a pump
+and a fuel sale, and raises a review alert when the sale stays unpaid after the vehicle has gone. Everything
+measured so far is on SYNTHETIC plates and SCRIPTED timelines (`results/plates_bench.md`). No real
+forecourt footage has been used.
+
+```
+make plates-test          # unit tests, no model weights needed
+make plates-bench-quick   # about 3 minutes
+make plates-bench         # the full tables, about 16 minutes -> results/plates_bench.md
+make plates-purge         # delete expired plate records now
+```
+
+### Parts
+
+| file | what it does |
+|---|---|
+| `reader.py` | plate detector + plate text reader behind two small interfaces (`PlateDetector`, `PlateOcr`), `make_reader()`, `vote()` over several frames |
+| `pump.py` | `PumpZone`, `FuelSale`, `DriveOffMonitor` (pump-zone tracker and the drive-off rule), `IouTracker`, `yolo_vehicles` |
+| `retention.py` | `PlateStore`: plate records with expiry, automatic deletion, access log |
+| `synth.py`, `scenarios.py` | SYNTHETIC plates, forecourt frames and scripted timelines for tests and the bench |
+
+### How to call it
+
+```python
+from bree.plates.reader import make_reader
+from bree.plates.pump import DriveOffMonitor, PumpZone, FuelSale, IouTracker, yolo_vehicles
+from bree.plates.retention import PlateStore
+
+zones = [PumpZone("P1", [(40, 520), (600, 520), (600, 715), (40, 715)], camera_id="forecourt")]
+plates = PlateStore("out/plates/store")                       # 72 h default, see Retention
+mon = DriveOffMonitor(zones, reader=make_reader(), plate_store=plates, out_dir="out/run")   # fps=camera rate
+tracker = IouTracker()
+
+# per frame of the forecourt camera (t = seconds on the shared store clock)
+alerts = mon.update(t, tracker.update(t, yolo_vehicles(yolo, frame)), frame, camera_id="forecourt")
+# from the forecourt controller / POS
+mon.on_sale(FuelSale("P1", t_start, t_end, amount=41.37, gallons=11.9, txn_id="T1042", prepaid=False))
+alerts += mon.on_payment(t, txn_id="T1042")                    # or pump_id="P1"
+# the existing alert and review path
+for a in alerts:
+    sink.emit(a)                                               # bree.alerts.writer.AlertSink
+    review.add_alert(a.to_dict(), camera="forecourt")          # bree.review.store.ReviewStore
+plates.sync_reviews(review)                                    # confirmed: keep 30 days; not theft: delete now
+```
+
+- A drive-off alert is a normal `bree.alerts.types.Alert` with `tier="review"`, one unpaid item of category
+  `fuel` whose `zone` is the pump id, and `person_id` set to the vehicle track id. A late payment gives a
+  retraction record (`retracts` set, tier `retracted`), the same shape the ledger already uses.
+- A plate is stored only when the vote over the frames of the visit reaches confidence 0.9; otherwise the alert
+  says "plate not read" and the reviewer has the clip.
+- The alert never holds the plate text. It says "stored as plate record <id>". The text is read with
+  `PlateStore.get(record_id, who, purpose)`, which is logged.
+- `make_reader(detector="both" | "open" | "classical")`, default `both`. `DriveOffMonitor(reader=None)` runs the rule and the
+  evidence clip with no plate reading at all: use that where plate reading is not allowed.
+- `update(..., evidence=pixelated_frame)` takes the head-pixelated copy of the frame for the clip when people
+  are in view. The module does not pixelate heads itself.
+- Shelf events and shopper identity are not involved: this module shares only the alert and review path.
+
+### The rule
+
+A sale at pump P is a drive-off candidate when it is not prepaid, not paid, and fuel has stopped. The vehicle is
+the one whose time in P's zone overlaps the fuelling time most. When that vehicle has been out of the zone for
+3 s it has left; if no payment arrives within the grace period after that (default 120 s), a review alert is
+raised. Stays under 5 s are ignored. Two vehicles in the zone during the sale lower the confidence and mark the
+alert identity uncertain. An unpaid sale with no vehicle seen at all is flagged after 5 minutes at low confidence.
+
+Gaps and track id changes (a person walks in front of the camera, the tracker renumbers the car):
+- A new track id in the same place (box overlap 0.5 or more) as a track that has just stopped is the same visit.
+- A box back in the same place after a gap is the same visit when that visit has an unpaid sale: within 60 s
+  once fuel has stopped, with no time limit while the sale is still dispensing. The alert lists every such gap.
+- The visit is split at the gap again, and the earlier part counts as left at the start of the gap, when a new
+  sale starts at that pump after the gap, or when the plate read after the gap differs from the plate read
+  before it by more than 2 characters. That is the next car taking the spot.
+- The stored plate and the evidence clip come only from the time fuel was flowing for that sale. A car that
+  arrives later can not put its plate on someone else's alert.
+- Known limit: a drive-off with an unreadable plate, followed within 60 s by a car that takes the same spot
+  and buys no fuel. The alert waits until that second car leaves and gives its leave time. It names the gap
+  and stores no plate. Also: a customer who is hidden after fuelling and then starts a second sale is split
+  like a new car, so the first sale is timed from the start of the gap.
+- Sale updates match by `txn_id`. A controller with no transaction ids is supported: an update matches the
+  sale at the same pump with the same start time, or the one still dispensing, and `on_payment(pump_id=...)`
+  settles the oldest unpaid sale at the pump. Not handled: an update without a `txn_id` that arrives after the
+  payment (it would open a new sale).
+
+### Retention
+
+| data | where | kept |
+|---|---|---|
+| plate reads of a vehicle that paid, or that had no sale | memory only, never on disk | at most 7 minutes after the vehicle leaves (grace period + 5 minutes) |
+| plate text and plate crop of a drive-off alert | `PlateStore` (SQLite, `secure_delete`) | 72 hours from the event (`retention_hours`) |
+| the same, after a reviewer confirms the drive-off | `PlateStore` | 30 days from the event (`confirmed_retention_days`) |
+| the same, after "not theft" or a late payment | | deleted at once |
+| access log (record id, who, purpose, time; no plate text) | `PlateStore` | 365 days (`access_log_days`) |
+| evidence clip (shows the plate in pixels) | review store media | the review store's rule, 30 days by default |
+
+Deletion is automatic: `purge()` runs when the store is opened, on every write and lookup, and once an hour
+from any running `DriveOffMonitor` that holds the store (`purge_every_s`), so an idle store with a live camera
+still loses its expired plates. With no monitor running, use `make plates-purge` from a timer. For the
+integrator: also call `PlateStore.sync_reviews(review_store)` from the review server's hourly timer, so a
+"not theft" decision deletes the plate within the hour. The evidence clip shows the plate in pixels and follows
+the review store's 30 day rule, not the 72 hour plate rule; whether forecourt clips need the short clock is a
+question for counsel. Not done: encryption at rest (use an encrypted volume).
+
+### Components and licences
+
+| component | version | licence | checked how |
+|---|---|---|---|
+| fast-plate-ocr (text reader, model `cct-s-v2-global-model`) | 1.1.0 | MIT | `LICENSE` in the installed package ("MIT License, Copyright (c) 2024 ankandrew"), package metadata `License-Expression: MIT`, https://github.com/ankandrew/fast-plate-ocr |
+| open-image-models (plate detector, model `yolo-v9-t-384-license-plate-end2end`) | 0.6.0 | MIT | same two checks, https://github.com/ankandrew/open-image-models |
+| ONNX Runtime | 1.30.0 | MIT | already a repo dependency |
+| OpenCV (classical localiser, image handling) | 5.0.0 | Apache 2.0 | already a repo dependency |
+
+Weights download on first use from the two projects' GitHub releases, with no sign-up, to `~/.cache/fast-plate-ocr`
+and `~/.cache/open-image-models`.
+
+Open points for counsel, not resolved here:
+1. The MIT licence files cover the packages. Neither project page (read 2026-10-05) states a separate licence
+   for the trained weights or names the training data.
+2. The detector is a YOLOv9 model. The original YOLOv9 code (WongKinYiu/yolov9) is GPL-3.0; an MIT
+   implementation (MultimediaTechLab/YOLO) also exists. The project page does not say which one produced these
+   weights. If this can not be confirmed, use `make_reader(detector="classical")`: the OpenCV localiser has no
+   weights. Its measured accuracy is in results.md.
+3. There is no weight-free text reader. A small character reader trained on synthetic plates was not built,
+   because the open reader could be downloaded.
+
+### Legal notes on plate reading (not legal advice)
+
+Plate reading is regulated in some states, and the rules are changing fast (several 2026 laws). Get counsel to
+clear each state before turning plate reading on there. The list below was put together on 2026-10-05 from the
+NCSL table "Automated License Plate Readers: State Statutes"
+(https://www.ncsl.org/technology-and-communication/automated-license-plate-readers-state-statutes, page dated
+2026-09-28) and the EFF list (https://www.eff.org/ALPRstatelaws). The statutes themselves were not read in
+full. Treat every line as a pointer to what counsel must read, not as a conclusion.
+
+States whose statutes reach private operators, or may:
+
+| state | citation | why it matters to a store |
+|---|---|---|
+| Arkansas | Ark. Code 12-12-1801 to 12-12-1808 | Generally bars individuals and businesses from using plate readers, with listed exceptions. Assume plate reading is off unless counsel finds an exception that fits. |
+| Maine | 29-A M.R.S. 2117-A | Use is limited to listed government purposes; a violation is a crime. Assume off. |
+| New Hampshire | RSA 261:75-b, RSA 236:130 | Plate readers are limited to law enforcement with a purge within minutes; surveillance that identifies vehicles on public ways is restricted. Whether a camera on a private forecourt is covered is a question for counsel. Assume off until answered. |
+| California | Cal. Civ. Code 1798.90.5 to 1798.90.55 | Applies to any "ALPR operator", private ones included: security procedures, a posted usage and privacy policy, access records, limits on sharing, and a private right of action. The access log in `PlateStore` is a start, not compliance. The CCPA (Cal. Civ. Code 1798.100 and following) may also treat a plate as personal information. |
+| Utah | Utah Code 41-6a-2001 to 41-6a-2006 | Lists who may use plate readers and for what, and has rules for privately held plate data and how long it is kept. Counsel must check that a retail forecourt fits a permitted use. |
+| Montana | Mont. Code 46-5-117 to 46-5-119 | Restricts plate readers on public highways. A forecourt camera that also sees the road needs a look. |
+| Connecticut | S.B. 397 (2026) | Per the NCSL table: covers public and private vendors, deletion within 21 days, limits on sale and on some uses. Second source checked 2026-10-05 (a vendor summary and the amendment text on cga.ct.gov): signed 2026-05-04, 21 day retention with listed exceptions. |
+| Washington | Wash. S.B. 6002 (2026) | Statewide rules on collection, access, sharing and retention of plate reader data. Second source checked 2026-10-05 (Washington State Standard, a vendor summary): 21 day retention with limited exceptions. Counsel must check the reach to a store. |
+| Oregon, New Jersey | 2026 Or. Laws ch. 77; N.J. A.B. 4070 (2026) | NOT CONFIRMED beyond the NCSL table: a search on 2026-10-05 found no second source for either citation. Listed there as 2026 laws on plate reader data (retention near 21 to 30 days, bans on selling or sharing), mostly written for agencies and their vendors. Counsel must confirm that each exists as cited and whether it reaches a store, before this text is shown outside the team. |
+
+States whose plate reader statutes are written for government or police use (retention figures as listed by
+NCSL; they still show what lawmakers consider reasonable): Alabama (Ala. Code 41-9-620), Colorado (C.R.S.
+24-72-113), Florida (Fla. Stat. 316.0777, 316.0778), Georgia (O.C.G.A. 35-1-22, 30 months), Idaho (Idaho Code
+49-1432), Illinois (625 ILCS 5/2-130), Iowa (Iowa Code 321P.4, 30 days), Kansas (K.S.A. 45-221), Kentucky (KRS
+189.632, 90 days), Maryland (Md. Code, Public Safety 3-509), Minnesota (Minn. Stat. 13.824, 60 days), Nebraska
+(Neb. Rev. Stat. 60-3201 to 60-3209, 180 days), New Mexico (N.M. Stat. 29-22-1 to 29-22-5), North Carolina
+(N.C. Gen. Stat. 20-183.30 to 20-183.33, 90 days), Tennessee (Tenn. Code 55-10-302, 90 days), Vermont (23
+V.S.A. 1607, 1608), Virginia (Va. Code 2.2-5517, 21 days).
+
+In every state:
+- Federal Driver's Privacy Protection Act, 18 U.S.C. 2721 to 2725: a store can not turn a plate into an owner
+  through motor vehicle records. The plate goes to the police with the report; BREE never looks anyone up.
+- States with no plate reader statute still have general privacy, consumer protection and data breach laws.
+- Many states have their own fuel theft (drive-off) statutes that say what a station may report and to whom.
+- Product defaults that follow from this: plate reading is a separate switch (`reader=None`), nothing is kept
+  for vehicles that paid, incident plates expire in 72 hours unless confirmed, every lookup is logged, plates
+  are never shared or sold and never matched against any list. Signage at the forecourt and a written policy
+  are the operator's job and are not in this repo.
+
 ## Layout
 
 ```

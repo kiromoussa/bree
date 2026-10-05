@@ -2,6 +2,531 @@
 
 Twelve parts, newest first. **Audit fixes (2026-10-05)** comes first. Then, from the integration of four parallel work streams: **Integration summary (2026-10-05)**, **End to end on simulated data**, **SKU detector trained on simulated frames**, **Calibration, 3D slots and store-wide identity**, **Camera node first pass**, **Human review feedback loop**. Then, unchanged: **Closed-world identity (2026-10-04)**, **Re-ID without the face (2026-10-03)**, **Overnight (2026-10-01)**, **Phase 2 (2026-09-30, real data)** and the **Phase 1 report**. Every number names the file it came from; real-data results and simulated or synthetic results are kept apart and labelled.
 
+# One pipeline path: shelf events, floor tracks, association, ledger (2026-10-05)
+
+All numbers in this section are SIMULATED: the DEV split of the fixed benchmark (6 clips from the browser store
+simulator, 421 s, 37 shoppers, 15 thieves, 70 picks, 20 stolen items). The TEST split was not run.
+
+**Bottom line.** The three core streams are wired into one runner (`bree.shelf.store:run`, the default of
+`make bench-dev`). On DEV it puts 16 of 20 stolen items in front of a reviewer (was 0 of 20), finds 67 of 70 picks
+(was 2) with the right product for 91 percent of them, and keeps 1.27 identities per shopper (was 4.0). The goal is
+not met: 4 of 22 honest shoppers get a review (the bar is 1 in 10), and no theft reaches alert tier because nothing
+detects concealment yet.
+
+| DEV, SIMULATED | per-camera engine (baseline) | first join of the streams | after the two fixes | goal |
+|---|---|---|---|---|
+| Theft recall, alert or review | 0 of 20 | 12 of 20 (0.60) | 16 of 20 (0.80) | 0.80 |
+| Theft recall, alert tier | 0 of 20 | 0 of 20 | 0 of 20 | |
+| Pick recall | 2 of 70 (0.03) | 69 of 70 (0.99) | 67 of 70 (0.96) | 0.80 |
+| Right SKU of detected picks | 1 of 2 | 0.913 | 0.910 | 0.85 |
+| Pick precision | 2 of 2 | 0.552 (125 PICK events) | 0.744 (90 PICK events) | |
+| Right shopper of detected picks | 2 of 2 | 0.928 | 0.940 | |
+| Alerts on honest shoppers | 0 | 0 | 0 | |
+| Reviews on honest shoppers | 0 of 22 | 6 of 22 | 4 of 22 (1.8 per 10) | 1 per 10 |
+| Identities per shopper | 4.0 | 1.27 | 1.27 | 1.5 |
+| Identities covering two shoppers | 93 | 15 | 6 | |
+
+Files: `results/bench_dev_baseline.md`, `results/bench_dev_first_join.md` (run before the fixes),
+`results/bench_dev.md` (final, `make bench-dev`, 577 s for the six clips on this laptop).
+
+### The funnel after the fixes (70 true picks, each counted at the first stage it fails)
+
+| stage | reached | lost here | passed on its own |
+|---|---|---|---|
+| in view | 70 | 0 | 70 |
+| frame reached pipeline | 70 | 0 | 70 |
+| hand or item detected | 70 | 8 | 62 |
+| shelf event emitted | 62 | 0 | 67 |
+| right slot | 62 | 10 | 57 |
+| right SKU | 52 | 0 | 61 |
+| associated to a shopper | 52 | 0 | 67 |
+| right shopper | 52 | 0 | 63 |
+| conceal or pay classified | 52 | 18 | 49 |
+| ledger basket | 34 | 8 | 56 |
+| alert | 26 | 8 | 31 |
+
+- **Conceal or pay classified loses the most, 18 picks, 17 of them stolen items.** There is no CONCEAL event at all:
+  the overhead pose does not show concealment in this simulator (association section below) and no item camera
+  reports it. This is why alert tier is 0 of 20. The stolen items still reach a reviewer through the ledger (18 of 20
+  are listed as unpaid on some record).
+- **"Hand or item detected" (8) is a logging gap, not a miss.** The shelf cameras do not write per-frame boxes to the
+  frame log; the runner logs the reach point of each shelf event only. 67 of 70 picks have a PICK event.
+- **Right slot (10).** Mostly the neighbouring facing, as in the shelf-events section. The SKU is right more often
+  than the slot (61 against 57).
+
+### What was wrong after the first join, and the two fixes
+
+1. **One reach was read as several takes.** 125 PICK events for 70 picks. Of the 60 false takes, 45 were repeats of a
+   true take within 5 s and 1.5 m (one camera at two facings, or two cameras at slots too far apart to be fused), 7
+   more sat next to another false take. Each repeat is an unpaid item on somebody. Fix:
+   `bree.shelf.store.one_act_per_reach`, after association: takes (or puts) by one shopper within 4 s and 1 m are one
+   act, and the best-evidenced reading is kept. 34 takes and 11 puts were merged on DEV. Merging before association
+   was tried first and lost true picks of two shoppers at neighbouring cooler doors (pick recall 0.91), so the merge
+   is per shopper.
+2. **Identities were swapped when two shoppers passed close to each other** (15 identities covered two shoppers; a
+   thief's basket left the store under an honest shopper's identity). Fix: person boxes carry clothing colour
+   (`bree.track.people.appearance`, upper and lower body, never the head) and `bree.track.floor` uses it twice: to
+   pick who reappeared after being lost, and after two people came within 0.8 m, to check who is who once both are
+   seen apart. 6 swaps were put right on DEV, identities covering two shoppers fell from 15 to 6, and identities
+   marked uncertain from 31 to 19 of 41.
+
+What-ifs on the stored shelf events and person boxes (same six clips, tracking, association and ledger only):
+
+| change | thefts flagged | reviews on honest shoppers | pick recall | pick precision |
+|---|---|---|---|---|
+| first join | 12 | 6 | 0.986 | 0.552 |
+| + clothing colour | 11 | 6 | 0.986 | 0.552 |
+| + clothing colour + one act per reach (4 s, 1.0 m): the final setting | 16 | 4 | 0.957 | 0.744 |
+| same with 3 s, 0.6 m | 15 | 4 | 0.986 | 0.676 |
+| same with 6 s, 1.0 m | 16 | 4 | 0.957 | 0.761 |
+| final setting, strangers never grouped (`group_window_s=0`) | 15 | 7 | 0.957 | 0.744 |
+
+Clothing colour alone does not move theft recall (11 against 12), it moves identity; the two fixes together do.
+
+### What is left (DEV, final run)
+
+- **4 missed thefts.** One pick was never seen. Two were picked by the right identity, which then became another
+  shopper before the exit (a hand-back after 7 s out of view in 7001, a group record in 7002 that the scorer credits
+  to the other shopper). One thief stood at the register next to another payer and the other shopper's receipt
+  cleared the stolen item (7006).
+- **4 reviews on honest shoppers.** Their 10 flagged items: 4 false takes (two from the slot watch cue alone), 2
+  true picks of another shopper, 2 own picks that were paid, 1 own pick that was put back, 1 own pick with the wrong
+  SKU of a sibling product.
+- **Tests:** the full suite (`.venv/bin/python -m pytest`) ran after the merge: 398 passed, 1 skipped (the browser test of
+  the review page, `BREE_PLAYWRIGHT` not set in that shell), none failed.
+- **Not measured:** the shelf rules were tuned with the old weights and `make shelf-eval` was not repeated with
+  `sim_sku_hands_v3`; the old weights were not run through the DEV benchmark; nothing was run on TEST.
+
+## 2026-10-05: fixed benchmark and baseline (SIMULATED)
+
+Everything here is simulated: 12 clips from the browser store simulator copy on the recommended-3d-45 layout.
+Nothing is real footage. Command: `.venv/bin/python -m bree.sim.bench dev --runner bree.sim.bench:run_pipeline --name baseline`,
+result in `results/bench_dev_baseline.md` and `.json`. The TEST split was not run except a 60 frame smoke check on
+one clip; no TEST number is recorded.
+
+DEV split: 6 clips (seeds 7001 to 7006), 421 s of simulated time, 37 shoppers (15 thieves, 22 honest), 70 true
+picks (41 paid, 20 concealed, 9 put back; 46 at gondolas, 15 in the cooler, 9 at the counter), 18 to 20 cameras
+per clip.
+
+Baseline: the per-camera engine as committed at 19f51dc (sim_sku detector, camera nodes and hub, closed-world
+identity, two-view slots).
+
+| Metric | Baseline, DEV |
+|---|---|
+| Theft recall, alert tier | 0 of 20 stolen items |
+| Theft recall, alert or review | 0 of 20 |
+| Alerts, reviews | 0, 0 (so alert precision is undefined, and no false alert on the 22 honest shoppers) |
+| Pick recall | 2 of 70 (2.9 percent) |
+| Pick precision | 2 of 2 PICK events |
+| Right SKU | 1 of the 2 paired picks, 1 of 70 true picks |
+| Right slot | 1 of 2 paired picks |
+| Time to alert | none (no alert) |
+| Store-wide identities per real shopper | 4.0 (148 identities for 37 shoppers; 93 of them cover two shoppers; 1 shopper never tracked) |
+
+Funnel, all 70 true picks, counted at the first stage each one fails:
+
+| stage | reached | lost here | passed on its own |
+|---|---|---|---|
+| in view of a rendered item camera | 70 | 0 | 70 |
+| frame reached the pipeline | 70 | 0 | 70 |
+| hand or item detected | 70 | 21 | 49 |
+| shelf event emitted | 49 | 47 | 2 |
+| right slot | 2 | 1 | 1 |
+| right SKU | 1 | 1 | 1 |
+| associated to a shopper | 0 | 0 | 2 |
+| right shopper | 0 | 0 | 2 |
+| conceal or pay classified | 0 | 0 | 1 |
+| ledger basket | 0 | 0 | 50 |
+| alert | 0 | 0 | 50 |
+
+Reading: the frames arrive and in 49 of 70 picks something is detected on the hand or the item (item box on 46,
+right SKU on 44, person box on the picker on 41, wrist near the hand on 32), but only 2 PICK events come out. The
+loss is at the shelf event stage (47 picks), then at detection (21, of which 20 at gondolas). The 50 in the last
+two rows are paid and put-back picks for which no alert is the right answer; with zero alerts that says nothing.
+None of the 20 concealed picks produced a PICK event.
+
+Pipeline wall time per clip, on a loaded 10 core laptop, 3 clips at a time: 11 to 20 minutes (camera nodes and
+hub 200 to 520 s, pipeline 480 to 815 s).
+
+## 2026-10-05: shelf events without a person box (SIMULATED, TRAIN-seed clips)
+
+Goal: rail, cooler and counter cameras report takes and puts per slot without a person box, so a pick no longer
+needs a person and an item in one view. Code in `src/bree/shelf/` (`diff.py` pixel comparison, `slots.py` slot
+watch, `hand.py` item in a hand, `events.py` fusion and the shared contract). Everything below is from simulated
+clips rendered with the benchmark generator on TRAIN seeds. No DEV or TEST clip was used.
+
+Clips: rules were tuned on 4900 to 4902. Held out are 4903 to 4906 plus 4950 and 4951, six clips. 4950 and 4951
+were added after a review found the first four too favourable. The review changes (shift and brightness
+handling, repeat drop) were made without looking at held-out results, and all nine clips were then run once.
+
+Unit: one truth pick and one item camera that saw the picked item at 20 px or more. Found: that camera reported a
+take within 3 s and 0.6 m. Right slot: the exact slot id. Slot or adjacent: the right slot, or the facing next to
+it (0.1 m or less) with the same SKU. Shares are of all pairs, a miss counts as wrong. Precision: share of events
+near any truth act. Strict precision: one event per act and camera. Repeats: further events of a camera near an
+act it already matched.
+
+Held out, six clips, `make shelf-eval`, `out/shelf/eval_heldout6.md`:
+
+| camera kind | act | pairs | recall | right slot | slot or adjacent | right SKU | right count | events | precision | strict precision | repeats | time error median s | p90 s |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| shelf | take | 62 | 0.919 | 0.855 | 0.903 | 0.903 | 0.919 | 87 | 0.828 | 0.724 | 0 | 0.07 | 0.39 |
+| cooler | take | 19 | 0.895 | 0.737 | 0.895 | 0.895 | 0.895 | 43 | 0.605 | 0.442 | 7 | 0.07 | 0.33 |
+| checkout | take | 13 | 1.000 | 1.000 | 1.000 | 1.000 | 0.923 | 23 | 0.652 | 0.565 | 1 | 0.10 | 0.12 |
+| all | take | 94 | 0.926 | 0.851 | 0.915 | 0.915 | 0.915 | 153 | 0.739 | 0.621 | 8 | 0.07 | 0.35 |
+| shelf | put | 12 | 0.750 | 0.750 | 0.750 | 0.750 | 0.750 | 20 | 0.500 | 0.500 | 0 | 0.23 | 0.44 |
+| cooler | put | 4 | 1.000 | 0.750 | 0.750 | 1.000 | 1.000 | 21 | 0.238 | 0.238 | 0 | 0.38 | 1.05 |
+| checkout | put | 5 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 11 | 0.455 | 0.455 | 0 | 0.27 | 0.45 |
+| all | put | 21 | 0.857 | 0.810 | 0.810 | 0.857 | 0.857 | 52 | 0.385 | 0.385 | 0 | 0.23 | 0.58 |
+
+Views fused per act (`fuse_views`): 70 picks, recall 0.957, right slot 0.871, right SKU 0.943. 167 fused events,
+97 match a truth act.
+
+By clip set (takes):
+
+| run | pairs | recall | right slot | slot or adjacent | precision | strict precision |
+|---|---|---|---|---|---|---|
+| held out, six clips | 94 | 0.926 | 0.851 | 0.915 | 0.739 | 0.621 |
+| of which 4903 to 4906 | 59 | 0.949 | 0.915 | 0.949 | 0.753 | 0.645 |
+| of which 4950 and 4951 | 35 | 0.886 | 0.743 | 0.857 | 0.717 | 0.583 |
+| tuning clips 4900 to 4902 | 41 | 0.829 | 0.805 | 0.829 | 0.763 | 0.513 |
+| all nine clips | 135 | 0.896 | 0.837 | 0.889 | 0.747 | 0.585 |
+
+Acceptance (pick recall and right slot at least 0.85 on held-out TRAIN-seed clips), stated plainly:
+
+- Recall is met on the six held-out clips: 0.926 over 94 pairs.
+- Right slot sits exactly at the bar: 0.851 over 94 pairs (80 right). It is not a comfortable pass. On the two
+  newest clips alone it is 0.743, on all nine clips 0.837.
+- Cooler cameras are under the bar on right slot: 0.737 over 19 pairs held out, 0.724 over 29 on all nine.
+- Of the 7 wrong slots held out, 6 are the neighbouring facing with the same SKU, seen at 20 to 52 px. For the
+  ledger (which counts SKUs) those are right: right SKU is 0.915. For slot-level stock they are wrong.
+- The neighbour-facing error was not fixed. The slot is still chosen by overlap of the changed patch with each
+  slot's visible pixels.
+
+What else the numbers say:
+
+- Precision is the weak side. Strictly counted, about 4 take events in 10 and 6 put events in 10 match no act.
+  An association step should not turn an unconfirmed put into a PUT_BACK on its own.
+- Repeats. One camera no longer reports the same or the neighbouring facing twice within 4 s. The repeats that
+  remain (8 held out, 13 on the tuning clips) are other slots 0.14 to 0.4 m from the act (checked on the tuning
+  clips), most in clip 4902 where the camera sways. They would be phantom picks in the ledger; `fuse_views`
+  does not merge events of one camera.
+- Idle cameras (rendered item cameras that see no act): 18 cameras, 22.4 camera minutes, 5 events, 0.22 events
+  per camera per minute held out.
+- Limit of this measure: the renderer keeps mostly item cameras that see a pick (10 of 12 in clip 4903), and
+  about 30 item cameras of the layout are never rendered. Store-wide false event counts will be higher than
+  these tables suggest. Going by the idle rate, 30 more cameras would add about 7 false events per minute, but
+  that rate rests on 5 events. A clip rendered with every item camera is needed (`render_clip.mjs
+  --max-item-cams 100 --spare-cams 100`, then `eval_shelf.py <seed> --tag _allcams`). I started one and stopped
+  it: with the other jobs on the laptop it would have taken over an hour. Request to the benchmark agent.
+- Unit count: every pick in these clips is one unit. 5 of 320 events on the nine clips carry a count above 1.
+  Counts above 1 are covered by a unit test only. Downstream should treat count above 1 as unconfirmed.
+- Timing: the take time is within 0.1 s of the truth for the median found pick, within 0.35 s for 9 in 10.
+- Tuning clips score lower than held out. Clips differ a lot one to the next; nine clips is still a small set.
+
+Shift and light (`make shelf-robust`, `out/shelf/robust_4903.md`; clip 4903, pixel comparison alone, the
+disturbance applied to the decoded frames of every item camera):
+
+| disturbance | pairs | recall | right slot | take events | precision | before this change |
+|---|---|---|---|---|---|---|
+| none | 13 | 0.923 | 0.923 | 23 | 0.696 | 24 events, precision 0.667 |
+| picture shifted 3 px from frame 50 | 13 | 0.923 | 0.846 | 25 | 0.560 | 148 events, precision 0.128 (reviewer's run) |
+| picture shifted 8 px from frame 50 | 13 | 0.923 | 0.923 | 26 | 0.615 | not measured |
+| dimmed to 30 percent over 30 s | 13 | 0.923 | 0.923 | 24 | 0.708 | recall 0.615, 94 events (reviewer's run) |
+| 10 percent brightness step | 13 | 0.923 | 0.923 | 22 | 0.727 | 12 of 13 found (reviewer's run) |
+| brightened by 60 percent | 13 | 0.923 | 0.923 | 48 | 0.312 | not measured |
+
+- A shift of the whole picture is estimated against the reference (phase correlation) and undone before
+  comparing. Brightness is undone for gains from 0.25 to 4 (it was 0.8 to 1.25, with a silent fallback).
+- Strong brightening is still weak: picks are found, but false takes double (48 against 23), because bright
+  areas clip at white. The camera reports `brightness_changed`, so the association step can discount it.
+- When more than half the picture differs from the reference the camera reads nothing and says `unreliable`;
+  after 1 s without motion it takes a new reference and says `reference_reset`. On the nine clips this window
+  opened 87 times (not inspected one by one; a shopper close to the camera is the likely cause), closed by
+  itself 85 times (`reliable`) and by a new reference twice.
+- A swaying camera is not fixed by this: clip 4902 still gives 67 events.
+
+Not done:
+
+- `point_3d` is the planogram slot face, not a two-view triangulation. `point_sigma_m` is now half the slot
+  width instead of null.
+- `evidence.before` and `.after` are null unless an evidence folder is passed (`run_clip(evidence_dir=...)`,
+  `--evidence DIR`). The evaluation runs did not pass one.
+- The hand cue is a skin blob or the detector's hand class; no better hand detector was dropped in.
+
+Wall time: 493 s for 38,010 camera frames (clips 4903 to 4906, 3 processes, laptop shared with other jobs).
+No "NMS time limit exceeded" warnings in these runs.
+
+## 2026-10-05 Hand and held-item detector (stream hand-detector, SIMULATED)
+
+Everything in this section is on simulated frames from the browser store simulator: one store model, invented
+package art, block-shaped hands. None of it is accuracy on real footage.
+
+### What was built
+
+- `scripts/train/sim/hands.js` + `scripts/train/render_hands.mjs`: frames of the benchmark's scripted behaviour
+  (reach, look, hold, put back, conceal, counter, two shoppers at one shelf) in randomised scenes, rendered on the
+  item cameras that see the hand, at the cameras' real resolutions (2688x1520, 1520x2688, 1920x1080). Each frame has
+  every item box with its SKU, and a box for every visible hand with `reaching` and `holding`.
+- 42 training scenes (seeds 2000 to 2041, 7,894 frames) and 10 held-out scenes (seeds 3000 to 3009, 1,936 frames),
+  all inside the benchmark TRAIN range, none shared with the first detector, dev or test.
+- `bree.train.dataset`: hand class, held-out seed range, crops around held items and reaching hands, frame stride,
+  parallel build. `bree.train.train`: fine-tuning with an added class keeps the old classes' outputs.
+- `bree.train.backend`: weights picked by version name, `SkuDetector.detect` returns items and hands apart, optional
+  second look centred on the hands, `BREE_SKU_ROI=full`. `sim_sku.pt` is unchanged and still the default.
+- `bree.train.eval_hands`: the evaluation below. `tests/test_hand_detector.py`.
+
+### Results on the held-out frames
+
+484 whole frames (every fourth of the held-out render), tiled inference on the whole frame at confidence 0.25, no
+person box. Command: `make hands-eval`. Full tables: `results/hand_detector.md`.
+
+| measure | sim_sku (old) | sim_sku_hands_v2 | sim_sku_hands_v3 | v3 + second look |
+|---|---|---|---|---|
+| item in a hand, 20 px or more: right SKU (target 85%) | 67.0% (235 of 351) | 74.1% | 87.5% (307 of 351) | 88.3% (310 of 351) |
+| item in a hand, 20 px or more: found | 75.2% | 78.9% | 90.6% | 91.7% |
+| hand on a reaching arm found, IoU 0.5 (target 90%) | 0% (no hand class) | 56.8% | 76.4% (230 of 301) | 79.1% (238 of 301) |
+| a hand box holds the true hand centre, reaching arm | 0% | 65.5% | 83.4% | 84.7% |
+| hand boxes that are a hand | n/a | 80.7% | 81.2% | 80.2% |
+| item on the counter, 20 px or more: right SKU | 65.9% | 70.5% | 76.1% | 77.3% |
+| shelf item, clear, 20 px or more: right SKU | 97.9% | 98.6% | 99.0% | 99.0% |
+| shelf item, partly hidden: right SKU | 95.7% | 97.0% | 97.8% | 98.0% |
+| item behind the front one: right SKU | 90.2% | 93.2% | 95.3% | 95.5% |
+
+Item in a hand, right SKU by pixels across a 6.6 cm can:
+
+| px | items | sim_sku (old) | sim_sku_hands_v3 |
+|---|---|---|---|
+| 30-40 | 17 | 35.3% | 70.6% |
+| 40-60 | 122 | 55.7% | 87.7% |
+| 60-100 | 148 | 83.8% | 93.9% |
+| 100+ | 61 | 59.0% | 78.7% |
+
+Held-out tiles, v3: mAP50 0.973, mAP50-95 0.872 over the 34 classes; the lowest SKU class is 0.956 AP50; the
+hand class is 0.848 AP50 (0.645 AP50-95). Per class: `hand_detector.md`.
+
+Speed, v3, measured while other jobs were running on the machine: 11.8 ms per 640 px tile and 51 ms per 4MP frame
+(15 tiles) on MPS; 65.5 ms per tile and 544 ms per frame on CPU. The same as the old weights (51 ms and 556 ms).
+
+Near-identical variants held in a hand, v3: 3 of 123 found bars given a sibling's SKU (cocoa_crest family), 3 of 34
+for the relieva pair, 0 in the other eight families that occur.
+
+### Acceptance
+
+- Right SKU for an item in a hand at 20 px or more, target 0.85: **met**, 0.875 (0.883 with the second look).
+  The old weights score 0.670 on the same frames.
+- Hand recall on reaching arms, target 0.9: **not met**, 0.764 (0.791 with the second look).
+
+What limits the hand recall, measured:
+
+1. Size. By the short side of the hand box, v3 finds 94.6% of reaching hands of 60 px or more (175 of 185), 64.7% at
+   30 to 60 px (44 of 68), 30.6% at 15 to 30 px (11 of 36) and none under 15 px (0 of 12). The 48 hands under 30 px are
+   16% of the reaching hands; they are far from the camera or mostly behind the item or the shelf (a hand counts as a
+   label from 30 visible pixels).
+2. Training time. The hand class starts from zero. 15.5 minutes of training gave 56.8%, 44 more minutes gave 76.4%, and
+   the val recall of the class was still rising (0.49 to 0.66). A further 3 epoch run (v4) was started and stopped at
+   79% of its second epoch, because other jobs on the shared machine had slowed it to between 2 and 12 seconds a step.
+   It was not evaluated and no v4 weights were written.
+3. Confidence threshold. At confidence 0.1 instead of 0.25, v3 finds 81.1% of reaching hands at IoU 0.5 and a hand box
+   holds the true hand centre for 89.4%, while the share of hand boxes that are a hand falls from 81.2% to 64.9%
+   (`eval_hands --weights sim_sku_hands_v3 --quick --conf 0.1`, not saved in the repo).
+
+What limits the held item: how much of it shows. v3 has the right SKU for 96.5% of held items that are 80% or more
+visible, 92.4% at 50 to 80% and 72.9% at 25 to 50% visible. Close-up items (100 px or more across a can, often larger
+than the 128 px tile overlap) are at 78.7%.
+
+### Not done
+
+- The new weights were not run through the pipeline or the benchmark clips; that is the integrator's and the
+  benchmark's step. Dev and test clips were not opened by this stream.
+- No frames of the first dataset were re-rendered with hand labels, so the 5,205 frames of seeds 1000 to 1239 are not
+  part of the new training set.
+- The tile mAP of the old weights on the new tiles is not reported (its class list has no hand class).
+
+## 2026-10-05: association stream (store-wide people, who took it, shelf events to the ledger)
+
+**Bottom line.** Shelf events can now be attached to a shopper without a person box in the item camera, and identity no
+longer falls apart. On the simulated clip of the first end to end run (`data/synth/clip_5001_door`, TRACK-2 and TRACK-3)
+the 4 shoppers get 4 identities, each born at the door and each seen leaving, plus one identity for the clerk (was 13
+people, 1 exit seen). On scripted scenes (SYNTHETIC) the right shopper is named for 450 of 462 shelf events (0.974)
+and none of the wrong ones is given without the uncertain mark. Fed the TRUE picks of the 6 DEV clips as shelf events
+(SIMULATED, an upper bound for this stage, not a pipeline result), the chain puts 16 of 20 stolen items in front of a
+reviewer with 1 review on an honest shopper; the recorded baseline found 0 of 20. Alert tier needs a conceal cue from
+an item camera: the overhead pose does not show concealment in this simulator (measured below).
+
+### Why identity fragmented (20, then 13 people for 4 shoppers)
+
+Read off the old run's logs (`data/synth/clip_5001_door/e2e/sim_eval/pipeline`):
+
+| cause | evidence | fix |
+|---|---|---|
+| Per-camera track ids were the unit of identity. Every new ByteTrack id was a new placement decision. | TRACK-2 made 22 track ids and TRACK-3 18 for 4 shoppers; 43 hand-offs, 40 uncertain marks | One tracker in floor metres over all people cameras (`bree.track.floor`). No per-camera ids. |
+| A track that appeared while its person's other track was still held counted as an entry nobody saw. | 9 of 13 people were "missed entry" births: TRACK-2 4, TRACK-3 3, rail cameras 2 | Births only at the door or in the first second. A new track elsewhere takes back a lost identity, or waits. |
+| Rail cameras took part in identity with floor points from a view that looks along the aisle. | 2 births from G1R-rail-3 and G2L-rail-4 | Identity comes from overhead and entrance cameras only. |
+| Floor position from the bottom of the box. | DEV 7001: median error per camera 0.14 to 0.63 m (p90 up to 3.7 m); hips at 0.93 m: 0.09 to 0.17 m | Placed by hip keypoints, then shoulders; a box without them can keep a track going but not start one. |
+| A second box of one person became a person. | the old rule waited 2 s and then made a person; 2 second-box frames on the door clip now | A new track on top of a tracked person is not confirmed; an inside birth needs steady detection for 1.5 s. |
+| Someone leaving and someone entering right behind shared an identity. | DEV 7003: a shopper left at 28.8 s, the next entered at 29.4 s and took the id | Last seen in the doorway or past it: left at once, never handed back. |
+| Exits were not seen, so nobody was ever reconciled. | 1 exit of 4 | 4 of 4 on the door clip; 39 exits counted for 37 true on DEV. |
+
+### Identity (SIMULATED clips; person boxes and keypoints from the pipeline's frame logs, tracker from pixels only)
+
+| | before | now |
+|---|---|---|
+| door clip: people made for 4 shoppers | 13 (4 at the door, 9 inside) | 4 shoppers + the clerk: 1.0 per shopper (1.25 counting the clerk) |
+| door clip: exits seen | 1 of 4 | 4 of 4 |
+| DEV: identities per shopper (37 shoppers) | 4.0 (148 ids; baseline run) | 1.08 (34 of 37 have exactly one, none untracked) |
+| DEV: identities covering two shoppers | 93 | 20, of which 2 are not marked uncertain |
+| DEV: floor position error, median | 0.41 m (box placement, first version of this tracker) | 0.064 m; 81% of shopper-frames covered |
+
+What is left: 20 identities on DEV still cover two shoppers at some point. The simulated shoppers walk through each
+other, and no tracker that uses position only can keep two people apart who pass through one point.
+`FloorConfig.encounter_m` (0.25 m) marks both identities uncertain when two come that close: 18 of the 20 mixed
+identities carry the mark. The price is that 29 shopper identities on these clips (47 identities were made in all, 7 of them on a clerk) are marked uncertain and
+so capped at review. With `encounter_m=0`, 5 are marked and 17 mixed identities go unmarked.
+
+### Who took it
+
+| test | events | right shopper | wrong and sure | marked uncertain |
+|---|---|---|---|---|
+| Scripted scenes, scripted tracks (SYNTHETIC, 200 scenes) | 462 | 450 (0.974) | 0 | 114 (12 of them wrong) |
+| of those: second shopper at the same shelf, 0.7 to 1.3 m along | 112 | 110 | 0 | 22 |
+| of those: shoulder to shoulder, 0.15 to 0.35 m (nobody could tell) | 87 | 79 | 0 | 80 |
+| of those: across the gondola / passer-by / alone | 263 | 261 | 0 | 12 |
+| Scripted scenes through the floor tracker (SYNTHETIC, 200 scenes) | 462 | 446 (0.965) | 0 | 229 |
+| DEV clips, true picks as shelf events, tracks from pixels (SIMULATED) | 70 | 66 (0.943) | 0 | 28 (24 of them right) |
+| same with `encounter_m=0` | 70 | 66 | 0 | 12 (8 of them right) |
+
+In the scripted scenes through the tracker, 780 identities were made for 753 shoppers (1.04); 90 cover two shoppers at
+some point and 3 of those are not marked.
+
+### To alerts, with the TRUE picks and put-backs as shelf events (SIMULATED DEV, 15 thieves, 20 stolen items)
+
+This isolates everything after the shelf-events stream. It is not an end to end result.
+
+| | alert | alert or review | alerts (false) | reviews (on honest shoppers) |
+|---|---|---|---|---|
+| recorded baseline (per-camera engine) | 0 of 20 | 0 of 20 | 0 | 0 |
+| no conceal cue | 0 | 16 of 20 | 0 (0) | 12 (1) |
+| true conceal times as cues | 6 | 16 of 20 | 4 (0) | 8 (1) |
+| true conceal times as cues, `encounter_m=0` | 13 | 16 of 20 | 9 (0) | 3 (1) |
+
+All 4 missed thefts were attached to the right shopper at the pick, without the uncertain mark. Three were flagged for
+review anyway, but under an identity that had become another shopper by the exit (its basket holds the picks of two
+shoppers), so the scorer counts the review for that other shopper. The fourth identity was never seen leaving, so it
+was never reconciled. Identity after the pick is what is left to fix, not the association.
+
+### Concealment is not visible from above in this simulator
+
+DEV 7001 to 7003, overhead and entrance cameras. Wrist to hip distance over torso length (10th / 50th / 90th
+percentile): concealing 0.11 / 0.18 / 0.25, walking with an item 0.08 / 0.20 / 0.36. The true hand of a walking shopper
+is in the same place with or without an item (0.26 m from the body axis, 0.92 m high). So the conceal cue has to come
+from an item camera; `store_events(conceal=...)` takes it and the ledger raises the tier as before.
+
+### Limits
+
+Simulated and synthetic only. The DEV numbers are from the clips used for tuning; TEST was not touched. The person
+boxes came from the baseline run's frame logs (the repo's detector and crop pose after ByteTrack); `bree.track.people`
+makes the same boxes without the tracker (738 against 692 on the first 260 frames of 7001 TRACK-1) but a full run with
+it was not timed. The stand distance in the simulator is exact (0.42 m gondola, 0.54 m cooler, 0.56 m counter, 0
+along the shelf); the association uses 0.5 m with 0.25 and 0.3 m spreads so it does not depend on that. Wrist lines of
+sight are used when an overhead camera has the wrists; their effect on its own was not measured.
+
+Reproduce: `make assoc-test assoc-scripted assoc-door assoc-dev`; the variants with
+`python -m bree.track.floor_bench dev --chain [--oracle-conceal] [--encounter-m 0]`. Results as run:
+`results/`.
+
+## 2026-10-05: fuel drive-off module (plates stream), SYNTHETIC results only
+
+The live site lists drive-off capture. This is the first version of it: a plate detector and text reader behind
+an interface, a pump-zone tracker, the drive-off rule, plate retention, and legal notes. All numbers below come
+from `scripts/plates/bench.py` (seed 20261005; full run 779 s for the reader table, then a `--scenarios-only`
+rerun of 215 s for the vote calibration and the timelines after the verifier fixes) on plates drawn with system fonts on crude car shapes and
+on scripted timelines. Nothing was measured on real footage, because there is none. The full tables are in
+`results/plates_bench.md`.
+
+### What was built
+
+- `src/bree/plates/reader.py`: open plate detector (open-image-models 0.6.0, YOLOv9-t, ONNX) and open text
+  reader (fast-plate-ocr 1.1.0, ONNX), both MIT packages that downloaded with no sign-up, plus an OpenCV-only
+  plate localiser. One call: `make_reader().read(frame, roi=vehicle_box)`. `vote()` merges reads over frames.
+- `src/bree/plates/pump.py`: `DriveOffMonitor`. Vehicle boxes in, dispenser sales and payments in, review
+  alerts out through the existing `Alert`, `AlertSink` and `ReviewStore`. Retractions on late payment.
+- `src/bree/plates/retention.py`: `PlateStore`. 72 hours by default, 30 days once confirmed, deleted at once on
+  "not theft" or late payment, logged lookups, automatic purge.
+- `README.md`: usage, retention table, licences with open questions, per-state legal notes.
+- `tests/test_plates.py`: 45 tests (44 need no model weights).
+
+### Plate read accuracy (SYNTHETIC), whole plate right
+
+Text reader alone on a plate crop, 150 crops per cell:
+
+| plate width px | day | day + motion blur | night | night, heavy noise |
+|---|---|---|---|---|
+| 32 | 3.3% | 4.0% | 0.0% | 0.0% |
+| 48 | 62.0% | 72.0% | 54.0% | 0.0% |
+| 64 | 88.7% | 71.3% | 82.0% | 0.0% |
+| 96 | 96.7% | 88.7% | 90.7% | 0.0% |
+| 160 | 100.0% | 98.7% | 98.0% | 16.7% |
+
+Character accuracy in the same cells: 49% at 32 px in daylight, 91% at 48 px, 98% at 64 px, 99% at 96 px,
+100% at 160 px; at night 39%, 89%, 95%, 99%, 100%. Voting over 5 frames lifts 48 px from 62% to 87% whole plate
+in daylight and from 54% to 97% at night (30 plates per cell).
+
+Detector plus reader inside the vehicle box, 30 frames per cell, whole plate right (open / OpenCV / both):
+
+| plate width px | day | day + motion blur | night | night, heavy noise |
+|---|---|---|---|---|
+| 48 | 43% / 47% / 47% | 43% / 53% / 53% | 33% / 20% / 30% | 0% / 0% / 0% |
+| 64 | 57% / 73% / 73% | 53% / 77% / 77% | 77% / 23% / 67% | 0% / 0% / 0% |
+| 96 | 57% / 87% / 87% | 47% / 83% / 83% | 100% / 67% / 100% | 0% / 0% / 0% |
+| 160 | 67% / 73% / 73% | 67% / 80% / 80% | 93% / 57% / 87% | 13% / 0% / 13% |
+
+What the tables say:
+- **Plate width decides.** Under 48 px nothing is readable; 64 px is the lowest width where a single frame is
+  right most of the time; 96 px and up is comfortable. A US plate is 12 inches wide, so 96 px on the plate
+  means about 8 px per inch at the pump. Camera placement for the forecourt should be planned from that number.
+- **The heavy-noise night level fails at every width** (brightness at 10%, noise sigma 16 grey levels: the
+  noise is two thirds of the whole signal). The ordinary night level (18%, sigma 10) is close to daylight from
+  64 px up. A forecourt is lit, so the ordinary level is the likelier one, but that is an assumption.
+- **The open detector misses a third to a half of the drawn daytime cars** and almost none at night from 64 px up. With 30 frames per
+  cell the margin is wide (about plus or minus 18 points). This may be an artefact of the crude drawings.
+- Text reader speed: 19.9 ms per crop on the laptop CPU with other jobs running.
+
+### Stored plates: how often a confident vote is right (SYNTHETIC, seed 20261006)
+
+A plate is stored only at vote confidence 0.9 or more. On 360 drawn plates (48 to 96 px, day, motion, night, 5
+frames each): votes at 0.9 and up were right for 313 of 319 (98%), 0.8 to 0.9 for 9 of 20 (45%), under 0.8 for
+4 of 21 (19%). So about 1 stored plate in 50 would still be wrong on this synthetic data.
+
+### Drive-off rule on 18 scripted timelines (SYNTHETIC)
+
+Right alerts and retractions in 18 of 18: paid inside, prepaid, drive-off, moved the car then paid inside the
+grace period, late payment (alert then retraction), drive through, two pumps at once, two cars in a row at one
+pump, sale reported late, camera blocked for 15 s, camera blocked past the grace period (alert then retraction,
+the known limit), hidden for 6 s while fuel is flowing then pays, hidden while fuel is flowing then drives
+off, track id change while fuel is flowing, drive-off with an unreadable plate followed 10 s later by a paying
+car in the same spot (one alert, the second car's plate not stored), no vehicle seen, night drive-off, night
+paid. Every alert was review tier.
+
+Plates on the 6 readable drive-offs that were not retracted: with both detectors 5 read exactly right, 1 not
+read, 0 stored wrong; with the open detector alone 3 right, 3 not read, 0 wrong. Retracted alerts left 0 plates
+in the store. 18 timelines is a check that the rule does what it says, not a rate.
+
+A verifier found two faults in the first version of the rule, both fixed and covered by the four new
+timelines and by unit tests: a paying customer's plate could be stored on the previous car's drive-off alert,
+and a short occlusion or track id change late in fuelling raised an alert on a car still at the pump.
+Remaining limit: an unreadable drive-off plate followed within 60 s by a car that takes the spot and buys no
+fuel delays the alert until that car leaves (the alert names the gap and stores no plate).
+
+### What this does not show
+
+- Nothing about real plates (embossed characters, frames, dirt, state designs, temporary tags, glare,
+  headlights at night) or real forecourt cameras.
+- Vehicle detection and tracking at a pump were not measured; the bench uses scripted vehicle boxes.
+- No forecourt controller is connected. `FuelSale` and `on_payment` are the interface; the adapter for a real
+  controller or POS feed is not written.
+- The licence of the detector weights is an open question for counsel (readme.md). The legal notes are pointers
+  compiled from the NCSL table and the EFF list, not legal advice, and the statutes were not read in full.
+
 # Audit fixes (2026-10-05)
 
 An independent audit re-ran the commands behind this report and probed the code. It reported 30 findings, 5 major and 25 minor. This is what was done about each. The corrected text and numbers are in the sections below; reasons are in DECISIONS "Audit fixes". Figures marked "audit" were measured by the audit and not re-run for this section.

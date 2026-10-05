@@ -58,7 +58,8 @@ class RunSummary:
 @dataclass
 class CameraInput:
     name: str             # unique per store; used in per-camera file names and event meta
-    source: str           # video file, webcam index, or rtsp:// URL
+    source: object        # video file, webcam index or rtsp:// URL; or a frame source object with `fps`, `live`
+                          # and iteration over Frame (bree.edge.hub.BurstSource: a node camera's bursts)
     store: StoreConfig    # this camera's zones (its pixels), terminals, catalog, floor_points
 
 
@@ -67,7 +68,7 @@ class _Cam:
 
     def __init__(self, cam: CameraInput, out: Path, suffix: str, max_frames: int | None, tracker_cls):
         self.name, self.store = cam.name, cam.store
-        self.src = VideoSource(cam.source, max_frames=max_frames)
+        self.src = cam.source if hasattr(cam.source, "fps") else VideoSource(cam.source, max_frames=max_frames)
         self.frames = iter(self.src)
         self.tracker = tracker_cls(self.src.fps)
         self.evidence = EvidenceBuffer(self.src.fps)
@@ -245,6 +246,8 @@ def run_store(cameras: list[CameraInput], backend: PerceptionBackend, out_dir: s
     summary.handoffs = len(fusion.identity.handoffs) if fusion.identity else 0
     summary.identity = {name: {"occupancy": eng.occupancy(), **eng.cw_stats}
                         for name, eng in fusion.engines.items() if eng.r.closed_world}
+    if fusion.identity is not None and fusion.identity.closed_world:      # several cameras: one pool for the store
+        summary.identity["store"] = {"occupancy": fusion.identity.occupancy(), **fusion.identity.cw_stats}
     events_log.close(); sink.close()
     for c in cams:
         c.frames_log.close()
@@ -255,5 +258,6 @@ def run_store(cameras: list[CameraInput], backend: PerceptionBackend, out_dir: s
         f"person {pid}:\n" + "\n".join(rec.log) for pid, rec in sorted(ledger.people.items())))
     # Event-engine notes per camera: stitched track ids, people lost inside the store, items lost from sight.
     (out / "engine_log.txt").write_text("\n".join(
-        f"[{name}] {line}" for name, eng in fusion.engines.items() for line in eng.log))
+        [f"[{name}] {line}" for name, eng in fusion.engines.items() for line in eng.log]
+        + [f"[store] {line}" for line in getattr(fusion.identity, "log", [])]))
     return summary

@@ -130,6 +130,49 @@ def score(truth: list[dict], alerts: list[dict], layout: dict, duration_s: float
     }
 
 
+def sim_handoff(layout: dict, closed_world: bool = False, slots: bool = False) -> dict | None:
+    """run_store `handoff` for a simulator run: store-wide closed-world identity, and / or the 3D slot of each
+    pick from the layout's own camera poses (the design pose: a simulator camera hangs exactly where the
+    layout says, so this is calibration without error)."""
+    h: dict = {}
+    if closed_world:
+        h["closed_world"] = True
+    if slots:
+        from bree.calib.camera import from_layout
+        h.update(calibration={c["id"]: from_layout(c) for c in layout["cameras"]}, slots=layout)
+    return h or None
+
+
+def slot_block(truth: list[dict], pipeline_events: list[dict], layout: dict, pick_tol_s: float = 3.0) -> dict | None:
+    """How the 3D slot on each PICK (`meta.slot`, bree.calib.slots) compares with the simulator's slot.
+    A PICK is paired with the nearest ground-truth pick in time at the same fixture. None when no PICK has a slot."""
+    fixture_of = {s["id"]: s["fixtureId"] for s in layout["slots"]}
+    picks = [e for e in pipeline_events if e.get("type") == "pick"]
+    with_slot = [p for p in picks if (p.get("meta") or {}).get("slot")]
+    if not with_slot:
+        return None
+    used: set[int] = set()
+    n = exact = sku = fixture = 0
+    for p in with_slot:
+        s = p["meta"]["slot"]
+        cand = [(abs(p["t"] - e["t"]), i) for i, e in enumerate(truth)
+                if i not in used and abs(p["t"] - e["t"]) <= pick_tol_s and p.get("zone") in (None, fixture_of.get(e["slotId"]))]
+        if not cand:
+            continue
+        e = truth[min(cand)[1]]
+        used.add(min(cand)[1])
+        n += 1
+        exact += s["id"] == e["slotId"]
+        sku += s["sku"] == e["skuId"]
+        fixture += s["fixture"] == fixture_of.get(e["slotId"])
+    by_source: dict[str, int] = {}
+    for p in with_slot:
+        by_source[p["meta"]["slot"]["source"]] = by_source.get(p["meta"]["slot"]["source"], 0) + 1
+    return {"pick_events": len(picks), "picks_with_a_slot": len(with_slot), "by_source": by_source,
+            "paired_with_a_true_pick": n, "slot_exact": exact, "slot_sku_right": sku, "slot_fixture_right": fixture,
+            "slot_exact_rate": _rate(exact, n), "slot_sku_right_rate": _rate(sku, n)}
+
+
 def markdown(card: dict) -> str:
     s = card["summary"]
     fmt = lambda v: "n/a" if v is None else (f"{v:.1%}" if isinstance(v, float) and v <= 1 else str(v))  # noqa: E731
@@ -155,6 +198,17 @@ def markdown(card: dict) -> str:
     missed = [c for c in card["concealed_events"] if not c["caught"]]
     if missed:
         lines += ["## Missed thefts", ""] + [f"- {c['shopper']} {c['skuId']} at {c['fixture']} (t={c['t_pick']} s, seen by {', '.join(c['seen_by_camera_kinds'])})" for c in missed] + [""]
+    ident = card["run"].get("identity") or {}
+    if ident:
+        lines += ["## Closed-world identity", "", "| pool | " + " | ".join(sorted({k for v in ident.values() for k in v})) + " |",
+                  "|---|" + "---|" * len({k for v in ident.values() for k in v})]
+        lines += [f"| {name} | " + " | ".join(str(v.get(k, 0)) for k in sorted({k for v in ident.values() for k in v})) + " |" for name, v in ident.items()]
+        lines.append("")
+    if card.get("slots"):
+        sl = card["slots"]
+        lines += ["## 3D slot of each pick", "", "| | |", "|---|---|"] + [f"| {k} | {v} |" for k, v in sl.items()] + [""]
+    elif card["run"].get("slots_3d"):
+        lines += ["## 3D slot of each pick", "", "No PICK event carried a slot.", ""]
     if card["run"]["warnings"]:
         lines += ["## Warnings", ""] + [f"- {w}" for w in card["run"]["warnings"]] + [""]
     return "\n".join(lines)
@@ -162,7 +216,10 @@ def markdown(card: dict) -> str:
 
 def run(sim_out, layout_path, out_dir, backend: str = "yolo", fps: float | None = None, zone_owner: str = "best",
         pos: dict | None = None, pick_tol_s: float = 3.0, alert_window_s: float = 300.0, save_video: bool = False,
-        max_frames: int | None = None, data_note: str = "Simulator data.") -> dict:
+        max_frames: int | None = None, data_note: str = "Simulator data.", closed_world: bool = False,
+        slots: bool = False, sources: dict | None = None) -> dict:
+    """`sources`: camera id -> frame source object that replaces that camera's adapter video (a node camera's
+    bursts from the hub, bree.edge.hub.BurstSource)."""
     from bree.cli import make_backend
     from bree.events.zones import load_store_config, merge_stores
     from bree.ledger.payments import JsonlPayments
@@ -175,9 +232,10 @@ def run(sim_out, layout_path, out_dir, backend: str = "yolo", fps: float | None 
     pay_path = out / "inputs" / "payments.jsonl"
     pay_path.write_text("".join(json.dumps(r) + "\n" for r in receipts))
     stores = [load_store_config(c["store"]) for c in ad["cameras"]]
-    cams = [CameraInput(c["id"], c["video"], s) for c, s in zip(ad["cameras"], stores)]
+    cams = [CameraInput(c["id"], (sources or {}).get(c["id"], c["video"]), s) for c, s in zip(ad["cameras"], stores)]
     summary = run_store(cams, make_backend(backend, merge_stores(stores)), out / "pipeline", payments=JsonlPayments(pay_path),
-                        save_video=save_video, max_frames=max_frames, verbose=False)
+                        save_video=save_video, max_frames=max_frames, verbose=False,
+                        handoff=sim_handoff(layout, closed_world, slots) if len(cams) > 1 or slots else None)
     ev_path = out / "pipeline" / "events.jsonl"
     pipeline_events = [json.loads(line) for line in ev_path.read_text().splitlines() if line.strip()]
     card = score(truth, final_alerts(summary.alerts), layout, ad["duration_s"], pipeline_events, ad["cameras"],
@@ -196,7 +254,10 @@ def run(sim_out, layout_path, out_dir, backend: str = "yolo", fps: float | None 
     card["run"] = {"source": str(sim_out), "layout": str(layout_path), "data": data_note, "backend": backend,
                    "fps": ad["fps"], "fps_note": ad["fps_note"], "zone_owner": zone_owner, "cameras": ad["cameras"],
                    "pos": pos_info, "pipeline_events": summary.events, "pipeline_fps": summary.pipeline_fps,
-                   "handoffs": summary.handoffs, "warnings": warnings}
+                   "handoffs": summary.handoffs, "closed_world": closed_world, "slots_3d": slots,
+                   "identity": summary.identity, "warnings": warnings}
+    if slots:
+        card["slots"] = slot_block(truth, pipeline_events, layout, pick_tol_s)
     (out / "scorecard.json").write_text(json.dumps(card, indent=1))
     (out / "scorecard.md").write_text(markdown(card))
     return card
@@ -208,7 +269,8 @@ def main(argv=None) -> None:
     ap.add_argument("--layout", help="shared layout JSON (default: <sim-out>/layout.json)")
     ap.add_argument("--fixture", metavar="DIR", help="generate the synthetic TOY fixture into DIR and score it (toy backend)")
     ap.add_argument("--out", help="default: <sim-out>/sim_eval")
-    ap.add_argument("--backend", choices=["yolo", "toy"], default="yolo")
+    ap.add_argument("--backend", choices=["yolo", "toy", "sim_sku"], default="yolo",
+                    help="sim_sku: products from the SIM-TRAINED SKU detector (make sku-train), people and pose from YOLO")
     ap.add_argument("--fps", type=float, default=None, help="written frame rate; default: inferred, else 10")
     ap.add_argument("--zone-owner", choices=["best", "all"], default="best",
                     help="best: each fixture zone goes to the camera that sees it largest; all: every camera that sees it")
@@ -221,6 +283,8 @@ def main(argv=None) -> None:
     ap.add_argument("--alert-window", type=float, default=300.0)
     ap.add_argument("--save-video", action="store_true", help="also write annotated_<camera>.mp4")
     ap.add_argument("--max-frames", type=int, default=None)
+    ap.add_argument("--closed-world", action="store_true", help="store-wide closed-world identity across the cameras (default off)")
+    ap.add_argument("--slots", action="store_true", help="3D slot of each pick from the layout's camera poses (meta.slot, scored against the sim's slot)")
     a = ap.parse_args(argv)
     note = "Simulator data."
     if a.fixture:
@@ -236,7 +300,7 @@ def main(argv=None) -> None:
     card = run(a.sim_out, layout, out, a.backend, a.fps, a.zone_owner,
                {"delay_s": a.pos_delay, "delay_sd_s": a.pos_delay_sd, "dropout": a.pos_dropout,
                 "sku_noise": a.pos_sku_noise, "seed": a.seed},
-               a.pick_tol, a.alert_window, a.save_video, a.max_frames, note)
+               a.pick_tol, a.alert_window, a.save_video, a.max_frames, note, a.closed_world, a.slots)
     print(markdown(card))
     print(f"scorecard: {out}/scorecard.json and scorecard.md; pipeline outputs in {out}/pipeline")
 

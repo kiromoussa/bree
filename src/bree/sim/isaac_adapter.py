@@ -135,10 +135,14 @@ def zones_3d(layout) -> list[dict]:
 
 def project_zone(points, view, proj, w, h):
     """Image polygon of a zone, clipped to the frame, and its area in px^2. None if it is not in view.
-    ponytail: a zone with any corner behind the camera is dropped, not clipped at the near plane."""
+    Points behind the camera are left out and the rest still make the zone: a camera mounted beside the
+    fixture it watches (the recommended layout's rail cameras look along the aisle) always has part of that
+    fixture behind it. ponytail: not a true clip at the near plane, so the polygon stops at the last slot in
+    front of the camera; with a slot every few centimetres the missing strip is outside the frame anyway."""
     import cv2
     px, front = project([to_usd(p) for p in points], view, proj, w, h)
-    if not front.all():
+    px = [p for p, ok in zip(px, front) if ok]
+    if len(px) < 3:
         return None
     poly = np.array(hull(px), np.float32)
     if len(poly) < 3:
@@ -212,7 +216,8 @@ def infer_fps(sim_out: Path, events: list[dict], n_frames: int, default: float =
 def adapt(sim_out, layout_path, work, fps: float | None = None, zone_owner: str = "best") -> dict:
     """Write <work>/<cam>.mp4 and <work>/<cam>.store.yaml for every camera with frames.
     zone_owner: "best" gives each fixture zone to the one camera that sees it largest (the pipeline
-    does not de-duplicate a pick seen by two cameras); "all" gives it to every camera that sees it."""
+    does not de-duplicate a pick seen by two cameras), with the door and register zones going to a
+    people camera when one sees them; "all" gives every zone to every camera that sees it."""
     import cv2
     sim_out, work = Path(sim_out), Path(work)
     work.mkdir(parents=True, exist_ok=True)
@@ -239,7 +244,12 @@ def adapt(sim_out, layout_path, work, fps: float | None = None, zone_owner: str 
             if hit:
                 seen.setdefault(z["name"], []).append((hit[1], cid, hit[0]))
     kinds = {z["name"]: z["kind"] for z in zones3d}
+    item_cam = lambda cid: by_id[cid]["kind"] in ("shelf", "cooler")     # noqa: E731
     for name, views in seen.items():
+        if zone_owner == "best" and kinds[name] not in ("shelf", "cooler"):
+            # the door and the register belong to a camera that watches people (overhead, entrance, checkout)
+            # when one sees them: an item camera is aimed at a shelf and, as a node, only sends frames on a trigger
+            views = [v for v in views if not item_cam(v[1])] or views
         for area, cid, poly in (sorted(views, reverse=True)[:1] if zone_owner == "best" else views):
             cams[cid]["zones"].append({"name": name, "kind": kinds[name], "polygon": poly})
     catalog = {s["id"]: {"category": s["id"], "price": s["price"]} for s in layout["skus"]}

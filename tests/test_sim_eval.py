@@ -123,7 +123,7 @@ def test_fixture_end_to_end(tmp_path):
     assert set(cams) == {"cam-overhead-01", "cam-cooler-01", "cam-shelf-01"}
     assert card["run"]["fps"] == 10.0 and not card["run"]["warnings"]
     assert cams["cam-cooler-01"]["zones"] == ["cooler-1"] and "gondola-1" in cams["cam-shelf-01"]["zones"]
-    assert cams["cam-overhead-01"]["zones"] == ["counter"]
+    assert cams["cam-overhead-01"]["zones"] == ["counter", "door-back"]     # people zones go to the people camera
     s = card["summary"]
     assert (s["concealed"], s["caught"], s["alerts"], s["false_alerts"]) == (1, 1, 1, 0)
     assert s["sku_correct_rate"] == 1.0 and s["time_to_alert_s"]["max"] < 20
@@ -131,3 +131,21 @@ def test_fixture_end_to_end(tmp_path):
     assert card["by_zone_kind"]["cooler"]["theft_recall"] == 1.0
     assert json.loads((tmp_path / "eval" / "scorecard.json").read_text())["summary"] == s
     assert "Theft recall" in (tmp_path / "eval" / "scorecard.md").read_text()
+
+
+def test_a_rail_camera_beside_its_gondola_still_gets_the_shelf_zone():
+    """Recommended layout (tests/fixtures/calib_layout.json): a rail camera looks along the aisle, so part of the
+    gondola it watches is behind it. The zone is the part in front, not dropped. Door and register zones go to a
+    camera that watches people when one sees them."""
+    from pathlib import Path
+
+    from bree.sim.isaac.convert import project
+    from bree.sim.isaac_adapter import camera_params_from_layout, load_camera, project_zone, to_usd, zones_3d
+    layout = json.loads((Path(__file__).resolve().parent / "fixtures" / "calib_layout.json").read_text())
+    cam = next(c for c in layout["cameras"] if c["id"] == "G1R-rail-3")
+    view, proj, w, h, _ = load_camera(camera_params_from_layout(cam), cam)
+    zone = next(z for z in zones_3d(layout) if z["name"] == "G1")
+    _, front = project([to_usd(p) for p in zone["points"]], view, proj, w, h)
+    assert front.any() and not front.all()
+    poly, area = project_zone(zone["points"], view, proj, w, h)
+    assert area > 0.2 * w * h and all(0 <= x <= w and 0 <= y <= h for x, y in poly)

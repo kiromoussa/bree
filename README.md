@@ -708,6 +708,9 @@ make bench-smoke     # one clip, 60 frames per camera, writes nothing to results
 - Where it stands after improvement round 3 (SIMULATED, `results/bench_dev.md`): 17 of 20 thefts flagged for review, 3 of
   22 honest shoppers reviewed (the bar is 2), pick recall 0.957, right SKU 0.940, 1.27 identities per shopper, no alert
   tier. The same code on the TRAIN-seed clips (`results/bench_train.md`): 15 of 19 and 3 of 36. REPORT.md, round 3.
+- After round 4 (SIMULATED) the headline is the same (17 of 20, 3 of 22; 15 of 19, 3 of 36) with 1.216 identities per
+  shopper on DEV (1.377 on the TRAIN-seed clips) and pick precision 0.905 (0.898): a second track on one person is
+  no longer a new person, and pixel-only takes at the pay point are not picks. REPORT.md, round 4.
 - A put event names the take it undoes (`undoes` against the take's `eids`) and says whether the item was seen going
   into the slot (`item_in`); `bree.events.shelf.confirm_puts` returns takes on that basis.
 

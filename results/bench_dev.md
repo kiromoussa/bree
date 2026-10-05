@@ -2,7 +2,7 @@
 
 SIMULATED (browser store simulator copy, scripts/bench/render_clip.mjs). Not real footage.
 
-6 clips (7001, 7002, 7003, 7004, 7005, 7006), 421 s of sim time, 37 shoppers (15 thieves, 22 honest), 70 picks, 20 stolen items. Runner `bree.shelf.store:run`, options {"backend": "sim_sku", "edge": true, "max_frames": null}. Scored 2026-10-05 16:09, commit 28989f3 plus uncommitted changes in src.
+6 clips (7001, 7002, 7003, 7004, 7005, 7006), 421 s of sim time, 37 shoppers (15 thieves, 22 honest), 70 picks, 20 stolen items. Runner `bree.shelf.store:run`, options {"backend": "sim_sku", "edge": true, "max_frames": null}. Scored 2026-10-05 17:00, commit 65f4103.
 
 ## Scorecard
 
@@ -16,19 +16,19 @@ SIMULATED (browser store simulator copy, scripts/bench/render_clip.mjs). Not rea
 | Reviews on honest shoppers | 3 (of 15 reviews) |
 | False alerts per hour | 0.0 |
 | Pick recall | 95.7% (67/70) |
-| Pick precision | 84.8% (of 79 PICK events) |
+| Pick precision | 90.5% (of 74 PICK events) |
 | Right SKU, of paired picks | 94.0%; of all true picks 90.0% |
 | Right slot, of paired picks | 88.1% |
 | Right shopper, of paired picks | 94.0% |
 | Time to alert after concealment | n/a |
-| Store-wide identities per real shopper | 1.27 (47 ids for 37 shoppers) |
-| Identities sitting on one shopper | mean 1.08, max 2; shoppers never tracked 0; ids covering two shoppers 6 |
+| Store-wide identities per real shopper | 1.216 (45 ids for 37 shoppers) |
+| Identities sitting on one shopper | mean 1.03, max 2; shoppers never tracked 0; ids covering two shoppers 9 |
 
 ## Funnel: where each true pick is lost
 
 Each true pick walks the stages in order and is counted at the first one it fails. "Passed on its own" counts the stage for every pick, whatever happened before it.
 
-### All picks: 70 picks, 27 through every stage
+### All picks: 70 picks, 28 through every stage
 
 | stage | reached this stage | lost here | passed on its own |
 |---|---|---|---|
@@ -41,8 +41,8 @@ Each true pick walks the stages in order and is counted at the first one it fail
 | associated to a shopper | 54 | 0 | 67 |
 | right shopper | 54 | 0 | 63 |
 | conceal or pay classified | 54 | 17 | 49 |
-| ledger basket | 37 | 2 | 61 |
-| alert | 35 | 8 | 37 |
+| ledger basket | 37 | 1 | 62 |
+| alert | 36 | 8 | 38 |
 
 ### Outcome concealed: 20 picks, 0 through every stage
 
@@ -60,7 +60,7 @@ Each true pick walks the stages in order and is counted at the first one it fail
 | ledger basket | 0 | 0 | 15 |
 | alert | 0 | 0 | 0 |
 
-### Outcome paid: 41 picks, 21 through every stage
+### Outcome paid: 41 picks, 22 through every stage
 
 | stage | reached this stage | lost here | passed on its own |
 |---|---|---|---|
@@ -73,8 +73,8 @@ Each true pick walks the stages in order and is counted at the first one it fail
 | associated to a shopper | 30 | 0 | 39 |
 | right shopper | 30 | 0 | 36 |
 | conceal or pay classified | 30 | 0 | 41 |
-| ledger basket | 30 | 2 | 38 |
-| alert | 28 | 7 | 30 |
+| ledger basket | 30 | 1 | 39 |
+| alert | 29 | 7 | 31 |
 
 ### Outcome put_back: 9 picks, 6 through every stage
 
@@ -124,7 +124,7 @@ Each true pick walks the stages in order and is counted at the first one it fail
 | ledger basket | 7 | 1 | 13 |
 | alert | 6 | 0 | 11 |
 
-### Zone gondola: 46 picks, 15 through every stage
+### Zone gondola: 46 picks, 16 through every stage
 
 | stage | reached this stage | lost here | passed on its own |
 |---|---|---|---|
@@ -137,8 +137,8 @@ Each true pick walks the stages in order and is counted at the first one it fail
 | associated to a shopper | 38 | 0 | 44 |
 | right shopper | 38 | 0 | 40 |
 | conceal or pay classified | 38 | 14 | 30 |
-| ledger basket | 24 | 1 | 40 |
-| alert | 23 | 8 | 19 |
+| ledger basket | 24 | 0 | 41 |
+| alert | 24 | 8 | 20 |
 
 What a stage means:
 
@@ -170,12 +170,12 @@ What a stage means:
 
 | clip | cameras | shoppers | thieves | picks | PICK events | stolen | alerted | alerts | false | ids | wall s (edge + pipeline) |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 7001 | 20 | 7 | 2 | 13 | 12 | 2 | 0 | 0 | 0 | 9 |  + 181.7 |
-| 7002 | 20 | 5 | 3 | 9 | 9 | 5 | 0 | 0 | 0 | 6 |  + 206.2 |
-| 7003 | 18 | 6 | 2 | 10 | 10 | 2 | 0 | 0 | 0 | 8 |  + 190.9 |
-| 7004 | 20 | 4 | 1 | 9 | 10 | 2 | 0 | 0 | 0 | 5 |  + 216.9 |
-| 7005 | 20 | 8 | 5 | 14 | 19 | 6 | 0 | 0 | 0 | 10 |  + 204.6 |
-| 7006 | 20 | 7 | 2 | 15 | 19 | 3 | 0 | 0 | 0 | 9 |  + 192.7 |
+| 7001 | 20 | 7 | 2 | 13 | 12 | 2 | 0 | 0 | 0 | 8 |  + 483.0 |
+| 7002 | 20 | 5 | 3 | 9 | 9 | 5 | 0 | 0 | 0 | 6 |  + 533.7 |
+| 7003 | 18 | 6 | 2 | 10 | 10 | 2 | 0 | 0 | 0 | 8 |  + 515.4 |
+| 7004 | 20 | 4 | 1 | 9 | 9 | 2 | 0 | 0 | 0 | 5 |  + 529.6 |
+| 7005 | 20 | 8 | 5 | 14 | 16 | 6 | 0 | 0 | 0 | 10 |  + 324.4 |
+| 7006 | 20 | 7 | 2 | 15 | 18 | 3 | 0 | 0 | 0 | 8 |  + 302.5 |
 
 ## Every true pick
 
@@ -189,7 +189,7 @@ What a stage means:
 | 7001 | 29.07 | P005 | cooler | D9-S2-7 | lumen_citrus | put_back | none | 23 (23) |  |  |  | lumen_citrus | P005 |
 | 7001 | 31.27 | P007 | gondola | G3R-S1-39 | caramel_crest | put_back | alert | 93 (93) |  |  |  | caramel_crest | P007 |
 | 7001 | 32.93 | P006 | cooler | D8-S4-3 | lumen_citrus | paid | hand or item detected | 18 (18) |  |  |  | lumen_citrus | P006 |
-| 7001 | 36.23 | P003 | gondola | G1L-S2-9 | peanut_pilot | paid | ledger basket | 51 (51) |  |  |  | peanut_pilot | P003 |
+| 7001 | 36.23 | P003 | gondola | G1L-S2-9 | peanut_pilot | paid | none | 51 (51) |  |  |  | peanut_pilot | P003 |
 | 7001 | 36.73 | P004 | checkout | CK-6 | cocoa_crest | paid | hand or item detected | 43 (43) |  |  |  | cocoa_crest | P004 |
 | 7001 | 37.3 | P007 | gondola | G4L-S1-46 | caramel_crest | paid | alert | 31 (31) |  |  |  | caramel_crest | P007 |
 | 7001 | 41 | P005 | gondola | G3L-S3-9 | crunchly_classic | paid | right slot | 36 (36) |  |  |  | ridgeline_original | P007 |

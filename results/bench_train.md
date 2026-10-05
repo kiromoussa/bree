@@ -2,7 +2,7 @@
 
 SIMULATED (browser store simulator copy, scripts/bench/render_clip.mjs). Not real footage.
 
-9 clips (4900, 4901, 4902, 4903, 4904, 4905, 4906, 4950, 4951), 653 s of sim time, 53 shoppers (17 thieves, 36 honest), 106 picks, 19 stolen items. Runner `bree.shelf.store:run`, options {"backend": "sim_sku", "edge": true, "max_frames": null}. Scored 2026-10-05 16:23, commit f72e3b4.
+9 clips (4900, 4901, 4902, 4903, 4904, 4905, 4906, 4950, 4951), 653 s of sim time, 53 shoppers (17 thieves, 36 honest), 106 picks, 19 stolen items. Runner `bree.shelf.store:run`, options {"backend": "sim_sku", "edge": true, "max_frames": null}. Scored 2026-10-05 17:07, commit 65f4103.
 
 ## Scorecard
 
@@ -16,19 +16,19 @@ SIMULATED (browser store simulator copy, scripts/bench/render_clip.mjs). Not rea
 | Reviews on honest shoppers | 3 (of 16 reviews) |
 | False alerts per hour | 0.0 |
 | Pick recall | 91.5% (97/106) |
-| Pick precision | 85.8% (of 113 PICK events) |
+| Pick precision | 89.8% (of 108 PICK events) |
 | Right SKU, of paired picks | 93.8%; of all true picks 85.8% |
 | Right slot, of paired picks | 83.5% |
 | Right shopper, of paired picks | 96.9% |
 | Time to alert after concealment | n/a |
-| Store-wide identities per real shopper | 1.453 (77 ids for 53 shoppers) |
-| Identities sitting on one shopper | mean 1.25, max 2; shoppers never tracked 0; ids covering two shoppers 26 |
+| Store-wide identities per real shopper | 1.377 (73 ids for 53 shoppers) |
+| Identities sitting on one shopper | mean 1.17, max 2; shoppers never tracked 0; ids covering two shoppers 21 |
 
 ## Funnel: where each true pick is lost
 
 Each true pick walks the stages in order and is counted at the first one it fails. "Passed on its own" counts the stage for every pick, whatever happened before it.
 
-### All picks: 106 picks, 47 through every stage
+### All picks: 106 picks, 48 through every stage
 
 | stage | reached this stage | lost here | passed on its own |
 |---|---|---|---|
@@ -40,9 +40,9 @@ Each true pick walks the stages in order and is counted at the first one it fail
 | right sku | 78 | 0 | 91 |
 | associated to a shopper | 78 | 0 | 97 |
 | right shopper | 78 | 2 | 94 |
-| conceal or pay classified | 76 | 15 | 80 |
-| ledger basket | 61 | 8 | 92 |
-| alert | 53 | 6 | 72 |
+| conceal or pay classified | 76 | 14 | 81 |
+| ledger basket | 62 | 8 | 92 |
+| alert | 54 | 6 | 72 |
 
 ### Outcome concealed: 19 picks, 0 through every stage
 
@@ -76,7 +76,7 @@ Each true pick walks the stages in order and is counted at the first one it fail
 | ledger basket | 46 | 8 | 53 |
 | alert | 38 | 6 | 48 |
 
-### Outcome put_back: 25 picks, 15 through every stage
+### Outcome put_back: 25 picks, 16 through every stage
 
 | stage | reached this stage | lost here | passed on its own |
 |---|---|---|---|
@@ -88,9 +88,9 @@ Each true pick walks the stages in order and is counted at the first one it fail
 | right sku | 16 | 0 | 21 |
 | associated to a shopper | 16 | 0 | 22 |
 | right shopper | 16 | 0 | 22 |
-| conceal or pay classified | 16 | 1 | 18 |
-| ledger basket | 15 | 0 | 25 |
-| alert | 15 | 0 | 24 |
+| conceal or pay classified | 16 | 0 | 19 |
+| ledger basket | 16 | 0 | 25 |
+| alert | 16 | 0 | 24 |
 
 ### Zone checkout: 18 picks, 12 through every stage
 
@@ -124,7 +124,7 @@ Each true pick walks the stages in order and is counted at the first one it fail
 | ledger basket | 11 | 1 | 29 |
 | alert | 10 | 1 | 22 |
 
-### Zone gondola: 55 picks, 26 through every stage
+### Zone gondola: 55 picks, 27 through every stage
 
 | stage | reached this stage | lost here | passed on its own |
 |---|---|---|---|
@@ -136,9 +136,9 @@ Each true pick walks the stages in order and is counted at the first one it fail
 | right sku | 44 | 0 | 47 |
 | associated to a shopper | 44 | 0 | 49 |
 | right shopper | 44 | 2 | 47 |
-| conceal or pay classified | 42 | 8 | 42 |
-| ledger basket | 34 | 6 | 47 |
-| alert | 28 | 2 | 38 |
+| conceal or pay classified | 42 | 7 | 43 |
+| ledger basket | 35 | 6 | 47 |
+| alert | 29 | 2 | 38 |
 
 What a stage means:
 
@@ -170,15 +170,15 @@ What a stage means:
 
 | clip | cameras | shoppers | thieves | picks | PICK events | stolen | alerted | alerts | false | ids | wall s (edge + pipeline) |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 4900 | 19 | 4 | 1 | 8 | 7 | 1 | 0 | 0 | 0 | 5 |  + 147.7 |
-| 4901 | 20 | 6 | 4 | 12 | 12 | 4 | 0 | 0 | 0 | 9 |  + 193.4 |
-| 4902 | 19 | 5 | 1 | 10 | 11 | 2 | 0 | 0 | 0 | 6 |  + 173.6 |
-| 4903 | 18 | 4 | 2 | 8 | 11 | 2 | 0 | 0 | 0 | 6 |  + 136.4 |
-| 4904 | 20 | 8 | 2 | 12 | 14 | 2 | 0 | 0 | 0 | 11 |  + 192.9 |
-| 4905 | 15 | 5 | 3 | 11 | 10 | 4 | 0 | 0 | 0 | 6 |  + 192.8 |
-| 4906 | 20 | 6 | 1 | 13 | 12 | 1 | 0 | 0 | 0 | 10 |  + 208.0 |
-| 4950 | 20 | 7 | 1 | 15 | 20 | 1 | 0 | 0 | 0 | 11 |  + 214.1 |
-| 4951 | 21 | 8 | 2 | 17 | 16 | 2 | 0 | 0 | 0 | 13 |  + 142.5 |
+| 4900 | 19 | 4 | 1 | 8 | 7 | 1 | 0 | 0 | 0 | 5 |  + 0.4 |
+| 4901 | 20 | 6 | 4 | 12 | 12 | 4 | 0 | 0 | 0 | 8 |  + 0.6 |
+| 4902 | 19 | 5 | 1 | 10 | 11 | 2 | 0 | 0 | 0 | 6 |  + 0.6 |
+| 4903 | 18 | 4 | 2 | 8 | 11 | 2 | 0 | 0 | 0 | 6 |  + 0.4 |
+| 4904 | 20 | 8 | 2 | 12 | 12 | 2 | 0 | 0 | 0 | 11 |  + 0.8 |
+| 4905 | 15 | 5 | 3 | 11 | 10 | 4 | 0 | 0 | 0 | 6 |  + 0.6 |
+| 4906 | 20 | 6 | 1 | 13 | 12 | 1 | 0 | 0 | 0 | 9 |  + 0.7 |
+| 4950 | 20 | 7 | 1 | 15 | 17 | 1 | 0 | 0 | 0 | 9 |  + 0.8 |
+| 4951 | 21 | 8 | 2 | 17 | 16 | 2 | 0 | 0 | 0 | 13 |  + 0.8 |
 
 ## Every true pick
 
@@ -249,7 +249,7 @@ What a stage means:
 | 4906 | 15.17 | P002 | gondola | G1R-S1-16 | peanut_pilot | paid | none | 56 (56) |  |  |  | peanut_pilot | P002 |
 | 4906 | 19.13 | P003 | gondola | G4R-S2-22 | ridgeline_original | put_back | none | 48 (48) |  |  |  | ridgeline_original | P003 |
 | 4906 | 27.87 | P006 | checkout | CK-6 | caramel_crest | put_back | none | 52 (52) |  |  |  | caramel_crest | P006 |
-| 4906 | 29.5 | P002 | gondola | G4R-S2-29 | morning_hoops | put_back | conceal or pay classified | 51 (51) |  |  |  | morning_hoops | P002 |
+| 4906 | 29.5 | P002 | gondola | G4R-S2-29 | morning_hoops | put_back | none | 51 (51) |  |  |  | morning_hoops | P002 |
 | 4906 | 29.57 | P005 | cooler | D14-S3-1 | orchard_lemon | put_back | in view | 0 (0) |  |  |  |  |  |
 | 4906 | 30.1 | P004 | cooler | D14-S5-7 | orchard_peach | paid | in view | 0 (0) |  |  |  |  |  |
 | 4906 | 32.07 | P003 | gondola | G3R-S2-12 | sierra_nacho | paid | none | 43 (43) |  |  |  | sierra_nacho | P003 |

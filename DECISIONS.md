@@ -736,3 +736,26 @@ An independent audit re-ran the commands behind the reports and probed the code.
   kept event). The clip runner writes events at the end, so this is free here; a camera node that streams events has
   to send the amendment. Marked in `ShelfCamera._absorb`.
 - **The two results files were made from scratch**, not with `--keep`: the shelf events changed.
+
+## Improvement round 4 (2026-10-05)
+
+- **The stage worked on was identity, not the three honest reviews one by one.** Round 3 named it; checking every
+  hand-back against the true shopper showed the cause (a second track on one person becomes "a new person", the
+  original track with the picks is lost for ever). Fixed at the tracker: a track that starts inside within 1.0 m of
+  a tracked person with nobody lost gets no identity. Threshold from the TRAIN-seed clips.
+- **Pixel-only takes within 0.75 m of the pay point are not passed to the ledger.** Uses `poi.register` of the
+  layout (where the payer stands; a real store marks it at install). 0 of 5 real on the TRAIN-seed clips, 0 of 4 on
+  DEV. A take there with the item seen in a hand still counts.
+- **The DEV goal is reported as not met although one setting meets every DEV bar.** `standing` plus
+  `ambiguous_factor` 1.0 gives 17 of 20 and 2 of 22 on DEV, and 15 of 19 and 4 of 36 on the TRAIN-seed clips (3 of
+  36 now). Same standard as rounds 2 and 3: a rule is kept only when neither set gets worse. To overrule:
+  `one_act_per_reach(..., standing=True)` and `"ambiguous_factor": 1.0` in the ledger settings of
+  `bree.shelf.store.rejoin`.
+- **The clothing gate for hand-backs is in the code but off** (`FloorConfig.other_m`, set 2.0 to turn on). It is
+  right about identity (12 of 25 wrong hand-backs refused, 0 of 45 right ones, TRAIN-seed) and costs one theft and
+  one honest review there, because flags that an identity error had produced disappear. It should go on together
+  with a look at the ledger's doubt discounts, not before.
+- **"A put cannot return an act still read as taken afterwards" was reverted.** Reading times are late by seconds, so
+  "afterwards" is not reliable.
+- **DEV was run from scratch, the TRAIN-seed clips with `--keep`.** Nothing before tracking changed this round, so
+  the stored shelf events and person boxes are the ones a fresh run would produce.

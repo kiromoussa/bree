@@ -97,6 +97,100 @@ Clothing colour alone does not move theft recall (11 against 12), it moves ident
 - **Not measured:** the shelf rules were tuned with the old weights and `make shelf-eval` was not repeated with
   `sim_sku_hands_v3`; the old weights were not run through the DEV benchmark; nothing was run on TEST.
 
+## 2026-10-05: improvement round 4 (SIMULATED): one person, one track
+
+All numbers are simulated. TEST was not touched. No training, no new clips. DEV was run from scratch
+(`make bench-dev`, stamped 65f4103: 8b5e265 plus a comment); the TRAIN-seed clips were rejoined from their stored shelf events and person
+boxes (`make bench-train BENCH_ARGS=--keep`: nothing before tracking changed this round).
+
+**Result: the headline did not move. 17 of 20 thefts flagged, 3 of 22 honest shoppers reviewed, the goal is still
+missed by one honest shopper. What improved is underneath: fewer identities, fewer wrong hand-backs, fewer false
+picks, on both sets, with no theft lost and no honest shopper added on either.**
+
+| | DEV before | DEV now | TRAIN-seed before | TRAIN-seed now |
+|---|---|---|---|---|
+| theft recall, alert or review | 0.85 (17/20) | 0.85 (17/20) | 0.789 (15/19) | 0.789 (15/19) |
+| reviews on honest shoppers | 3 of 22 | 3 of 22 | 3 of 36 | 3 of 36 |
+| pick recall | 0.957 | 0.957 | 0.915 | 0.915 |
+| pick precision | 0.848 (79 PICK events) | 0.905 (74) | 0.858 (113) | 0.898 (108) |
+| right SKU of paired picks | 0.940 | 0.940 | 0.938 | 0.938 |
+| identities per shopper | 1.27 (47) | 1.216 (45) | 1.453 (77) | 1.377 (73) |
+| people "first seen inside" | 6 | 2 | 13 | 8 |
+| hand-backs to the wrong person | 6 of 34 | 3 of 31 | 25 of 74 | 22 of 72 |
+| identities covering two shoppers | 6 | 9 | 26 | 21 |
+
+The last row got worse on DEV (two clips, 7001 and 7006): a second track that used to become an extra person and
+soak up a mix-up no longer exists, so the mix-up sits on the two real identities, marked uncertain.
+
+### Stage looked at: identity
+
+Round 3 named it the next bottleneck (one honest review and one missed theft on DEV go through it). Every hand-back
+of the floor tracker was checked against the true shopper before and after (scoring side only). The log line of a
+hand-back now says how far from where the person was lost the new track started, how different the clothing colour
+is, and how many lost people fitted.
+
+**Root cause in one sentence: when two cameras place one person more than 0.8 m apart, the tracker started a second
+track on them, let it grow into "a person first seen inside the store", and the original track, the one holding the
+picks, starved and stayed lost in the store for ever, to be handed to the next stranger who appeared.**
+
+Checked first: of 18 people "first seen inside" on DEV plus the TRAIN-seed clips (counted with the clothing gate
+below switched on), 9 were a second track of the tracked
+person standing nearest (all within 0.9 m of them); the other 9 were 1.4 m or more away, or across the counter from
+staff. In DEV 7001 the thief P001 was tracked as id 2 until 17.2 s and as "new person" id 6 from 16.0 s; id 2, holding
+the stolen item, was never seen again and was given to P007 when she walked in at 24.9 s, 11.2 m away.
+
+### Kept (commit 8b5e265)
+
+1. **A track that starts inside within 1.0 m of a tracked person, with nobody lost, is a second track of them**, not
+   an entry nobody saw (`FloorConfig.second_track_m`; staff behind the counter and a customer in front of it are not
+   merged). It gets no identity. If the person's own track is then lost, the ordinary hand-back gives the second
+   track their identity. The 1.0 m was read off the TRAIN-seed clips (second tracks at 0.4 to 0.7 m, real other people
+   at 1.4 m and more) and holds on DEV (0.4 to 0.9 m).
+2. **Pixels that change within reach of where the payer stands, with no item seen in a hand, are not a pick**
+   (`pay_reach_m` 0.75 m around `poi.register` of the layout, in `bree.events.shelf.confirm_puts`). The backbar
+   camera reads the payer's arm or their goods on the counter as a take from the two counter slots next to the
+   register: 0 of 5 such events were a real take on the TRAIN-seed clips (0 of 4 on DEV), while 2 of 2 pixel-only
+   takes further along the counter were real (2 of 3 on DEV). This is what moved pick precision. A take there with
+   the item seen in a hand is passed on as before.
+
+DEV 7001 after the change: P001 keeps id 2 from the door to the exit and her theft is flagged. The clip's count does
+not change, because the other thief (P003) now shares the register with P005 at 53.7 s, the two identities swap, and
+both of P003's `peanut_pilot` (one stolen, one paid) are covered by the two receipts that land on that identity.
+
+### Tried on both sets and not kept
+
+Thefts flagged / honest shoppers reviewed, DEV then TRAIN-seed. Kept version: 17 and 3, 15 and 3. All by rejoining
+stored events (`scripts/bench/whatif.py`, logs in `out/bench/round4/`).
+
+| variant | DEV | TRAIN-seed | |
+|---|---|---|---|
+| clothing gate: a track more than 2 m from where a person was lost, colour distance over 0.25, is not them | 17 and 3 | 14 and 4 | refuses 12 of 25 wrong hand-backs and 0 of 45 right ones on TRAIN-seed, 5 of 6 and 0 of 26 on DEV. In the code, off (`FloorConfig.other_m`) |
+| an act is timed by the readings no put took back (`standing`) | 16 and 2 | 14 and 3 | fixes the 7006 double read. In the code, off |
+| `standing` plus no discount for a pick two people fit (`ambiguous_factor` 1.0) | 17 and 2 | 15 and 4 | meets every DEV bar; one more honest review on TRAIN-seed |
+| the same plus "a put cannot return an act still read as taken afterwards" | 17 and 2 | 16 and 5 | reverted: reading times are late by seconds (a take at 14.7 s read at 18.3 s) |
+| no discount alone | 17 and 3 | 16 and 4 | |
+| `from_last` (round 3) on the new identities | 17 and 2 | 14 and 3 | as in round 3 |
+
+The pattern in the first three rows is the finding of this round: **when identity or the event list gets more right,
+the headline gets worse, because several flagged thefts were flagged through an error.** In TRAIN-seed 4951 the gate
+keeps thief P005 on one identity for the whole visit, and his theft drops from review to nothing: the pick also fits
+a second person, which halves its score, and it ends at 0.25 against a bar of 0.4. Before, a wrong identity carried
+it over the bar. In DEV 7005 `standing` merges a false second
+take into the real one, and the theft that the false take had pushed over the bar is lost the same way.
+
+### Why the goal is still missed, and what cannot be fixed in the join
+
+The three honest shoppers reviewed on DEV each have their own cause, and none is identity any more:
+
+- 7001 P007: a camera on the far gondola read 456 changed pixels at a top-shelf slot (1,284 visible pixels) as a
+  take while she walked past 1.06 m in front of it. Nothing measured separates it from real pixel-only takes. With
+  the pay-point rule, 9 of 11 one-camera pixel-only takes that reach the ledger are real (5 of 5 on the TRAIN-seed
+  clips, 4 of 6 on DEV); the two false ones are both on DEV, and their size, slot score, duration and distance to
+  the shopper all sit inside the range of the real ones. Two stolen items on DEV are read this way and no other, so
+  the class cannot be dropped.
+- 7005 P008: unchanged from round 3 (the cooler camera that read the take never reported the put-back).
+- 7006 P001: one reach read twice 4.2 s apart. `standing` fixes it and costs a theft, see above.
+
 ## 2026-10-05: improvement round 3 (SIMULATED): a put names the take it undoes
 
 All numbers are simulated. TEST was not touched. No training, no new clips. Both sets were run from scratch

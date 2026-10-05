@@ -217,7 +217,24 @@ def test_error_model_is_the_simulators():
             q = s[0] ** 2 + s[1] ** 2
             sim_err = math.sqrt(q / sin2 + s[0] ** 2 * s[1] ** 2 / q)
             got = triangulate([(A, A.project(X)[0][0]), (B, B.project(X)[0][0])], noise)["rms_m"]
-            assert got == pytest.approx(sim_err, rel=0.05)             # off-axis pixels are slightly finer in a pinhole
+            # Off-axis pixels are slightly finer in a pinhole. This is the formula at the image centre, NOT the
+            # simulator's output: with its lens edge loss and range in place of depth the simulator reads up to
+            # about 11% higher on the 45 camera layout (bree/calib/slots.py docstring, audit 2026-10-05).
+            assert got == pytest.approx(sim_err, rel=0.05)
+
+
+def test_fixture_cameras_match_the_recommended_layout():
+    """The fixture is a trimmed copy of ~/bree/software/shared/layouts/recommended-47.json (labels such as zone
+    and mount dropped). Every field the fixture keeps must equal the layout's, so a layout change cannot drift
+    past the calibration tests unseen. Skipped when the research repo is not next to this one."""
+    src = Path.home() / "bree" / "software" / "shared" / "layouts" / "recommended-47.json"
+    if not src.exists():
+        pytest.skip(f"{src} not present")
+    real = {c["id"]: c for c in json.loads(src.read_text())["cameras"]}
+    mine = {c["id"]: c for c in LAYOUT["cameras"]}
+    assert sorted(mine) == sorted(real) and len(mine) == 45
+    assert all(mine[i][k] == real[i][k] for i in mine for k in mine[i])
+    assert {k for c in mine.values() for k in c} >= {"position", "yaw", "pitch", "hfov", "resolution", "kind"}
 
 
 def test_lines_of_sight_that_do_not_meet_are_rejected():

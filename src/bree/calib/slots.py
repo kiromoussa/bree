@@ -5,9 +5,19 @@ camera pins a point down across its line of sight, with a 1 sigma miss of
     s = sqrt((pixel sigma / pixels per metre)^2 + (range x pointing error)^2)   metres
 in each direction perpendicular to the ray. `NoiseModel(pixel_px, cam_rot_deg)` are the simulator's `pxSigma`
 and `calibDeg`; `cam_pos_m` adds an error on where the camera hangs (0 in the simulator). `sigma_px` is the
-same s expressed in pixels, `triangulate` propagates it to a 3D covariance (its `rms_m` equals the
-simulator's two-ray `pairError`, checked in tests/test_calib.py), and `perturbed` draws a mis-calibrated
-camera for Monte Carlo runs.
+same s expressed in pixels, `triangulate` propagates it to a 3D covariance, and `perturbed` draws a
+mis-calibrated camera for Monte Carlo runs.
+
+How close `rms_m` is to the simulator's two-ray `pairError` (audit 2026-10-05): the same formula, but not
+the same number. On the simulator's own per-slot output for recommended-47.json (471 slots it calls
+localisable, the same camera pair per slot) rms_m / errCm has median 0.960, minimum 0.891, maximum 0.999:
+within about 10%, and the simulator is the more cautious one. It applies a lens edge loss (edgeLoss 0.2) and
+uses range where this code uses depth along the optical axis. tests/test_calib.py checks the formula at the
+image centre with 5% tolerance, where the two agree; it does not see the gap off axis.
+The prediction is first order and runs a little low: an independent Monte Carlo (40 layout slot pairs, 1,500
+draws each) measured rms at 1.043 times rms_m at the median, range 1.000 to 1.091 with this module's
+defaults and 0.991 to 1.121 with the simulator's. Read rms_m as about 4% low, up to about 12% off axis.
+The slot gate and `assign` weights lean on it; the 0.7 to 1.4 band in the tests covers it.
 
   triangulate()   N-view linear triangulation + two Gauss-Newton steps on the reprojection error
   SlotMap         the layout's slots: front-face centre and outward normal of each. `assign` picks the most

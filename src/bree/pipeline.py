@@ -116,6 +116,9 @@ def run_store(cameras: list[CameraInput], backend: PerceptionBackend, out_dir: s
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     multi = len(cameras) > 1
+    loose = [c.name for c in cameras if getattr(c.source, "wall_clock", False) and not getattr(c.source, "t0_given", True)]
+    if len(loose) > 1:      # each would start its clock at its own first frame (bree.edge.hub.BurstSource)
+        raise ValueError(f"cameras {loose} read hub bursts on the hub's clock: give every BurstSource the same t0")
     fusion = StoreEvents({c.name: c.store for c in cameras}, handoff)
     ledger = build_ledger(merge_stores([c.store for c in cameras]), **(ledger_overrides or {}))
     cams = [_Cam(c, out, f"_{c.name}" if multi else "", max_frames, Tracker) for c in cameras]

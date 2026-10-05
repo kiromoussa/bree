@@ -13,6 +13,13 @@ A burst folder gets a `.done` file once `on_burst` has run on it. Bursts on disk
 stopped with a full queue, or two requests raced for the last queue slot) are found by a scan at start
 and whenever the queue runs empty after such a race, so a stored burst always reaches the pipeline.
 
+Retention: a stored burst is raw full-resolution JPEGs (faces are NOT pixelated), plus whatever `on_burst`
+wrote next to them (burst.mp4, pipeline/). The hub deletes every burst folder older than `retain_s`
+(default 24 hours, by the time it was received) at start and every `SWEEP_EVERY_S` after, processed or not.
+A burst deleted before `on_burst` ran on it is counted as an error (the pipeline is more than `retain_s`
+behind). `retain_s=None` keeps everything (recorded test runs only). heartbeats.jsonl holds no images and
+is kept.
+
 Time: for each node boot the hub keeps offset = (hub wall clock at receive) - (node monotonic at send),
 the smallest over the last `OFFSET_WINDOW` requests (the smallest is the one that waited least on the
 wire). A frame's hub time is its monotonic time + that offset; burst.json carries both.
@@ -37,11 +44,15 @@ MAX_BODY = 256 * 1024 * 1024
 OFFSET_WINDOW = 30          # requests; short enough to follow crystal drift, long enough to skip a slow one
 _NAME = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_.-]{0,63}$")   # never starts with a dot: no "." or ".." path parts
 DONE = ".done"              # marker in a burst folder: on_burst has run on it (or failed; see the file)
+RETAIN_S = 24 * 3600.0      # raw bursts are deleted after this long (Hub retain_s, --retain-hours)
+SWEEP_EVERY_S = 600.0
 
 
 class Hub:
     def __init__(self, out_dir: str | Path, token: str = "", queue_max: int = 32,
-                 on_burst: Callable[[Path, dict], None] | None = None, stale_s: float = 30.0):
+                 on_burst: Callable[[Path, dict], None] | None = None, stale_s: float = 30.0,
+                 retain_s: float | None = RETAIN_S):
+        self.retain_s, self.swept, self._next_sweep = retain_s, 0, 0.0
         self.out = Path(out_dir)
         self.out.mkdir(parents=True, exist_ok=True)
         self.token, self.on_burst, self.stale_s = token, on_burst, stale_s
@@ -141,6 +152,7 @@ class Hub:
         now = time.time()
         with self._lock:
             return {"queue": self.q.qsize(), "errors": self.error_count,
+                    "retain_s": self.retain_s, "bursts_deleted_by_retention": self.swept,
                     "last_error": self.errors[-1] if self.errors else None, "nodes": {
                 cam: {**n, "age_s": (age := round(now - n["last_heartbeat"], 1) if "last_heartbeat" in n else None),
                       "stale": age is None or age > self.stale_s,
@@ -163,8 +175,33 @@ class Hub:
         # ponytail: walks every burst folder; fine for a start-up or after-a-race scan, not for every request.
         return sorted(p.parent for p in self.out.glob("*/burst/*/burst.json") if not (p.parent / DONE).exists())
 
+    def sweep(self, now: float | None = None) -> int:
+        """Delete every stored burst folder (any kind) received more than retain_s ago, and stale .tmp
+        folders. Runs in the worker thread, so never while on_burst is inside a folder. Returns the count."""
+        if self.retain_s is None:
+            return 0
+        now, n = time.time() if now is None else now, 0
+        for d in list(self.out.glob("*/*/*")):
+            stamp = d / "burst.json" if (d / "burst.json").exists() else d      # .tmp from a crash: folder time
+            try:
+                if not d.is_dir() or now - stamp.stat().st_mtime <= self.retain_s:
+                    continue
+                if self.on_burst and d.parent.name == "burst" and stamp != d and not (d / DONE).exists():
+                    self.error_count += 1
+                    self.errors.append(f"{d.name}: deleted by retention before the pipeline ran on it")
+                shutil.rmtree(d)
+                n += 1
+            except OSError as e:
+                self.error_count += 1
+                self.errors.append(f"{d.name}: retention delete failed: {e!r}")
+        self.swept += n
+        return n
+
     def _work(self) -> None:
         while True:
+            if time.time() >= self._next_sweep:              # at start, then every SWEEP_EVERY_S
+                self._next_sweep = time.time() + SWEEP_EVERY_S
+                self.sweep()
             try:
                 dest, meta = self.q.get(timeout=0.5)
             except queue.Empty:
@@ -234,8 +271,15 @@ class BurstSource:
     as `source`, so several node cameras (and ordinary streams) run into one ledger with one identity pool.
 
     Frame time: the hub's wall time (`hub_time`) minus `t0` when the node sent a monotonic clock; else the
-    node's own media time (a file played as the camera) minus `t0`. Use the same `t0` for every camera of
-    a store (default: this camera's first frame for hub time, 0 for media time).
+    node's own media time (a file played as the camera) minus `t0`. The two clocks are never mixed: when any
+    frame of the camera has a hub time, frames without one are dropped and counted in `dropped_no_hub_time`
+    (a burst spooled before a node reboot that arrived after a hub restart: the old boot's offset is gone).
+    Use the same `t0` for every camera of a store. The default (this camera's first frame for hub time, 0
+    for media time) puts each hub-time camera on its own clock, so bree.pipeline.run_store refuses two
+    hub-time sources without an explicit `t0` (`wall_clock`, `t0_given`).
+    Hub time is good to tens of milliseconds per camera (simulated: mean 10.6 ms, worst 37.0 ms over 200
+    bursts with 2 ms plus exponential 50 ms latency and 50 ppm drift, audit 2026-10-05), which is the same
+    order as the 3D slot step's pairing window (SlotLocator sync_s, 0.07 s).
 
     ponytail: reads what is on disk when iteration starts (recorded bursts), it does not follow a live
     hub; and the tracker is not told about the gaps, so a track can carry over a short gap between two
@@ -253,8 +297,13 @@ class BurstSource:
             self.width, self.height = meta["size"]
         if not rows:
             self.fps, self.width, self.height = 10.0, 0, 0
+        self.wall_clock = any(wall for wall, _ in rows.values())
+        self.dropped_no_hub_time = sum(1 for wall, _ in rows.values() if not wall) if self.wall_clock else 0
+        if self.wall_clock:
+            rows = {t: r for t, r in rows.items() if r[0]}
+        self.t0_given = t0 is not None
         times = sorted(rows)
-        self.t0 = t0 if t0 is not None else (times[0] if rows and rows[times[0]][0] else 0.0)
+        self.t0 = t0 if t0 is not None else (times[0] if self.wall_clock else 0.0)
         self.rows = [(t, rows[t][1]) for t in times][:max_frames]
 
     def __len__(self) -> int:
@@ -299,11 +348,15 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--store", action="append", default=[], metavar="CAMERA=STORE.yaml",
                     help="run the vision pipeline on that camera's bursts (repeatable)")
     ap.add_argument("--backend", default="yolo", choices=["yolo", "toy", "sim_sku"])
+    ap.add_argument("--retain-hours", type=float, default=RETAIN_S / 3600,
+                    help="delete stored bursts (raw frames, faces not pixelated) after this many hours; 0 = keep forever")
     a = ap.parse_args(argv)
     stores = dict(s.split("=", 1) for s in a.store)
-    hub = Hub(a.out, a.token, on_burst=pipeline_feed(stores, a.backend) if stores else None)
+    hub = Hub(a.out, a.token, on_burst=pipeline_feed(stores, a.backend) if stores else None,
+              retain_s=a.retain_hours * 3600 if a.retain_hours > 0 else None)
     hub.serve(a.host, a.port)
-    print(f"hub listening on {a.host}:{a.port}, storing in {a.out}" + ("" if a.token else "  (NO TOKEN SET)"), flush=True)
+    keep = f"bursts deleted after {a.retain_hours:g} h" if a.retain_hours > 0 else "bursts are NEVER deleted (--retain-hours 0)"
+    print(f"hub listening on {a.host}:{a.port}, storing in {a.out}, {keep}" + ("" if a.token else "  (NO TOKEN SET)"), flush=True)
     while True:
         time.sleep(3600)
 

@@ -459,3 +459,56 @@ def test_burst_source_reads_a_cameras_bursts_as_one_stream_with_gaps(clip, tmp_p
     assert ts == sorted(ts) and len(set(ts)) == len(ts) and 0 <= ts[0] and ts[-1] <= 90 / FPS
     assert [f.index for f in frames] == list(range(len(frames)))
     assert len(BurstSource(tmp_path / "hub" / "nobody")) == 0        # a camera that never triggered: an empty stream
+
+
+# ------------------------------------------------------------------ audit 2026-10-05
+def test_pre_roll_is_a_time_span_not_a_frame_count():
+    """A source slower than the configured rate must not give a longer pre-roll; a faster one is capped by
+    the frame count (RAM), so its pre-roll is shorter."""
+    def pre_roll(real_fps):
+        rec = BurstRecorder("c", fps=10, pre_roll_s=2.0, post_roll_s=0.5)
+        out = []
+        for i in range(int(20 * real_fps)):
+            out += rec.push(i / real_fps, i, {"a"} if 10.0 <= i / real_fps < 11.0 else set())
+        return out[0].t_trigger - out[0].frames[0].t
+    assert pre_roll(10) == pytest.approx(2.0)
+    assert pre_roll(5) == pytest.approx(2.0)                         # was 4.0 s as a frame count
+    assert pre_roll(20) == pytest.approx(1.0)                        # 20 frames is the RAM bound
+
+
+def test_hub_deletes_bursts_older_than_the_retention(tmp_path):
+    import os
+    out = tmp_path / "hub"
+    hub = Hub(out, on_burst=lambda d, m: (d / "burst.mp4").write_bytes(b"x"), retain_s=3600.0)
+    assert all(hub.handle("POST", "/v1/burst", {}, burst_msg(i))[0] == 200 for i in (0, 1, 2))
+    hub.q.join()
+    old, edge, new = (out / "c1" / "burst" / f"aaa_{i:010d}" for i in (0, 1, 2))
+    now = time.time()
+    os.utime(old / "burst.json", (now - 3601, now - 3601))
+    os.utime(edge / "burst.json", (now - 3599, now - 3599))
+    assert hub.sweep(now) == 1
+    assert not old.exists() and (edge / "frame_0000.jpg").exists() and (new / "burst.mp4").exists()
+    assert hub.health()["bursts_deleted_by_retention"] == 1 and hub.error_count == 0
+    # a hub restarted on old bursts sweeps at start; one the pipeline never saw is counted as an error
+    os.utime(edge / "burst.json", (now - 7200, now - 7200))
+    (new / ".done").unlink()
+    os.utime(new / "burst.json", (now - 7200, now - 7200))
+    h2 = Hub(out, on_burst=lambda d, m: None, retain_s=3600.0)
+    assert wait_for(lambda: h2.swept == 2) and not list(out.rglob("frame_*.jpg"))
+    assert h2.error_count == 1 and "retention" in h2.errors[-1]
+    assert Hub(tmp_path / "keep", retain_s=None).sweep(now + 1e9) == 0
+
+
+def test_burst_source_never_mixes_hub_time_and_media_time(tmp_path):
+    from bree.edge.hub import BurstSource
+    from bree.pipeline import CameraInput, run_store
+    for cam in ("c1", "c2"):
+        for seq, hub_time in ((0, None), (1, 1.7e9)):
+            d = tmp_path / cam / "burst" / f"b_{seq}"
+            d.mkdir(parents=True)
+            (d / "burst.json").write_text(json.dumps({"fps": 10, "size": [4, 4], "frames": [{"t": 50.0, "hub_time": hub_time}]}))
+    src = BurstSource(tmp_path / "c1")
+    assert len(src) == 1 and src.dropped_no_hub_time == 1 and src.wall_clock and not src.t0_given
+    assert [t - src.t0 for t, _ in src.rows] == [0.0]                # was [50.0, 1700000000.0] on one axis
+    with pytest.raises(ValueError, match="same t0"):
+        run_store([CameraInput(c, BurstSource(tmp_path / c), None) for c in ("c1", "c2")], None, tmp_path / "o")

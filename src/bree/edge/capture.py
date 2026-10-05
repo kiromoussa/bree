@@ -130,11 +130,17 @@ class Burst:
 
 
 class BurstRecorder:
-    """Ring buffer plus burst assembly. push() once per captured frame; it returns finished bursts."""
+    """Ring buffer plus burst assembly. push() once per captured frame; it returns finished bursts.
+
+    The pre-roll is a time span: the ring holds the frames of the last `pre_roll_s` seconds by their own
+    timestamps, so a source slower than `fps` still gives `pre_roll_s` of pre-roll, not more. The frame
+    count ceil(pre_roll_s * fps) stays as the upper bound (full-res frames are held raw in RAM), so a
+    source FASTER than the configured `fps` gives a shorter pre-roll: pre_roll_s * fps / real fps."""
 
     def __init__(self, camera_id: str, fps: float, pre_roll_s: float = 2.0, post_roll_s: float = 1.5,
                  max_burst_s: float = 6.0):
         self.camera_id, self.post_roll_s, self.max_burst_s = camera_id, post_roll_s, max_burst_s
+        self.pre_roll_s = pre_roll_s
         self.ring: deque[tuple[float, Any]] = deque(maxlen=max(1, math.ceil(pre_roll_s * fps)))
         self.cur: Burst | None = None
         self._last_active = 0.0
@@ -145,6 +151,8 @@ class BurstRecorder:
         if self.cur is None:
             if not active:
                 self.ring.append((t, main))
+                while t - self.ring[0][0] >= self.pre_roll_s - 1e-9 and len(self.ring) > 1:
+                    self.ring.popleft()                  # older than the pre-roll once the next frame triggers
                 return []
             self._n += 1
             self.cur = Burst(self.camera_id, self._n, 0, t, [],

@@ -7,9 +7,9 @@
   "edge": true,
   "max_frames": null
  },
- "scored_at": "2026-10-05 17:07",
- "commit": "65f4103",
- "wall_s": 6.5,
+ "scored_at": "2026-10-05 17:26",
+ "commit": "db103d3",
+ "wall_s": 7.1,
  "scorecard": {
   "clips": 9,
   "sim_seconds": 653,
@@ -28,12 +28,12 @@
   "alert_precision": null,
   "false_alerts_on_honest_shoppers": 0,
   "false_alerts_on_nobody": 0,
-  "reviews": 16,
-  "reviews_on_honest_shoppers": 3,
+  "reviews": 15,
+  "reviews_on_honest_shoppers": 2,
   "false_alerts_per_hour": 0.0,
-  "pipeline_picks": 108,
+  "pipeline_picks": 107,
   "pick_recall": 0.915,
-  "pick_precision": 0.898,
+  "pick_precision": 0.907,
   "right_sku_of_paired_picks": 0.938,
   "right_sku_of_all_true_picks": 0.858,
   "right_slot_of_paired_picks": 0.835,
@@ -48,7 +48,7 @@
  },
  "funnel": {
   "picks": 106,
-  "through_every_stage": 48,
+  "through_every_stage": 51,
   "stages": [
    {
     "stage": "in_view",
@@ -106,15 +106,15 @@
    },
    {
     "stage": "ledger_basket",
-    "passed_on_its_own": 92,
+    "passed_on_its_own": 97,
     "reached": 62,
-    "lost_here": 8
+    "lost_here": 4
    },
    {
     "stage": "alert",
-    "passed_on_its_own": 72,
-    "reached": 54,
-    "lost_here": 6
+    "passed_on_its_own": 74,
+    "reached": 58,
+    "lost_here": 7
    }
   ]
  },
@@ -179,7 +179,7 @@
     },
     {
      "stage": "ledger_basket",
-     "passed_on_its_own": 14,
+     "passed_on_its_own": 15,
      "reached": 0,
      "lost_here": 0
     },
@@ -193,7 +193,7 @@
   },
   "paid": {
    "picks": 62,
-   "through_every_stage": 32,
+   "through_every_stage": 35,
    "stages": [
     {
      "stage": "in_view",
@@ -251,15 +251,15 @@
     },
     {
      "stage": "ledger_basket",
-     "passed_on_its_own": 53,
+     "passed_on_its_own": 57,
      "reached": 46,
-     "lost_here": 8
+     "lost_here": 4
     },
     {
      "stage": "alert",
-     "passed_on_its_own": 48,
-     "reached": 38,
-     "lost_here": 6
+     "passed_on_its_own": 50,
+     "reached": 42,
+     "lost_here": 7
     }
    ]
   },
@@ -469,21 +469,21 @@
     },
     {
      "stage": "ledger_basket",
-     "passed_on_its_own": 29,
+     "passed_on_its_own": 30,
      "reached": 11,
-     "lost_here": 1
+     "lost_here": 0
     },
     {
      "stage": "alert",
      "passed_on_its_own": 22,
-     "reached": 10,
-     "lost_here": 1
+     "reached": 11,
+     "lost_here": 2
     }
    ]
   },
   "gondola": {
    "picks": 55,
-   "through_every_stage": 27,
+   "through_every_stage": 30,
    "stages": [
     {
      "stage": "in_view",
@@ -541,14 +541,14 @@
     },
     {
      "stage": "ledger_basket",
-     "passed_on_its_own": 47,
+     "passed_on_its_own": 51,
      "reached": 35,
-     "lost_here": 6
+     "lost_here": 3
     },
     {
      "stage": "alert",
-     "passed_on_its_own": 38,
-     "reached": 29,
+     "passed_on_its_own": 40,
+     "reached": 32,
      "lost_here": 2
     }
    ]
@@ -712,7 +712,7 @@
       "associated_to_a_shopper": true,
       "right_shopper": true,
       "conceal_or_pay_classified": false,
-      "ledger_basket": false,
+      "ledger_basket": true,
       "alert": false
      },
      "lost_at": "conceal_or_pay_classified",
@@ -955,12 +955,26 @@
      "t_pick": 18.83,
      "t_conceal": 21.83,
      "alert": false,
-     "alert_or_review": false,
+     "alert_or_review": true,
      "sku_in_alert": false,
      "time_to_alert_s": null
     }
    ],
-   "alerts": [],
+   "alerts": [
+    {
+     "clip": 4900,
+     "alert_id": "A00001",
+     "tier": "review",
+     "person_id": 4,
+     "shopper": "P003",
+     "true_theft": true,
+     "t_emitted": 53.0,
+     "skus": [
+      "voltlink_usbc"
+     ],
+     "confidence": 0.65
+    }
+   ],
    "pipeline_picks": 7,
    "pipeline_picks_paired": 7,
    "identity": {
@@ -998,8 +1012,11 @@
     "unassigned_shelf_events": 0,
     "people": 4,
     "uncertain_people": 2,
-    "alerts": 0,
-    "review_store": null,
+    "alerts": 1,
+    "review_store": {
+     "records": 1,
+     "new": 1
+    },
     "pipeline_events": {
      "enter": 4,
      "exit": 4,
@@ -1073,7 +1090,7 @@
       "right_sku_detected": false,
       "person_detected": false,
       "hand_detected": true,
-      "event_t": 13.9,
+      "event_t": 14.4,
       "event_zone": "CD10",
       "event_sku": "arcwave_original",
       "event_slot": "D10-S4-7",
@@ -1555,7 +1572,7 @@
      "t_pick": 14.67,
      "t_conceal": 17.67,
      "alert": false,
-     "alert_or_review": true,
+     "alert_or_review": false,
      "sku_in_alert": false,
      "time_to_alert_s": null
     },
@@ -1601,19 +1618,6 @@
      "clip": 4901,
      "alert_id": "A00001",
      "tier": "review",
-     "person_id": 2,
-     "shopper": "P001",
-     "true_theft": true,
-     "t_emitted": 34.1,
-     "skus": [
-      "arcwave_berry"
-     ],
-     "confidence": 0.65
-    },
-    {
-     "clip": 4901,
-     "alert_id": "A00002",
-     "tier": "review",
      "person_id": 6,
      "shopper": "P005",
      "true_theft": true,
@@ -1625,7 +1629,7 @@
     },
     {
      "clip": 4901,
-     "alert_id": "A00003",
+     "alert_id": "A00002",
      "tier": "review",
      "person_id": 5,
      "shopper": "P004",
@@ -1638,7 +1642,7 @@
     },
     {
      "clip": 4901,
-     "alert_id": "A00004",
+     "alert_id": "A00003",
      "tier": "review",
      "person_id": 8,
      "shopper": "P006",
@@ -1651,7 +1655,7 @@
      "confidence": 0.55
     }
    ],
-   "pipeline_picks": 12,
+   "pipeline_picks": 11,
    "pipeline_picks_paired": 10,
    "identity": {
     "store_wide_ids": 8,
@@ -1669,7 +1673,7 @@
    },
    "pipeline_events": {
     "enter": 7,
-    "pick": 12,
+    "pick": 11,
     "put_back": 2,
     "exit": 6,
     "pay": 8
@@ -1682,24 +1686,24 @@
     "wall_s": {
      "shelf": 0.0,
      "people": 0.1,
-     "pipeline": 0.6
+     "pipeline": 0.7
     },
     "unreliable_camera_spans": 13,
     "shelf_events": 24,
-    "store_shelf_events": 15,
+    "store_shelf_events": 14,
     "unassigned_shelf_events": 0,
     "people": 7,
     "uncertain_people": 4,
-    "alerts": 4,
+    "alerts": 3,
     "review_store": {
-     "records": 4,
-     "new": 4
+     "records": 3,
+     "new": 3
     },
     "pipeline_events": {
      "enter": 7,
      "exit": 6,
      "pay": 8,
-     "pick": 12,
+     "pick": 11,
      "put_back": 2
     }
    }
@@ -1937,7 +1941,7 @@
       "right_sku_detected": false,
       "person_detected": false,
       "hand_detected": true,
-      "event_t": 26.0,
+      "event_t": 26.1,
       "event_zone": "CD09",
       "event_sku": "lumen_citrus",
       "event_slot": "D9-S1-5",
@@ -2105,7 +2109,7 @@
       "right_sku_detected": false,
       "person_detected": false,
       "hand_detected": true,
-      "event_t": 40.9,
+      "event_t": 41.3,
       "event_zone": "G4",
       "event_sku": "ridgeline_original",
       "event_slot": "G4R-S3-40",
@@ -2356,7 +2360,7 @@
       "right_sku_detected": false,
       "person_detected": false,
       "hand_detected": true,
-      "event_t": 18.6,
+      "event_t": 19.7,
       "event_zone": "CD09",
       "event_sku": "fizzo_zero",
       "event_slot": "D9-S5-1",
@@ -2440,7 +2444,7 @@
       "right_sku_detected": false,
       "person_detected": false,
       "hand_detected": true,
-      "event_t": 22.2,
+      "event_t": 22.7,
       "event_zone": "CD10",
       "event_sku": "arcwave_original",
       "event_slot": "D10-S5-4",
@@ -2703,7 +2707,7 @@
     "wall_s": {
      "shelf": 0.0,
      "people": 0.1,
-     "pipeline": 0.4
+     "pipeline": 0.5
     },
     "unreliable_camera_spans": 4,
     "shelf_events": 32,
@@ -4078,7 +4082,7 @@
       "right_sku_detected": false,
       "person_detected": false,
       "hand_detected": true,
-      "event_t": 13.7,
+      "event_t": 14.3,
       "event_zone": "CD10",
       "event_sku": "arcwave_original",
       "event_slot": "D10-S1-7",
@@ -4982,10 +4986,10 @@
       "associated_to_a_shopper": true,
       "right_shopper": true,
       "conceal_or_pay_classified": true,
-      "ledger_basket": false,
-      "alert": false
+      "ledger_basket": true,
+      "alert": true
      },
-     "lost_at": "ledger_basket",
+     "lost_at": null,
      "detail": {
       "item_frames": 34,
       "hand_frames": 33,
@@ -5108,10 +5112,10 @@
       "associated_to_a_shopper": true,
       "right_shopper": true,
       "conceal_or_pay_classified": true,
-      "ledger_basket": false,
-      "alert": false
+      "ledger_basket": true,
+      "alert": true
      },
-     "lost_at": "ledger_basket",
+     "lost_at": null,
      "detail": {
       "item_frames": 25,
       "hand_frames": 21,
@@ -5289,7 +5293,7 @@
       "right_sku_detected": false,
       "person_detected": false,
       "hand_detected": true,
-      "event_t": 54.8,
+      "event_t": 58.3,
       "event_zone": "G3",
       "event_sku": "peanut_pilot",
       "event_slot": "G3L-S4-17",
@@ -5356,22 +5360,7 @@
      "time_to_alert_s": null
     }
    ],
-   "alerts": [
-    {
-     "clip": 4950,
-     "alert_id": "A00001",
-     "tier": "review",
-     "person_id": 6,
-     "shopper": "P005",
-     "true_theft": false,
-     "t_emitted": 64.7,
-     "skus": [
-      "relieva_ibu",
-      "oatfield_cookies"
-     ],
-     "confidence": 0.7
-    }
-   ],
+   "alerts": [],
    "pipeline_picks": 17,
    "pipeline_picks_paired": 14,
    "identity": {
@@ -5404,7 +5393,7 @@
     "wall_s": {
      "shelf": 0.0,
      "people": 0.1,
-     "pipeline": 0.8
+     "pipeline": 0.9
     },
     "unreliable_camera_spans": 16,
     "shelf_events": 51,
@@ -5412,11 +5401,8 @@
     "unassigned_shelf_events": 1,
     "people": 8,
     "uncertain_people": 6,
-    "alerts": 1,
-    "review_store": {
-     "records": 1,
-     "new": 1
-    },
+    "alerts": 0,
+    "review_store": null,
     "pipeline_events": {
      "enter": 8,
      "exit": 7,
@@ -5663,7 +5649,7 @@
       "right_sku_detected": false,
       "person_detected": false,
       "hand_detected": true,
-      "event_t": 19.0,
+      "event_t": 20.0,
       "event_zone": "G4",
       "event_sku": "voltlink_micro",
       "event_slot": "G4L-S1-16",
@@ -5705,7 +5691,7 @@
       "right_sku_detected": false,
       "person_detected": false,
       "hand_detected": true,
-      "event_t": 20.0,
+      "event_t": 20.9,
       "event_zone": "CD10",
       "event_sku": "arcwave_berry",
       "event_slot": "D10-S3-6",
@@ -5776,10 +5762,10 @@
       "associated_to_a_shopper": true,
       "right_shopper": true,
       "conceal_or_pay_classified": true,
-      "ledger_basket": false,
+      "ledger_basket": true,
       "alert": false
      },
-     "lost_at": "ledger_basket",
+     "lost_at": "alert",
      "detail": {
       "item_frames": 20,
       "hand_frames": 18,
@@ -6112,10 +6098,10 @@
       "associated_to_a_shopper": true,
       "right_shopper": true,
       "conceal_or_pay_classified": true,
-      "ledger_basket": false,
+      "ledger_basket": true,
       "alert": true
      },
-     "lost_at": "ledger_basket",
+     "lost_at": null,
      "detail": {
       "item_frames": 39,
       "hand_frames": 28,
@@ -6227,11 +6213,9 @@
      "true_theft": true,
      "t_emitted": 180.6,
      "skus": [
-      "fizzo_cola",
-      "voltlink_micro",
-      "peanut_pilot"
+      "voltlink_micro"
      ],
-     "confidence": 0.75
+     "confidence": 0.65
     }
    ],
    "pipeline_picks": 16,
@@ -6267,7 +6251,7 @@
     "wall_s": {
      "shelf": 0.0,
      "people": 0.1,
-     "pipeline": 0.8
+     "pipeline": 0.9
     },
     "unreliable_camera_spans": 16,
     "shelf_events": 29,

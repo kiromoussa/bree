@@ -97,6 +97,86 @@ Clothing colour alone does not move theft recall (11 against 12), it moves ident
 - **Not measured:** the shelf rules were tuned with the old weights and `make shelf-eval` was not repeated with
   `sim_sku_hands_v3`; the old weights were not run through the DEV benchmark; nothing was run on TEST.
 
+## 2026-10-05: improvement round 5 (SIMULATED): the ledger's doubt discount
+
+All numbers are simulated. TEST was not touched. No training, no new clips. Nothing before tracking changed, so DEV
+and the TRAIN-seed clips were both rejoined from their stored shelf events and person boxes
+(`make bench-dev BENCH_ARGS=--keep`, `make bench-train BENCH_ARGS=--keep`, stamped db103d3). The stored events are the
+ones of round 4's from-scratch DEV run.
+
+**Result: every DEV bar is met for the first time. 17 of 20 thefts flagged, 2 of 22 honest shoppers reviewed (was 3).
+The TRAIN-seed clips did not get worse: 15 of 19 thefts, 2 of 36 honest shoppers reviewed (was 3).**
+
+| | DEV before | DEV now | TRAIN-seed before | TRAIN-seed now |
+|---|---|---|---|---|
+| theft recall, alert or review | 0.85 (17/20) | 0.85 (17/20) | 0.789 (15/19) | 0.789 (15/19) |
+| theft recall, alert tier | 0 of 20 | 0 of 20 | 0 of 19 | 0 of 19 |
+| reviews on honest shoppers | 3 of 22 | 2 of 22 | 3 of 36 | 2 of 36 |
+| pick recall | 0.957 (67/70) | 0.971 (68/70) | 0.915 | 0.915 |
+| pick precision | 0.905 (74 PICK events) | 0.944 (72) | 0.898 (108) | 0.907 (107) |
+| right SKU of paired picks | 0.940 (63/67) | 0.926 (63/68) | 0.938 | 0.938 |
+| identities per shopper | 1.216 | 1.216 | 1.377 | 1.377 |
+
+Right SKU of paired picks went down on DEV because one more true pick is paired and its PICK names the wrong product;
+the count of picks with the right product is the same (63).
+
+### Stage looked at: the ledger's doubt discount (round 4's first bottleneck)
+
+**Root cause in one sentence: a pick that fits two people was halved for ever, even after both had left and neither
+had paid for it, so a correctly read theft scored 0.25 to 0.30 against a review bar of 0.4 and only got flagged when
+some error (a false second take, a wrong identity) pushed it over.** That is why round 4 could not switch on the fix
+for the take that is read twice (`standing`): it removed the false second take that was carrying a real theft.
+
+Cases looked at before changing code: DEV 7005 P005 (the theft that `standing` lost), TRAIN-seed 4906 P003 (the
+honest shopper that "no discount" added) and TRAIN-seed 4901 P001 (see below). In 4906 four people stood at the
+counter between 38 and 45 s; the receipt with her `sierra_nacho` was handed by visit time to another of them, who had
+no such pick, and the person the ledger named as the other candidate for the pick had no receipt at all.
+
+### Kept (commit db103d3)
+
+1. **A crowded pick is discounted only while another candidate's receipts are still to come**
+   (`LedgerConfig.ambiguous_settles`). Once every candidate has been reconciled and none paid for an extra one, the
+   item is unpaid whoever of them took it, and it scores in full. It stays review tier at most while it is not
+   concealed (new cap: "a pick that also fits another person").
+2. **A pick in doubt (crowded, or on an uncertain identity) is covered by a paid item nobody saw its payer take,
+   whoever that payer is** (`LedgerConfig.doubt_takes_any_extra`). Before, only the named candidates were asked. It
+   fired 9 times on the TRAIN-seed clips and 0 times on DEV; it removed two honest reviews there (4906 P003, 4950
+   P005) and took two false unpaid items off a real thief's record (4951 P005, still flagged). No flagged theft was
+   lost through it on either set.
+3. **An act is timed by the readings no put took back** (`standing` in `one_act_per_reach`, written in round 4, now
+   on). This is what removes the DEV review of 7006 P001 (one cooler take read twice, 4.2 s apart).
+
+Step by step, thefts flagged / honest shoppers reviewed, DEV then TRAIN-seed (`scripts/bench/whatif.py`, logs in
+`out/bench/round5/`):
+
+| variant | DEV | TRAIN-seed |
+|---|---|---|
+| round 4 code | 17 and 3 | 15 and 3 |
+| 1 alone | 17 and 3 | 16 and 4 |
+| 1 and 2 | 17 and 3 | 16 and 2 |
+| 1, 2 and 3 (kept) | 17 and 2 | 15 and 2 |
+| 3 alone (round 4's rejected variant) | 16 and 2 | 14 and 3 |
+
+### Tried and not kept
+
+"An item seen in a hand after a put with the item seen going in is a new take" (so `standing` does not merge it
+into the returned act): 17 and 2 on DEV, 16 and 3 on TRAIN-seed. It brings back 4901 P001 and adds an honest review
+(4905 P003). Not kept: the kept version has fewer honest reviews, and in 4901 the camera's put-back is the false
+event (one reach, read as take, put, take), so the rule would be right there for the wrong reason.
+
+### What is still open
+
+- The one theft the kept version loses on the TRAIN-seed clips, 4901 P001: one reach into a cooler read as a take of
+  the neighbouring product at 13.9 s, a put with "item seen going in" at 15.1 s that did not happen, and the right
+  product in the hand at 18.3 s. With `standing` the three are one act and the false put returns it. 4900 P003 is
+  gained in exchange (its pick fitted two people and is no longer halved).
+- Alert tier is still 0 of 20: no concealment cue exists. Unchanged since round 0.
+- The two honest reviews left on DEV are the ones round 4 described: 7001 P007 (a far camera read 456 changed pixels
+  as a take while she walked past) and 7005 P008 (the cooler camera that read the take never reported the put-back).
+  Both are per-camera shelf event errors, not join or ledger errors.
+- The three thefts missed on DEV: 7001 P003 (identities swap at the register and two receipts cover both his
+  items), 7005 P001 (at the counter, no receipt), 7005 P007 (no shelf event).
+
 ## 2026-10-05: improvement round 4 (SIMULATED): one person, one track
 
 All numbers are simulated. TEST was not touched. No training, no new clips. DEV was run from scratch

@@ -2,7 +2,7 @@
 
 SIMULATED (browser store simulator copy, scripts/bench/render_clip.mjs). Not real footage.
 
-9 clips (4900, 4901, 4902, 4903, 4904, 4905, 4906, 4950, 4951), 653 s of sim time, 53 shoppers (17 thieves, 36 honest), 106 picks, 19 stolen items. Runner `bree.shelf.store:run`, options {"backend": "sim_sku", "edge": true, "max_frames": null}. Scored 2026-10-05 17:07, commit 65f4103.
+9 clips (4900, 4901, 4902, 4903, 4904, 4905, 4906, 4950, 4951), 653 s of sim time, 53 shoppers (17 thieves, 36 honest), 106 picks, 19 stolen items. Runner `bree.shelf.store:run`, options {"backend": "sim_sku", "edge": true, "max_frames": null}. Scored 2026-10-05 17:26, commit db103d3.
 
 ## Scorecard
 
@@ -13,10 +13,10 @@ SIMULATED (browser store simulator copy, scripts/bench/render_clip.mjs). Not rea
 | Stolen items alerted with the right SKU | 0/19 |
 | Alert precision | n/a (0/0) |
 | False alerts on honest shoppers | 0 (of 36 honest shoppers); on nobody: 0 |
-| Reviews on honest shoppers | 3 (of 16 reviews) |
+| Reviews on honest shoppers | 2 (of 15 reviews) |
 | False alerts per hour | 0.0 |
 | Pick recall | 91.5% (97/106) |
-| Pick precision | 89.8% (of 108 PICK events) |
+| Pick precision | 90.7% (of 107 PICK events) |
 | Right SKU, of paired picks | 93.8%; of all true picks 85.8% |
 | Right slot, of paired picks | 83.5% |
 | Right shopper, of paired picks | 96.9% |
@@ -28,7 +28,7 @@ SIMULATED (browser store simulator copy, scripts/bench/render_clip.mjs). Not rea
 
 Each true pick walks the stages in order and is counted at the first one it fails. "Passed on its own" counts the stage for every pick, whatever happened before it.
 
-### All picks: 106 picks, 48 through every stage
+### All picks: 106 picks, 51 through every stage
 
 | stage | reached this stage | lost here | passed on its own |
 |---|---|---|---|
@@ -41,8 +41,8 @@ Each true pick walks the stages in order and is counted at the first one it fail
 | associated to a shopper | 78 | 0 | 97 |
 | right shopper | 78 | 2 | 94 |
 | conceal or pay classified | 76 | 14 | 81 |
-| ledger basket | 62 | 8 | 92 |
-| alert | 54 | 6 | 72 |
+| ledger basket | 62 | 4 | 97 |
+| alert | 58 | 7 | 74 |
 
 ### Outcome concealed: 19 picks, 0 through every stage
 
@@ -57,10 +57,10 @@ Each true pick walks the stages in order and is counted at the first one it fail
 | associated to a shopper | 16 | 0 | 19 |
 | right shopper | 16 | 2 | 16 |
 | conceal or pay classified | 14 | 14 | 0 |
-| ledger basket | 0 | 0 | 14 |
+| ledger basket | 0 | 0 | 15 |
 | alert | 0 | 0 | 0 |
 
-### Outcome paid: 62 picks, 32 through every stage
+### Outcome paid: 62 picks, 35 through every stage
 
 | stage | reached this stage | lost here | passed on its own |
 |---|---|---|---|
@@ -73,8 +73,8 @@ Each true pick walks the stages in order and is counted at the first one it fail
 | associated to a shopper | 46 | 0 | 56 |
 | right shopper | 46 | 0 | 56 |
 | conceal or pay classified | 46 | 0 | 62 |
-| ledger basket | 46 | 8 | 53 |
-| alert | 38 | 6 | 48 |
+| ledger basket | 46 | 4 | 57 |
+| alert | 42 | 7 | 50 |
 
 ### Outcome put_back: 25 picks, 16 through every stage
 
@@ -121,10 +121,10 @@ Each true pick walks the stages in order and is counted at the first one it fail
 | associated to a shopper | 16 | 0 | 30 |
 | right shopper | 16 | 0 | 29 |
 | conceal or pay classified | 16 | 5 | 22 |
-| ledger basket | 11 | 1 | 29 |
-| alert | 10 | 1 | 22 |
+| ledger basket | 11 | 0 | 30 |
+| alert | 11 | 2 | 22 |
 
-### Zone gondola: 55 picks, 27 through every stage
+### Zone gondola: 55 picks, 30 through every stage
 
 | stage | reached this stage | lost here | passed on its own |
 |---|---|---|---|
@@ -137,8 +137,8 @@ Each true pick walks the stages in order and is counted at the first one it fail
 | associated to a shopper | 44 | 0 | 49 |
 | right shopper | 44 | 2 | 47 |
 | conceal or pay classified | 42 | 7 | 43 |
-| ledger basket | 35 | 6 | 47 |
-| alert | 29 | 2 | 38 |
+| ledger basket | 35 | 3 | 51 |
+| alert | 32 | 2 | 40 |
 
 What a stage means:
 
@@ -171,14 +171,14 @@ What a stage means:
 | clip | cameras | shoppers | thieves | picks | PICK events | stolen | alerted | alerts | false | ids | wall s (edge + pipeline) |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | 4900 | 19 | 4 | 1 | 8 | 7 | 1 | 0 | 0 | 0 | 5 |  + 0.4 |
-| 4901 | 20 | 6 | 4 | 12 | 12 | 4 | 0 | 0 | 0 | 8 |  + 0.6 |
+| 4901 | 20 | 6 | 4 | 12 | 11 | 4 | 0 | 0 | 0 | 8 |  + 0.7 |
 | 4902 | 19 | 5 | 1 | 10 | 11 | 2 | 0 | 0 | 0 | 6 |  + 0.6 |
-| 4903 | 18 | 4 | 2 | 8 | 11 | 2 | 0 | 0 | 0 | 6 |  + 0.4 |
+| 4903 | 18 | 4 | 2 | 8 | 11 | 2 | 0 | 0 | 0 | 6 |  + 0.5 |
 | 4904 | 20 | 8 | 2 | 12 | 12 | 2 | 0 | 0 | 0 | 11 |  + 0.8 |
 | 4905 | 15 | 5 | 3 | 11 | 10 | 4 | 0 | 0 | 0 | 6 |  + 0.6 |
 | 4906 | 20 | 6 | 1 | 13 | 12 | 1 | 0 | 0 | 0 | 9 |  + 0.7 |
-| 4950 | 20 | 7 | 1 | 15 | 17 | 1 | 0 | 0 | 0 | 9 |  + 0.8 |
-| 4951 | 21 | 8 | 2 | 17 | 16 | 2 | 0 | 0 | 0 | 13 |  + 0.8 |
+| 4950 | 20 | 7 | 1 | 15 | 17 | 1 | 0 | 0 | 0 | 9 |  + 0.9 |
+| 4951 | 21 | 8 | 2 | 17 | 16 | 2 | 0 | 0 | 0 | 13 |  + 0.9 |
 
 ## Every true pick
 
@@ -264,10 +264,10 @@ What a stage means:
 | 4950 | 24.4 | P002 | gondola | G2R-S4-37 | peanut_pilot | paid | right slot | 35 (35) |  |  |  | peanut_pilot | P002 |
 | 4950 | 25.43 | P001 | checkout | CK-7 | cocoa_crest | put_back | none | 50 (50) |  |  |  | cocoa_crest | P001 |
 | 4950 | 26.77 | P004 | cooler | D10-S5-2 | arcwave_tropical | paid | none | 55 (55) |  |  |  | arcwave_tropical | P004 |
-| 4950 | 26.87 | P005 | gondola | G4L-S1-28 | relieva_ibu | paid | ledger basket | 34 (34) |  |  |  | relieva_ibu | P005 |
+| 4950 | 26.87 | P005 | gondola | G4L-S1-28 | relieva_ibu | paid | none | 34 (34) |  |  |  | relieva_ibu | P005 |
 | 4950 | 30.3 | P006 | gondola | G4L-S3-10 | caramel_crest | paid | none | 51 (51) |  |  |  | caramel_crest | P006 |
 | 4950 | 30.33 | P003 | cooler | D10-S1-2 | arcwave_tropical | paid | shelf event emitted | 43 (43) |  |  |  |  |  |
-| 4950 | 37.53 | P005 | gondola | G2L-S1-2 | oatfield_cookies | paid | ledger basket | 25 (25) |  |  |  | oatfield_cookies | P005 |
+| 4950 | 37.53 | P005 | gondola | G2L-S1-2 | oatfield_cookies | paid | none | 25 (25) |  |  |  | oatfield_cookies | P005 |
 | 4950 | 38.27 | P007 | cooler | D11-S4-7 | arcwave_tropical | concealed | right slot | 51 (51) |  |  |  | arcwave_original | P001 |
 | 4950 | 40.2 | P001 | cooler | D9-S2-1 | fizzo_cola | paid | right slot | 30 (30) |  |  |  | fizzo_cola | P001 |
 | 4950 | 40.77 | P003 | checkout | CK-7 | cocoa_crest | put_back | none | 52 (52) |  |  |  | cocoa_crest | P003 |
@@ -280,7 +280,7 @@ What a stage means:
 | 4951 | 19.3 | P004 | gondola | G4L-S1-8 | caramel_crest | put_back | right slot | 18 (18) |  |  |  | voltlink_micro | P004 |
 | 4951 | 20.9 | P003 | cooler | D10-S3-6 | arcwave_berry | concealed | conceal or pay classified | 24 (24) |  |  |  | arcwave_berry | P003 |
 | 4951 | 24.1 | P001 | gondola | G2R-S4-43 | cocoa_crest | paid | none | 17 (17) |  |  |  | cocoa_crest | P001 |
-| 4951 | 27.03 | P005 | cooler | D8-S4-3 | fizzo_cola | paid | ledger basket | 20 (20) |  |  |  | fizzo_cola | P005 |
+| 4951 | 27.03 | P005 | cooler | D8-S4-3 | fizzo_cola | paid | alert | 20 (20) |  |  |  | fizzo_cola | P005 |
 | 4951 | 32.33 | P004 | gondola | G2L-S2-8 | torqueline_10w30 | put_back | none | 50 (50) |  |  |  | torqueline_10w30 | P004 |
 | 4951 | 32.33 | P008 | gondola | G4L-S4-6 | torqueline_10w30 | paid | none | 19 (19) |  |  |  | torqueline_10w30 | P008 |
 | 4951 | 32.87 | P005 | gondola | G3R-S1-20 | voltlink_micro | concealed | conceal or pay classified | 39 (39) |  |  |  | voltlink_micro | P005 |
@@ -288,5 +288,5 @@ What a stage means:
 | 4951 | 34.07 | P007 | cooler | D11-S5-5 | arcwave_tropical | paid | hand or item detected | 36 (36) |  |  |  | arcwave_tropical | P007 |
 | 4951 | 41.33 | P004 | gondola | G1R-S2-40 | ridgeline_teriyaki | paid | none | 37 (37) |  |  |  | ridgeline_teriyaki | P004 |
 | 4951 | 41.83 | P006 | cooler | D8-S3-6 | lumen_citrus | paid | none | 12 (12) |  |  |  | lumen_citrus | P006 |
-| 4951 | 41.93 | P008 | gondola | G2L-S1-19 | peanut_pilot | paid | ledger basket | 39 (39) |  |  |  | peanut_pilot | P008 |
+| 4951 | 41.93 | P008 | gondola | G2L-S1-19 | peanut_pilot | paid | none | 39 (39) |  |  |  | peanut_pilot | P008 |
 | 4951 | 50.53 | P004 | gondola | G3L-S4-1 | oatfield_cookies | paid | hand or item detected | 34 (34) |  |  |  |  |  |

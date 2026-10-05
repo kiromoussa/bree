@@ -759,3 +759,25 @@ An independent audit re-ran the commands behind the reports and probed the code.
   "afterwards" is not reliable.
 - **DEV was run from scratch, the TRAIN-seed clips with `--keep`.** Nothing before tracking changed this round, so
   the stored shelf events and person boxes are the ones a fresh run would produce.
+
+
+## Improvement round 5 (2026-10-05)
+
+- **The stage worked on was the ledger's doubt discount**, named first by round 4. A crowded pick is now halved only
+  while another candidate's receipts can still arrive; after that it scores in full and is review tier at most
+  (`LedgerConfig.ambiguous_settles`, set False for the old rule).
+- **A pick in doubt can be covered by anybody's paid item that nobody saw them take**
+  (`LedgerConfig.doubt_takes_any_extra`). Risk accepted: a thief whose pick is in doubt is cleared if a stranger paid
+  for the same product and their own pick of it was missed. It did not happen on DEV or the TRAIN-seed clips (9
+  firings, no flagged theft lost). It applies only to picks in doubt, never to a pick one person clearly made.
+- **`standing` is on.** With the two ledger rules neither set gets worse against round 4 (DEV 17 and 2 from 17 and
+  3, TRAIN-seed 15 and 2 from 15 and 3), the standard of rounds 2 to 4. On the TRAIN-seed clips it trades one flagged
+  theft for another (4901 P001 lost, 4900 P003 gained).
+- **"A take after a put with the item seen going in is a new take" was not kept** (TRAIN-seed 16 and 3 against 15 and
+  2). Fewer honest reviews was preferred over one more theft, because the honest bar is the one the goal was missing.
+- **DEV was rejoined with `--keep`, not run from scratch.** Only the join and the ledger changed (git diff 875fa28
+  to db103d3 touches `src/bree/ledger/ledger.py` and one default in `src/bree/shelf/store.py`), so the stored shelf
+  events and person boxes of round 4's from-scratch run are what a fresh run would produce. Saves about 35 minutes.
+- **Tests:** full suite on the kept code, 415 passed, 1 skipped, 0 failed (counted from the progress lines of `out/bench/round5/tests_full.log`).
+- **goal_met is reported true for DEV** with the caveat that one case moves the honest rate by 0.45 per 10 and theft
+  recall by 0.05, and that alert tier is 0. TEST has not been run.

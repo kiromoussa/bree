@@ -35,6 +35,9 @@ def make_backend(kind: str, store, imgsz: int | None = None, products: bool = Tr
     if kind == "toy":
         from bree.detect.toy import ToyBackend
         return ToyBackend()
+    if kind == "sim_sku":     # people + pose from COCO YOLO, products from the SIM-TRAINED SKU detector (bree.train)
+        from bree.train.backend import make_sim_backend
+        return make_sim_backend(store, imgsz, runtime)
     from bree.detect.yolo import YoloBackend
     from bree.hw import detect_hardware
     hw = detect_hardware()
@@ -79,7 +82,7 @@ def main(argv: list[str] | None = None) -> None:
     r.add_argument("--store", action="append", default=None,
                    help=f"store layout YAML for the matching --source (default {DEFAULT_STORE.name})")
     r.add_argument("--out", default="out/run")
-    r.add_argument("--backend", choices=["yolo", "toy"], default="yolo")
+    r.add_argument("--backend", choices=["yolo", "toy", "sim_sku"], default="yolo")
     r.add_argument("--payments", default=None, help="payments.jsonl | stdin | http[:PORT]")
     r.add_argument("--imgsz", type=int, default=None)
     r.add_argument("--runtime", choices=RUNTIMES, default="pytorch", help=RUNTIME_HELP)

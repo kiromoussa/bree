@@ -168,7 +168,7 @@ def register(sub) -> None:
     from bree.cli import RUNTIME_HELP, RUNTIMES
     db = sub.add_parser("dashboard", help="local web dashboard: live alerts + baskets")
     db.add_argument("--source", default=None, help="video/webcam/rtsp; default: a toy clip")
-    db.add_argument("--backend", choices=["yolo", "toy"], default="yolo")
+    db.add_argument("--backend", choices=["yolo", "toy", "sim_sku"], default="yolo")
     db.add_argument("--runtime", choices=RUNTIMES, default="pytorch", help=RUNTIME_HELP)
     db.add_argument("--payments", default=None)
     db.add_argument("--store", default=str(STORE))
@@ -179,7 +179,7 @@ def register(sub) -> None:
 
     sh = sub.add_parser("shadow", help="pilot shadow mode: run silently, log would-be alerts for review")
     sh.add_argument("--config", required=True, help="shadow YAML (see configs/shadow_example.yaml)")
-    sh.add_argument("--backend", choices=["yolo", "toy"], default=None, help="override the config")
+    sh.add_argument("--backend", choices=["yolo", "toy", "sim_sku"], default=None, help="override the config")
     sh.add_argument("--runtime", choices=RUNTIMES, default=None, help="override the config; " + RUNTIME_HELP)
     sh.add_argument("--review-port", type=int, default=None, help="override the config; 0 = no review page")
     sh.add_argument("--once", action="store_true",

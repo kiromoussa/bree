@@ -1,0 +1,1503 @@
+{
+ "data": "SIMULATED (browser store simulator copy); not real footage",
+ "weights": "/Users/kiromoussa/bree-vision/data/synth/weights/sim_sku.pt",
+ "training": {
+  "data_note": "SIMULATED store frames only",
+  "base_weights": "yolo26n.pt",
+  "data": "data/synth/sku/data.yaml",
+  "classes": 33,
+  "train_images": 13596,
+  "imgsz": 640,
+  "epochs": 6,
+  "batch": 32,
+  "device": "mps",
+  "train_wall_s": 19250.5,
+  "train_wall_min": 320.8,
+  "validated_every_epoch": false,
+  "val_split_at_end": {
+   "metrics/mAP50(B)": 0.9734,
+   "metrics/mAP50-95(B)": 0.8838
+  },
+  "augmentation": {
+   "hsv_h": 0.01,
+   "hsv_s": 0.4,
+   "hsv_v": 0.35,
+   "fliplr": 0.0,
+   "flipud": 0.0,
+   "scale": 0.25,
+   "translate": 0.1,
+   "mosaic": 0.5,
+   "close_mosaic": 2,
+   "erasing": 0.0
+  },
+  "run_dir": "/Users/kiromoussa/bree-vision/data/synth/runs/sim_sku",
+  "weights": "/Users/kiromoussa/bree-vision/data/synth/weights/sim_sku.pt"
+ },
+ "dataset": {
+  "train": {
+   "seeds": [
+    1001,
+    1003,
+    1004,
+    1005,
+    1006,
+    1007,
+    1008,
+    1009,
+    1010,
+    1012,
+    1014,
+    1015,
+    1016,
+    1017,
+    1018,
+    1019,
+    1020,
+    1021,
+    1022,
+    1023,
+    1024,
+    1026,
+    1028,
+    1029,
+    1032,
+    1033,
+    1036,
+    1037,
+    1039,
+    1042,
+    1043,
+    1044,
+    1045,
+    1046,
+    1047,
+    1050,
+    1053,
+    1056,
+    1057,
+    1058,
+    1059,
+    1060,
+    1063,
+    1064,
+    1070,
+    1071,
+    1073,
+    1074,
+    1076,
+    1077,
+    1079,
+    1083,
+    1085,
+    1089,
+    1091,
+    1093,
+    1095,
+    1097,
+    1099,
+    1100,
+    1101,
+    1103,
+    1104,
+    1105,
+    1106,
+    1108,
+    1110,
+    1112,
+    1113,
+    1114,
+    1116,
+    1117,
+    1119,
+    1121,
+    1122,
+    1123,
+    1124,
+    1126,
+    1127,
+    1128,
+    1132,
+    1134,
+    1135,
+    1136,
+    1138,
+    1139,
+    1140,
+    1141,
+    1142,
+    1143,
+    1144,
+    1145,
+    1146,
+    1150,
+    1151,
+    1152,
+    1153,
+    1154,
+    1155,
+    1159,
+    1161,
+    1163,
+    1165,
+    1167,
+    1168,
+    1171,
+    1173,
+    1175,
+    1177,
+    1178,
+    1180,
+    1182,
+    1183,
+    1187,
+    1188,
+    1189,
+    1190,
+    1191,
+    1194,
+    1195,
+    1197,
+    1200,
+    1201,
+    1202,
+    1204,
+    1205,
+    1206,
+    1209,
+    1210,
+    1211,
+    1212,
+    1213,
+    1214,
+    1215,
+    1216,
+    1218,
+    1219,
+    1221,
+    1222,
+    1226,
+    1227,
+    1228,
+    1229,
+    1230,
+    1232,
+    1233,
+    1235,
+    1236,
+    1237,
+    1238,
+    1239
+   ],
+   "frames": 3299,
+   "tiles": 13596,
+   "boxes": 170667,
+   "boxes_by_kind": {
+    "shelf": 123991,
+    "backstock": 43789,
+    "hand": 2079,
+    "counter": 808
+   }
+  },
+  "val": {
+   "seeds": [
+    1000,
+    1011,
+    1013,
+    1027,
+    1030,
+    1035,
+    1038,
+    1049,
+    1051,
+    1061,
+    1065,
+    1066,
+    1067,
+    1068,
+    1072,
+    1078,
+    1080,
+    1087,
+    1092,
+    1094,
+    1096,
+    1098,
+    1102,
+    1107,
+    1109,
+    1111,
+    1120,
+    1129,
+    1137,
+    1148,
+    1149,
+    1156,
+    1160,
+    1166,
+    1169,
+    1170,
+    1172,
+    1181,
+    1193,
+    1196,
+    1207,
+    1208,
+    1225,
+    1231
+   ],
+   "frames": 941,
+   "tiles": 3917,
+   "boxes": 49085,
+   "boxes_by_kind": {
+    "shelf": 35254,
+    "backstock": 12985,
+    "counter": 268,
+    "hand": 578
+   }
+  },
+  "test": {
+   "seeds": [
+    1002,
+    1025,
+    1031,
+    1034,
+    1040,
+    1041,
+    1048,
+    1052,
+    1054,
+    1055,
+    1062,
+    1069,
+    1075,
+    1081,
+    1082,
+    1084,
+    1086,
+    1088,
+    1090,
+    1115,
+    1118,
+    1125,
+    1130,
+    1131,
+    1133,
+    1147,
+    1157,
+    1158,
+    1162,
+    1164,
+    1174,
+    1176,
+    1179,
+    1184,
+    1185,
+    1186,
+    1192,
+    1198,
+    1199,
+    1203,
+    1217,
+    1220,
+    1223,
+    1224,
+    1234
+   ],
+   "frames": 965,
+   "tiles": 3991,
+   "boxes": 49424,
+   "boxes_by_kind": {
+    "shelf": 37739,
+    "backstock": 10900,
+    "hand": 585,
+    "counter": 200
+   }
+  }
+ },
+ "val": {
+  "map50": 0.9718366705150956,
+  "map50_95": 0.881641004806811,
+  "images": 3991,
+  "instances": 49424,
+  "per_class": [
+   {
+    "name": "fizzo_cola",
+    "instances": 1945,
+    "ap50": 0.9792847783920696,
+    "ap50_95": 0.8705854640196105
+   },
+   {
+    "name": "fizzo_zero",
+    "instances": 1646,
+    "ap50": 0.971946748244835,
+    "ap50_95": 0.8609498526038613
+   },
+   {
+    "name": "fizzo_cherry",
+    "instances": 1916,
+    "ap50": 0.9764342620528592,
+    "ap50_95": 0.8622600520639603
+   },
+   {
+    "name": "lumen_citrus",
+    "instances": 1268,
+    "ap50": 0.9760175518974771,
+    "ap50_95": 0.8234010108013473
+   },
+   {
+    "name": "arcwave_original",
+    "instances": 1505,
+    "ap50": 0.9813658135444286,
+    "ap50_95": 0.8908489643091821
+   },
+   {
+    "name": "arcwave_tropical",
+    "instances": 1501,
+    "ap50": 0.9810628944885814,
+    "ap50_95": 0.8909077066800156
+   },
+   {
+    "name": "arcwave_berry",
+    "instances": 1429,
+    "ap50": 0.9743164951160326,
+    "ap50_95": 0.8841410023165593
+   },
+   {
+    "name": "clearwell_water",
+    "instances": 925,
+    "ap50": 0.964969113914709,
+    "ap50_95": 0.8192235739501961
+   },
+   {
+    "name": "orchard_lemon",
+    "instances": 1149,
+    "ap50": 0.9155922353995546,
+    "ap50_95": 0.8229083348744428
+   },
+   {
+    "name": "orchard_peach",
+    "instances": 916,
+    "ap50": 0.9032867304746419,
+    "ap50_95": 0.8209624152256447
+   },
+   {
+    "name": "pacer_glacier",
+    "instances": 705,
+    "ap50": 0.9533159304128642,
+    "ap50_95": 0.811500042569867
+   },
+   {
+    "name": "pacer_orange",
+    "instances": 568,
+    "ap50": 0.9721625047206299,
+    "ap50_95": 0.859862390763978
+   },
+   {
+    "name": "pacer_punch",
+    "instances": 558,
+    "ap50": 0.9713466347940233,
+    "ap50_95": 0.8654434630715935
+   },
+   {
+    "name": "crunchly_classic",
+    "instances": 770,
+    "ap50": 0.9761645900860627,
+    "ap50_95": 0.9363130497918875
+   },
+   {
+    "name": "crunchly_sco",
+    "instances": 781,
+    "ap50": 0.9735111351911743,
+    "ap50_95": 0.9263845888052735
+   },
+   {
+    "name": "crunchly_bbq",
+    "instances": 736,
+    "ap50": 0.9781120496946938,
+    "ap50_95": 0.9428605710199267
+   },
+   {
+    "name": "sierra_nacho",
+    "instances": 815,
+    "ap50": 0.9787420717482176,
+    "ap50_95": 0.9364190938451559
+   },
+   {
+    "name": "sierra_ranch",
+    "instances": 768,
+    "ap50": 0.9822977341927622,
+    "ap50_95": 0.9390429761669802
+   },
+   {
+    "name": "ridgeline_original",
+    "instances": 1005,
+    "ap50": 0.9768236070432288,
+    "ap50_95": 0.9238022934128102
+   },
+   {
+    "name": "ridgeline_teriyaki",
+    "instances": 1276,
+    "ap50": 0.9783151192913739,
+    "ap50_95": 0.924724669982281
+   },
+   {
+    "name": "oatfield_cookies",
+    "instances": 1488,
+    "ap50": 0.9833385447172601,
+    "ap50_95": 0.9178174200291458
+   },
+   {
+    "name": "morning_hoops",
+    "instances": 822,
+    "ap50": 0.9724545795586782,
+    "ap50_95": 0.9152856444453178
+   },
+   {
+    "name": "torqueline_5w30",
+    "instances": 1389,
+    "ap50": 0.9592763419773112,
+    "ap50_95": 0.8721128386038902
+   },
+   {
+    "name": "torqueline_10w30",
+    "instances": 1357,
+    "ap50": 0.9633984478545806,
+    "ap50_95": 0.8734242084508118
+   },
+   {
+    "name": "relieva_ibu",
+    "instances": 2091,
+    "ap50": 0.9795109912869555,
+    "ap50_95": 0.8910823158303186
+   },
+   {
+    "name": "relieva_aceta",
+    "instances": 1958,
+    "ap50": 0.9829130840832803,
+    "ap50_95": 0.8930420651689059
+   },
+   {
+    "name": "voltlink_usbc",
+    "instances": 1507,
+    "ap50": 0.9803684708301124,
+    "ap50_95": 0.9293356715232189
+   },
+   {
+    "name": "voltlink_micro",
+    "instances": 1201,
+    "ap50": 0.9828722913583237,
+    "ap50_95": 0.9331174063796869
+   },
+   {
+    "name": "cocoa_crest",
+    "instances": 4376,
+    "ap50": 0.9777337981983347,
+    "ap50_95": 0.8547724658732163
+   },
+   {
+    "name": "peanut_pilot",
+    "instances": 4254,
+    "ap50": 0.9835904346092317,
+    "ap50_95": 0.8773580912368661
+   },
+   {
+    "name": "caramel_crest",
+    "instances": 4134,
+    "ap50": 0.9797390935971009,
+    "ap50_95": 0.8586282667519922
+   },
+   {
+    "name": "aldermoor_gold",
+    "instances": 1171,
+    "ap50": 0.9820722578180426,
+    "ap50_95": 0.8176291192077947
+   },
+   {
+    "name": "aldermoor_menthol",
+    "instances": 1494,
+    "ap50": 0.9782737904087231,
+    "ap50_95": 0.8480061288490255
+   }
+  ]
+ },
+ "frames": {
+  "frames": 965,
+  "predictions": 87554,
+  "unmatched_predictions": 7952,
+  "box_precision": 0.9092,
+  "items": 84873,
+  "conf": 0.25,
+  "iou": 0.5
+ },
+ "curves": {
+  "shelf_front_clear": [
+   {
+    "px": "0-10",
+    "lo": 0,
+    "n": 93,
+    "found": 93,
+    "sku_right": 93,
+    "found_rate": 1.0,
+    "sku_right_rate": 1.0,
+    "sku_right_of_found": 1.0
+   },
+   {
+    "px": "10-15",
+    "lo": 10,
+    "n": 124,
+    "found": 119,
+    "sku_right": 117,
+    "found_rate": 0.9597,
+    "sku_right_rate": 0.9435,
+    "sku_right_of_found": 0.9832
+   },
+   {
+    "px": "15-20",
+    "lo": 15,
+    "n": 1238,
+    "found": 1211,
+    "sku_right": 1191,
+    "found_rate": 0.9782,
+    "sku_right_rate": 0.962,
+    "sku_right_of_found": 0.9835
+   },
+   {
+    "px": "20-25",
+    "lo": 20,
+    "n": 2048,
+    "found": 2014,
+    "sku_right": 1992,
+    "found_rate": 0.9834,
+    "sku_right_rate": 0.9727,
+    "sku_right_of_found": 0.9891
+   },
+   {
+    "px": "25-30",
+    "lo": 25,
+    "n": 2357,
+    "found": 2322,
+    "sku_right": 2318,
+    "found_rate": 0.9852,
+    "sku_right_rate": 0.9835,
+    "sku_right_of_found": 0.9983
+   },
+   {
+    "px": "30-40",
+    "lo": 30,
+    "n": 12070,
+    "found": 11913,
+    "sku_right": 11864,
+    "found_rate": 0.987,
+    "sku_right_rate": 0.9829,
+    "sku_right_of_found": 0.9959
+   },
+   {
+    "px": "40-60",
+    "lo": 40,
+    "n": 5743,
+    "found": 5295,
+    "sku_right": 5273,
+    "found_rate": 0.922,
+    "sku_right_rate": 0.9182,
+    "sku_right_of_found": 0.9958
+   },
+   {
+    "px": "60-100",
+    "lo": 60,
+    "n": 1958,
+    "found": 1797,
+    "sku_right": 1797,
+    "found_rate": 0.9178,
+    "sku_right_rate": 0.9178,
+    "sku_right_of_found": 1.0
+   },
+   {
+    "px": "100+",
+    "lo": 100,
+    "n": 64,
+    "found": 59,
+    "sku_right": 59,
+    "found_rate": 0.9219,
+    "sku_right_rate": 0.9219,
+    "sku_right_of_found": 1.0
+   }
+  ],
+  "shelf_front_partly_hidden": [
+   {
+    "px": "0-10",
+    "lo": 0,
+    "n": 267,
+    "found": 260,
+    "sku_right": 258,
+    "found_rate": 0.9738,
+    "sku_right_rate": 0.9663,
+    "sku_right_of_found": 0.9923
+   },
+   {
+    "px": "10-15",
+    "lo": 10,
+    "n": 804,
+    "found": 755,
+    "sku_right": 742,
+    "found_rate": 0.9391,
+    "sku_right_rate": 0.9229,
+    "sku_right_of_found": 0.9828
+   },
+   {
+    "px": "15-20",
+    "lo": 15,
+    "n": 4060,
+    "found": 3824,
+    "sku_right": 3720,
+    "found_rate": 0.9419,
+    "sku_right_rate": 0.9163,
+    "sku_right_of_found": 0.9728
+   },
+   {
+    "px": "20-25",
+    "lo": 20,
+    "n": 5788,
+    "found": 5600,
+    "sku_right": 5479,
+    "found_rate": 0.9675,
+    "sku_right_rate": 0.9466,
+    "sku_right_of_found": 0.9784
+   },
+   {
+    "px": "25-30",
+    "lo": 25,
+    "n": 6006,
+    "found": 5748,
+    "sku_right": 5668,
+    "found_rate": 0.957,
+    "sku_right_rate": 0.9437,
+    "sku_right_of_found": 0.9861
+   },
+   {
+    "px": "30-40",
+    "lo": 30,
+    "n": 10353,
+    "found": 9959,
+    "sku_right": 9893,
+    "found_rate": 0.9619,
+    "sku_right_rate": 0.9556,
+    "sku_right_of_found": 0.9934
+   },
+   {
+    "px": "40-60",
+    "lo": 40,
+    "n": 9268,
+    "found": 8358,
+    "sku_right": 8325,
+    "found_rate": 0.9018,
+    "sku_right_rate": 0.8983,
+    "sku_right_of_found": 0.9961
+   },
+   {
+    "px": "60-100",
+    "lo": 60,
+    "n": 2922,
+    "found": 2451,
+    "sku_right": 2445,
+    "found_rate": 0.8388,
+    "sku_right_rate": 0.8368,
+    "sku_right_of_found": 0.9976
+   },
+   {
+    "px": "100+",
+    "lo": 100,
+    "n": 81,
+    "found": 75,
+    "sku_right": 73,
+    "found_rate": 0.9259,
+    "sku_right_rate": 0.9012,
+    "sku_right_of_found": 0.9733
+   }
+  ],
+  "backstock": [
+   {
+    "px": "0-10",
+    "lo": 0,
+    "n": 392,
+    "found": 381,
+    "sku_right": 375,
+    "found_rate": 0.9719,
+    "sku_right_rate": 0.9566,
+    "sku_right_of_found": 0.9843
+   },
+   {
+    "px": "10-15",
+    "lo": 10,
+    "n": 261,
+    "found": 226,
+    "sku_right": 220,
+    "found_rate": 0.8659,
+    "sku_right_rate": 0.8429,
+    "sku_right_of_found": 0.9735
+   },
+   {
+    "px": "15-20",
+    "lo": 15,
+    "n": 1299,
+    "found": 1166,
+    "sku_right": 1136,
+    "found_rate": 0.8976,
+    "sku_right_rate": 0.8745,
+    "sku_right_of_found": 0.9743
+   },
+   {
+    "px": "20-25",
+    "lo": 20,
+    "n": 1996,
+    "found": 1859,
+    "sku_right": 1832,
+    "found_rate": 0.9314,
+    "sku_right_rate": 0.9178,
+    "sku_right_of_found": 0.9855
+   },
+   {
+    "px": "25-30",
+    "lo": 25,
+    "n": 2214,
+    "found": 2058,
+    "sku_right": 2029,
+    "found_rate": 0.9295,
+    "sku_right_rate": 0.9164,
+    "sku_right_of_found": 0.9859
+   },
+   {
+    "px": "30-40",
+    "lo": 30,
+    "n": 7277,
+    "found": 6744,
+    "sku_right": 6647,
+    "found_rate": 0.9268,
+    "sku_right_rate": 0.9134,
+    "sku_right_of_found": 0.9856
+   },
+   {
+    "px": "40-60",
+    "lo": 40,
+    "n": 4589,
+    "found": 4034,
+    "sku_right": 3988,
+    "found_rate": 0.8791,
+    "sku_right_rate": 0.869,
+    "sku_right_of_found": 0.9886
+   },
+   {
+    "px": "60-100",
+    "lo": 60,
+    "n": 1160,
+    "found": 932,
+    "sku_right": 927,
+    "found_rate": 0.8034,
+    "sku_right_rate": 0.7991,
+    "sku_right_of_found": 0.9946
+   },
+   {
+    "px": "100+",
+    "lo": 100,
+    "n": 29,
+    "found": 22,
+    "sku_right": 22,
+    "found_rate": 0.7586,
+    "sku_right_rate": 0.7586,
+    "sku_right_of_found": 1.0
+   }
+  ],
+  "in_hand_or_on_counter": [
+   {
+    "px": "0-10",
+    "lo": 0,
+    "n": 0,
+    "found": 0,
+    "sku_right": 0,
+    "found_rate": null,
+    "sku_right_rate": null,
+    "sku_right_of_found": null
+   },
+   {
+    "px": "10-15",
+    "lo": 10,
+    "n": 0,
+    "found": 0,
+    "sku_right": 0,
+    "found_rate": null,
+    "sku_right_rate": null,
+    "sku_right_of_found": null
+   },
+   {
+    "px": "15-20",
+    "lo": 15,
+    "n": 0,
+    "found": 0,
+    "sku_right": 0,
+    "found_rate": null,
+    "sku_right_rate": null,
+    "sku_right_of_found": null
+   },
+   {
+    "px": "20-25",
+    "lo": 20,
+    "n": 0,
+    "found": 0,
+    "sku_right": 0,
+    "found_rate": null,
+    "sku_right_rate": null,
+    "sku_right_of_found": null
+   },
+   {
+    "px": "25-30",
+    "lo": 25,
+    "n": 0,
+    "found": 0,
+    "sku_right": 0,
+    "found_rate": null,
+    "sku_right_rate": null,
+    "sku_right_of_found": null
+   },
+   {
+    "px": "30-40",
+    "lo": 30,
+    "n": 5,
+    "found": 4,
+    "sku_right": 3,
+    "found_rate": 0.8,
+    "sku_right_rate": 0.6,
+    "sku_right_of_found": 0.75
+   },
+   {
+    "px": "40-60",
+    "lo": 40,
+    "n": 144,
+    "found": 115,
+    "sku_right": 84,
+    "found_rate": 0.7986,
+    "sku_right_rate": 0.5833,
+    "sku_right_of_found": 0.7304
+   },
+   {
+    "px": "60-100",
+    "lo": 60,
+    "n": 165,
+    "found": 147,
+    "sku_right": 138,
+    "found_rate": 0.8909,
+    "sku_right_rate": 0.8364,
+    "sku_right_of_found": 0.9388
+   },
+   {
+    "px": "100+",
+    "lo": 100,
+    "n": 98,
+    "found": 61,
+    "sku_right": 49,
+    "found_rate": 0.6224,
+    "sku_right_rate": 0.5,
+    "sku_right_of_found": 0.8033
+   }
+  ]
+ },
+ "curve_all_items": [
+  {
+   "px": "0-10",
+   "lo": 0,
+   "n": 752,
+   "found": 734,
+   "sku_right": 726,
+   "found_rate": 0.9761,
+   "sku_right_rate": 0.9654,
+   "sku_right_of_found": 0.9891
+  },
+  {
+   "px": "10-15",
+   "lo": 10,
+   "n": 1189,
+   "found": 1100,
+   "sku_right": 1079,
+   "found_rate": 0.9251,
+   "sku_right_rate": 0.9075,
+   "sku_right_of_found": 0.9809
+  },
+  {
+   "px": "15-20",
+   "lo": 15,
+   "n": 6597,
+   "found": 6201,
+   "sku_right": 6047,
+   "found_rate": 0.94,
+   "sku_right_rate": 0.9166,
+   "sku_right_of_found": 0.9752
+  },
+  {
+   "px": "20-25",
+   "lo": 20,
+   "n": 9832,
+   "found": 9473,
+   "sku_right": 9303,
+   "found_rate": 0.9635,
+   "sku_right_rate": 0.9462,
+   "sku_right_of_found": 0.9821
+  },
+  {
+   "px": "25-30",
+   "lo": 25,
+   "n": 10577,
+   "found": 10128,
+   "sku_right": 10015,
+   "found_rate": 0.9575,
+   "sku_right_rate": 0.9469,
+   "sku_right_of_found": 0.9888
+  },
+  {
+   "px": "30-40",
+   "lo": 30,
+   "n": 29705,
+   "found": 28620,
+   "sku_right": 28407,
+   "found_rate": 0.9635,
+   "sku_right_rate": 0.9563,
+   "sku_right_of_found": 0.9926
+  },
+  {
+   "px": "40-60",
+   "lo": 40,
+   "n": 19744,
+   "found": 17802,
+   "sku_right": 17670,
+   "found_rate": 0.9016,
+   "sku_right_rate": 0.895,
+   "sku_right_of_found": 0.9926
+  },
+  {
+   "px": "60-100",
+   "lo": 60,
+   "n": 6205,
+   "found": 5327,
+   "sku_right": 5307,
+   "found_rate": 0.8585,
+   "sku_right_rate": 0.8553,
+   "sku_right_of_found": 0.9962
+  },
+  {
+   "px": "100+",
+   "lo": 100,
+   "n": 272,
+   "found": 217,
+   "sku_right": 203,
+   "found_rate": 0.7978,
+   "sku_right_rate": 0.7463,
+   "sku_right_of_found": 0.9355
+  }
+ ],
+ "curve_by_box_short_side_all_items": [
+  {
+   "px": "0-10",
+   "lo": 0,
+   "n": 96,
+   "found": 52,
+   "sku_right": 48,
+   "found_rate": 0.5417,
+   "sku_right_rate": 0.5,
+   "sku_right_of_found": 0.9231
+  },
+  {
+   "px": "10-15",
+   "lo": 10,
+   "n": 1071,
+   "found": 907,
+   "sku_right": 875,
+   "found_rate": 0.8469,
+   "sku_right_rate": 0.817,
+   "sku_right_of_found": 0.9647
+  },
+  {
+   "px": "15-20",
+   "lo": 15,
+   "n": 2790,
+   "found": 2644,
+   "sku_right": 2578,
+   "found_rate": 0.9477,
+   "sku_right_rate": 0.924,
+   "sku_right_of_found": 0.975
+  },
+  {
+   "px": "20-25",
+   "lo": 20,
+   "n": 3073,
+   "found": 2934,
+   "sku_right": 2872,
+   "found_rate": 0.9548,
+   "sku_right_rate": 0.9346,
+   "sku_right_of_found": 0.9789
+  },
+  {
+   "px": "25-30",
+   "lo": 25,
+   "n": 3316,
+   "found": 3183,
+   "sku_right": 3104,
+   "found_rate": 0.9599,
+   "sku_right_rate": 0.9361,
+   "sku_right_of_found": 0.9752
+  },
+  {
+   "px": "30-40",
+   "lo": 30,
+   "n": 16130,
+   "found": 15706,
+   "sku_right": 15547,
+   "found_rate": 0.9737,
+   "sku_right_rate": 0.9639,
+   "sku_right_of_found": 0.9899
+  },
+  {
+   "px": "40-60",
+   "lo": 40,
+   "n": 23504,
+   "found": 22874,
+   "sku_right": 22617,
+   "found_rate": 0.9732,
+   "sku_right_rate": 0.9623,
+   "sku_right_of_found": 0.9888
+  },
+  {
+   "px": "60-100",
+   "lo": 60,
+   "n": 18612,
+   "found": 16508,
+   "sku_right": 16370,
+   "found_rate": 0.887,
+   "sku_right_rate": 0.8795,
+   "sku_right_of_found": 0.9916
+  },
+  {
+   "px": "100+",
+   "lo": 100,
+   "n": 16281,
+   "found": 14794,
+   "sku_right": 14746,
+   "found_rate": 0.9087,
+   "sku_right_rate": 0.9057,
+   "sku_right_of_found": 0.9968
+  }
+ ],
+ "min_px": {
+  "shelf_front_clear": {
+   "0.8": 0,
+   "0.9": 0,
+   "0.95": null
+  },
+  "shelf_front_partly_hidden": {
+   "0.8": 0,
+   "0.9": 100,
+   "0.95": null
+  },
+  "backstock": {
+   "0.8": null,
+   "0.9": null,
+   "0.95": null
+  },
+  "in_hand_or_on_counter": {
+   "0.8": null,
+   "0.9": null,
+   "0.95": null
+  }
+ },
+ "recommendation": "Minimum pixels (simulated): no lower limit shows up for clearly visible shelf items. Every bucket with 30 or more items has the right SKU 90% of the time or better, so the simulator's default of 20 px across a can holds on this data and nothing here supports raising it. Right-SKU rate by pixels across a can, clearly visible shelf items: 10-15 px 94.3%, 15-20 px 96.2%, 20-25 px 97.3%, 25-30 px 98.4%, 30-40 px 98.3%, 40-60 px 91.8%. By the short side of the item's own box in pixels, all items: 0-10 px 50.0%, 10-15 px 81.7%, 15-20 px 92.4%, 20-25 px 93.5%, 25-30 px 93.6%.",
+ "confusion": {
+  "aldermoor_gold/aldermoor_menthol": {
+   "columns": [
+    "aldermoor_gold",
+    "aldermoor_menthol",
+    "other",
+    "missed"
+   ],
+   "rows": {
+    "aldermoor_gold": [
+     1823,
+     14,
+     0,
+     26
+    ],
+    "aldermoor_menthol": [
+     8,
+     2210,
+     0,
+     26
+    ]
+   },
+   "found": 4055,
+   "sku_right": 4033,
+   "confused_within_family": 22,
+   "confused_within_family_rate": 0.0054
+  },
+  "arcwave_original/arcwave_tropical/arcwave_berry": {
+   "columns": [
+    "arcwave_original",
+    "arcwave_tropical",
+    "arcwave_berry",
+    "other",
+    "missed"
+   ],
+   "rows": {
+    "arcwave_original": [
+     3202,
+     4,
+     11,
+     2,
+     116
+    ],
+    "arcwave_tropical": [
+     6,
+     3083,
+     5,
+     2,
+     137
+    ],
+    "arcwave_berry": [
+     9,
+     10,
+     3519,
+     3,
+     169
+    ]
+   },
+   "found": 9856,
+   "sku_right": 9804,
+   "confused_within_family": 45,
+   "confused_within_family_rate": 0.0046
+  },
+  "cocoa_crest/peanut_pilot/caramel_crest": {
+   "columns": [
+    "cocoa_crest",
+    "peanut_pilot",
+    "caramel_crest",
+    "other",
+    "missed"
+   ],
+   "rows": {
+    "cocoa_crest": [
+     5616,
+     34,
+     32,
+     1,
+     438
+    ],
+    "peanut_pilot": [
+     24,
+     5927,
+     31,
+     0,
+     396
+    ],
+    "caramel_crest": [
+     29,
+     22,
+     5649,
+     1,
+     325
+    ]
+   },
+   "found": 17366,
+   "sku_right": 17192,
+   "confused_within_family": 172,
+   "confused_within_family_rate": 0.0099
+  },
+  "crunchly_classic/crunchly_sco/crunchly_bbq/sierra_nacho/sierra_ranch": {
+   "columns": [
+    "crunchly_classic",
+    "crunchly_sco",
+    "crunchly_bbq",
+    "sierra_nacho",
+    "sierra_ranch",
+    "other",
+    "missed"
+   ],
+   "rows": {
+    "crunchly_classic": [
+     1170,
+     2,
+     2,
+     1,
+     0,
+     0,
+     124
+    ],
+    "crunchly_sco": [
+     0,
+     1171,
+     0,
+     0,
+     1,
+     0,
+     108
+    ],
+    "crunchly_bbq": [
+     1,
+     0,
+     1314,
+     0,
+     0,
+     2,
+     80
+    ],
+    "sierra_nacho": [
+     0,
+     0,
+     2,
+     1302,
+     0,
+     0,
+     115
+    ],
+    "sierra_ranch": [
+     0,
+     0,
+     1,
+     0,
+     1273,
+     0,
+     127
+    ]
+   },
+   "found": 6242,
+   "sku_right": 6230,
+   "confused_within_family": 10,
+   "confused_within_family_rate": 0.0016
+  },
+  "fizzo_cola/fizzo_zero/fizzo_cherry/lumen_citrus": {
+   "columns": [
+    "fizzo_cola",
+    "fizzo_zero",
+    "fizzo_cherry",
+    "lumen_citrus",
+    "other",
+    "missed"
+   ],
+   "rows": {
+    "fizzo_cola": [
+     3147,
+     2,
+     38,
+     0,
+     1,
+     61
+    ],
+    "fizzo_zero": [
+     3,
+     2757,
+     16,
+     2,
+     2,
+     103
+    ],
+    "fizzo_cherry": [
+     20,
+     7,
+     3342,
+     1,
+     6,
+     68
+    ],
+    "lumen_citrus": [
+     1,
+     1,
+     1,
+     2347,
+     3,
+     53
+    ]
+   },
+   "found": 11697,
+   "sku_right": 11593,
+   "confused_within_family": 92,
+   "confused_within_family_rate": 0.0079
+  },
+  "orchard_lemon/orchard_peach": {
+   "columns": [
+    "orchard_lemon",
+    "orchard_peach",
+    "other",
+    "missed"
+   ],
+   "rows": {
+    "orchard_lemon": [
+     1995,
+     49,
+     3,
+     70
+    ],
+    "orchard_peach": [
+     235,
+     1481,
+     7,
+     70
+    ]
+   },
+   "found": 3770,
+   "sku_right": 3476,
+   "confused_within_family": 284,
+   "confused_within_family_rate": 0.0753
+  },
+  "pacer_glacier/pacer_orange/pacer_punch": {
+   "columns": [
+    "pacer_glacier",
+    "pacer_orange",
+    "pacer_punch",
+    "other",
+    "missed"
+   ],
+   "rows": {
+    "pacer_glacier": [
+     1334,
+     1,
+     3,
+     1,
+     73
+    ],
+    "pacer_orange": [
+     5,
+     1232,
+     7,
+     1,
+     44
+    ],
+    "pacer_punch": [
+     1,
+     0,
+     1255,
+     0,
+     49
+    ]
+   },
+   "found": 3840,
+   "sku_right": 3821,
+   "confused_within_family": 17,
+   "confused_within_family_rate": 0.0044
+  },
+  "relieva_ibu/relieva_aceta": {
+   "columns": [
+    "relieva_ibu",
+    "relieva_aceta",
+    "other",
+    "missed"
+   ],
+   "rows": {
+    "relieva_ibu": [
+     3188,
+     19,
+     3,
+     295
+    ],
+    "relieva_aceta": [
+     12,
+     3105,
+     0,
+     209
+    ]
+   },
+   "found": 6327,
+   "sku_right": 6293,
+   "confused_within_family": 31,
+   "confused_within_family_rate": 0.0049
+  },
+  "ridgeline_original/ridgeline_teriyaki": {
+   "columns": [
+    "ridgeline_original",
+    "ridgeline_teriyaki",
+    "other",
+    "missed"
+   ],
+   "rows": {
+    "ridgeline_original": [
+     1523,
+     8,
+     3,
+     245
+    ],
+    "ridgeline_teriyaki": [
+     13,
+     1808,
+     2,
+     295
+    ]
+   },
+   "found": 3357,
+   "sku_right": 3331,
+   "confused_within_family": 21,
+   "confused_within_family_rate": 0.0063
+  },
+  "torqueline_5w30/torqueline_10w30": {
+   "columns": [
+    "torqueline_5w30",
+    "torqueline_10w30",
+    "other",
+    "missed"
+   ],
+   "rows": {
+    "torqueline_5w30": [
+     2006,
+     43,
+     0,
+     304
+    ],
+    "torqueline_10w30": [
+     40,
+     2064,
+     0,
+     328
+    ]
+   },
+   "found": 4153,
+   "sku_right": 4070,
+   "confused_within_family": 83,
+   "confused_within_family_rate": 0.02
+  },
+  "voltlink_usbc/voltlink_micro": {
+   "columns": [
+    "voltlink_usbc",
+    "voltlink_micro",
+    "other",
+    "missed"
+   ],
+   "rows": {
+    "voltlink_usbc": [
+     2121,
+     10,
+     1,
+     343
+    ],
+    "voltlink_micro": [
+     6,
+     1671,
+     1,
+     252
+    ]
+   },
+   "found": 3810,
+   "sku_right": 3792,
+   "confused_within_family": 16,
+   "confused_within_family_rate": 0.0042
+  }
+ },
+ "speed": {
+  "mps": {
+   "ms_per_640_tile": 8.2,
+   "tiles_per_s": 121.5,
+   "ms_per_frame": 48.2,
+   "frame": "1520x2688",
+   "tiles_per_frame": 15,
+   "frames_per_s": 20.73
+  },
+  "cpu": {
+   "ms_per_640_tile": 39.8,
+   "tiles_per_s": 25.1,
+   "ms_per_frame": 300.3,
+   "frame": "1520x2688",
+   "tiles_per_frame": 15,
+   "frames_per_s": 3.33
+  }
+ }
+}

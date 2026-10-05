@@ -14,6 +14,7 @@ results/*
 !results/*.json
 !results/bench.json
 !results/*.md
+!results/*.png
 *.mp4
 *.avi
 !docs/**/*.gif

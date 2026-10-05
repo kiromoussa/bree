@@ -2,7 +2,7 @@
 
 SIMULATED (browser store simulator copy, scripts/train/render_synth.mjs --clip). Not real footage.
 
-Clip: 530 frames at 10 fps, cameras REGISTER-top, TRACK-2, TRACK-3, G4L-rail-1, G2L-rail-4, G2L-rail-3, G1R-rail-3, G3R-rail-1. Product weights: /Users/kiromoussa/bree-vision/data/synth/weights/sim_sku.pt. Person confidence threshold 0.15. Wall time 732.8 s.
+Clip: 530 frames at 10 fps, cameras REGISTER-top, TRACK-2, TRACK-3, G4L-rail-1, G2L-rail-4, G2L-rail-3, G1R-rail-3, G3R-rail-1. Product weights: data/synth/weights/sim_sku.pt. Person confidence threshold 0.15. Wall time 1005.9 s.
 
 ## Edge: camera nodes and hub
 
@@ -60,9 +60,9 @@ SIMULATED (browser store simulator copy, scripts/train/render_synth.mjs --clip).
 
 ## Closed-world identity
 
-| pool | assigned_lost | births_entrance | births_missed_entry | births_warmup | exits | handoffs_live | occupancy | uncertain_marks |
-|---|---|---|---|---|---|---|---|---|
-| store | 16 | 4 | 12 | 1 | 1 | 32 | 10 | 40 |
+| pool | assigned_lost | births_entrance | births_missed_entry | births_warmup | exits | frames_no_floor_point | handoffs_live | occupancy | placed_with_feet_out_of_frame | uncertain_marks |
+|---|---|---|---|---|---|---|---|---|---|---|
+| store | 12 | 4 | 8 | 1 | 1 | 48 | 32 | 9 | 0 | 40 |
 
 ## 3D slot of each pick
 
@@ -84,11 +84,13 @@ No PICK event carried a slot.
 
 ## Where a pick is lost (ground-truth boxes of items in a hand, per camera kind)
 
-| camera kind | item boxes | frame reached pipeline | person box in frame | product box on item | right sku | item inside a shelf zone of this camera |
-|---|---|---|---|---|---|---|
-| overhead | 602 | 602 | 602 | 2 | 0 | 0 |
-| shelf | 296 | 296 | 79 | 83 | 83 | 203 |
-| checkout | 1 | 1 | 1 | 0 | 0 | 0 |
+Each column is its own count over the same item boxes, not a step that follows the one before. "Tracked person" is a track in the pipeline's frame log; the SKU detector looks around raw person detections, so a product box can be found in a frame with no track.
+
+| camera kind | item boxes | frame reached pipeline | tracked person in frame | product box on item | right sku | product box on item and tracked person | right sku and tracked person | item inside a shelf zone of this camera |
+|---|---|---|---|---|---|---|---|---|
+| overhead | 602 | 602 | 602 | 2 | 0 | 2 | 0 | 0 |
+| shelf | 296 | 296 | 79 | 83 | 83 | 63 | 63 | 203 |
+| checkout | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 
 ## Review store and owner report
 

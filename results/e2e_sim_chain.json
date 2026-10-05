@@ -31,7 +31,7 @@
   "events": 7
  },
  "backend": "sim_sku",
- "weights": "/Users/kiromoussa/bree-vision/data/synth/weights/sim_sku.pt",
+ "weights": "data/synth/weights/sim_sku.pt",
  "edge_in_chain": true,
  "closed_world": true,
  "slots_3d": true,
@@ -51,7 +51,7 @@
     "burst_bytes": 89856781,
     "spool_drained": true,
     "node_errors": 0,
-    "trigger_ms_per_frame": 1.522,
+    "trigger_ms_per_frame": 3.37,
     "full_stream_bytes_estimate": 241746670
    },
    "G2L-rail-3": {
@@ -66,7 +66,7 @@
     "burst_bytes": 110316481,
     "spool_drained": true,
     "node_errors": 0,
-    "trigger_ms_per_frame": 1.587,
+    "trigger_ms_per_frame": 3.521,
     "full_stream_bytes_estimate": 249862115
    },
    "G2L-rail-4": {
@@ -81,7 +81,7 @@
     "burst_bytes": 95900267,
     "spool_drained": true,
     "node_errors": 0,
-    "trigger_ms_per_frame": 0.645,
+    "trigger_ms_per_frame": 0.801,
     "full_stream_bytes_estimate": 229987066
    },
    "G3R-rail-1": {
@@ -96,7 +96,7 @@
     "burst_bytes": 153984977,
     "spool_drained": true,
     "node_errors": 0,
-    "trigger_ms_per_frame": 1.768,
+    "trigger_ms_per_frame": 3.052,
     "full_stream_bytes_estimate": 290434298
    },
    "G4L-rail-1": {
@@ -111,7 +111,7 @@
     "burst_bytes": 112497627,
     "spool_drained": true,
     "node_errors": 0,
-    "trigger_ms_per_frame": 1.677,
+    "trigger_ms_per_frame": 3.509,
     "full_stream_bytes_estimate": 258111439
    },
    "REGISTER-top": {
@@ -385,21 +385,23 @@
     "seed": 0
    },
    "pipeline_events": {
-    "enter": 20,
+    "enter": 13,
     "exit": 1
    },
-   "pipeline_fps": 21.78,
-   "handoffs": 46,
+   "pipeline_fps": 9.52,
+   "handoffs": 43,
    "closed_world": true,
    "slots_3d": true,
    "identity": {
     "store": {
      "occupancy": 9,
+     "placed_with_feet_out_of_frame": 0,
      "births_entrance": 4,
-     "births_missed_entry": 16,
+     "births_missed_entry": 9,
      "handoffs_live": 30,
-     "uncertain_marks": 42,
-     "assigned_lost": 16,
+     "uncertain_marks": 40,
+     "frames_no_floor_point": 52,
+     "assigned_lost": 13,
      "exits": 1
     }
    },
@@ -422,25 +424,31 @@
   "overhead": {
    "item_boxes": 602,
    "frame_reached_pipeline": 602,
-   "person_box_in_frame": 578,
+   "tracked_person_in_frame": 578,
    "product_box_on_item": 2,
    "right_sku": 0,
+   "product_box_on_item_and_tracked_person": 2,
+   "right_sku_and_tracked_person": 0,
    "item_inside_a_shelf_zone_of_this_camera": 0
   },
   "shelf": {
    "item_boxes": 296,
    "frame_reached_pipeline": 296,
-   "person_box_in_frame": 69,
+   "tracked_person_in_frame": 69,
    "product_box_on_item": 69,
    "right_sku": 69,
+   "product_box_on_item_and_tracked_person": 58,
+   "right_sku_and_tracked_person": 58,
    "item_inside_a_shelf_zone_of_this_camera": 203
   },
   "checkout": {
    "item_boxes": 1,
    "frame_reached_pipeline": 1,
-   "person_box_in_frame": 1,
+   "tracked_person_in_frame": 1,
    "product_box_on_item": 0,
    "right_sku": 0,
+   "product_box_on_item_and_tracked_person": 0,
+   "right_sku_and_tracked_person": 0,
    "item_inside_a_shelf_zone_of_this_camera": 0
   }
  },
@@ -498,5 +506,5 @@
   },
   "owner_report_md": "# BREE weekly report: 2026-10-05 to 2026-10-11\n\n- Alerts sent: **0** (0 from staged tests, 0 withdrawn after a late receipt, 0 from customers)\n- Confirmed theft: **0**\n- Rejected (not theft): **0**\n- Unclear: 0. Reviewers disagreed: 0. Not reviewed yet: 0.\n- No customer alert has a clear decision yet, so there is no real theft share to report.\n- No customer alerts this week.\n\n## Staged test thefts\n\nStaged: 0. Caught: **0**. Missed: **0**.\n\n## By zone (customer alerts)\n\n| | Sent | Confirmed | Rejected | Real theft share |\n|---|---|---|---|---|\n\n## By camera (customer alerts)\n\n| | Sent | Confirmed | Rejected | Real theft share |\n|---|---|---|---|---|\n"
  },
- "wall_s": 513.7
+ "wall_s": 1093.0
 }

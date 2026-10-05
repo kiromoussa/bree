@@ -473,3 +473,26 @@ def test_two_stores_cannot_share_a_dataset_folder(tmp_path):
     assert n > 0 and len(kept["examples"]) == n and kept["store_id"] == a.store_id != b.store_id
     assert all((shared / (e.get("image") or e["window"])).is_file() for e in kept["examples"])
     assert shared.resolve() not in b.dataset_dirs()                                # and B's retention does not reach into it
+
+
+def test_purged_keypoints_are_not_left_in_the_database_file(tmp_path):
+    """Audit 2026-10-05: after a purge the keypoints of purged alerts were still readable in the bytes of
+    review.sqlite (freed pages). The marker is a keypoint value that appears nowhere else."""
+    marker = b"7777.125"
+    frames = [{"t": 0.1 * k, "kpts": [[7777.125, 7777.125, 0.9]] * 17} for k in range(40)]
+    s = ReviewStore(tmp_path / "s", retention_days=30, now=BASE)
+    for i in range(4):
+        s.add_alert(_alert(i), camera="cam1", event_ts=BASE + (0 if i < 2 else 20 * DAY), frames=frames, now=BASE)
+    db = tmp_path / "s" / "review.sqlite"
+    full = db.read_bytes().count(marker)                             # a few markers straddle a page boundary
+    assert 0.99 * 4 * 40 * 17 * 2 <= full <= 4 * 40 * 17 * 2
+    assert s.purge(BASE + 35 * DAY)["alerts_purged"] == 2
+    live = sum(json.dumps(a["frames"]).count(marker.decode()) for a in s.alerts())
+    s.close()
+    assert live == 2 * 40 * 17 * 2 and 0.99 * live <= db.read_bytes().count(marker) <= live
+    assert not list((tmp_path / "s").glob("review.sqlite-*"))        # no journal or WAL left holding the old rows
+
+
+def test_ingest_of_a_missing_file_is_one_line_not_a_traceback(tmp_path):
+    with pytest.raises(SystemExit, match="no alerts file"):
+        ingest(ReviewStore(tmp_path / "s"), str(tmp_path / "nope" / "alerts.jsonl"))

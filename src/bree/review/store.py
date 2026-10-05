@@ -170,6 +170,9 @@ class ReviewStore:
         self.lock = threading.RLock()
         self.db = sqlite3.connect(self.dir / "review.sqlite", check_same_thread=False)
         self.db.row_factory = sqlite3.Row
+        # Deleted and overwritten content (purged keypoints, frame paths) is zeroed in the file, not left in
+        # freed pages. Before SCHEMA, so a new store is created with it; it is a per-connection setting.
+        self.db.execute("PRAGMA secure_delete=ON")
         self.db.executescript(SCHEMA)
         if retention_days is not None:
             if retention_days <= 0:
@@ -360,6 +363,8 @@ class ReviewStore:
                                 (now, a["alert_id"]))
                 n += 1
             self.db.commit()
+            if n:           # also clears pages freed before secure_delete was set (a store from an older version)
+                self.db.execute("VACUUM")
         examples, errors = 0, []
         for mf in (d / "manifest.json" for d in self.dataset_dirs()):
             if not mf.is_file():                # the folder was moved or deleted by hand

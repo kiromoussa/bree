@@ -19,10 +19,12 @@ const settled = prev => page.waitForFunction(p => !busy && (!cur || cur.alert_id
 const ready = () => page.waitForTimeout(450);          // the page ignores decisions for 400 ms after an alert appears
 const first = await id();
 
-// 1. Too early: a key right after the alert appears is ignored.
-await page.keyboard.press('1');
+// 1. Too early: a key right after the alert appears is ignored. The key is pressed from inside the page in
+//    the same task that marks the alert as just shown (t0), so the check does not depend on how long the
+//    browser and this script took to get here (on a loaded machine that was more than the 400 ms).
+await page.evaluate(() => { t0 = performance.now(); document.dispatchEvent(new KeyboardEvent('keydown', { key: '1', bubbles: true })); });
 await page.waitForTimeout(150);
-const tooEarly = (await id()) !== first;
+const tooEarly = (await id()) !== first || await page.evaluate(() => busy);
 
 // 2. Key 3 = wrong item. The "3" is not typed, Enter submits without the mouse.
 await ready();

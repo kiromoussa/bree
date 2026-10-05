@@ -38,6 +38,9 @@ def _find_clip(clip: str, src: Path) -> str | None:
 def ingest(store: ReviewStore, alerts_file: str, camera: str | None = None, frames_log: str | None = None) -> dict:
     """Add the records of one alerts.jsonl / would_be_alerts.jsonl. Returns counts and warnings."""
     src = Path(alerts_file)
+    if not src.is_file():
+        raise SystemExit(f"ingest: no alerts file at {src} (make demo writes out/demo/<clip>/alerts.jsonl, "
+                         "for example out/demo/walkout/alerts.jsonl)")
     recs = [json.loads(line) for line in src.read_text().splitlines() if line.strip()]
     run, ids, warnings = src.resolve().parent.name, {}, []
     stored = sorted(store.alerts(), key=lambda a: a["created_ts"])

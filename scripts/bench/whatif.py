@@ -7,7 +7,7 @@ and the ledger with other settings and score again. Nothing before tracking is r
     --floor '{"other_m": 99}'  (bree.track.floor.FloorConfig)
     --join '{"put_returns": "none"}' (or "both")  --reach '{"from_last": true}'       # the round 3 choices
 
-Never give it the test split: it is for tuning. Output: out/bench/whatif/<name>/<split>/ and one line per split.
+Never give it the test split: it is for tuning. --splits dev2 takes the dev2 clips that have a finished run. Output: out/bench/whatif/<name>/<split>/ and one line per split.
 """
 from __future__ import annotations
 
@@ -29,6 +29,8 @@ def run(name: str, split: str, join=None, reach=None, assoc=None, ledger=None, s
     scored = []
     for clip in clip_dirs(split):
         stored = Path(src or ROOT / "out" / "bench" / split) / clip.name / "pipeline"
+        if not (stored / "shelf_events.jsonl").exists() or not (stored.parent / "run.json").exists():      # not run yet (dev2 while it renders)
+            continue
         out = ROOT / "out" / "bench" / "whatif" / name / split / clip.name
         (out / "pipeline").mkdir(parents=True, exist_ok=True)
         for f in [*stored.glob("people_*.jsonl"), stored / "shelf_events.jsonl"]:
@@ -48,7 +50,7 @@ def line(res: dict) -> str:
     honest = [f"{c['clip']} {a['shopper']} {a['skus']}" for c in res["clips"] for a in c["alerts"] if not a["true_theft"]]
     return (f"{res['split']:5s} thefts {s['thefts_alerted_or_reviewed']}/{s['stolen_items']} (alert tier {s['thefts_alerted']})  honest flagged {s['reviews_on_honest_shoppers'] + s['false_alerts_on_honest_shoppers']}"
             f"/{s['honest_shoppers']}  picks {s['pick_recall']} prec {s['pick_precision']} ({s['pipeline_picks']})  sku {s['right_sku_of_paired_picks']}  slot {s['right_slot_of_paired_picks']}"
-            f"  shopper {s['right_shopper_of_paired_picks']}  ids {s['store_wide_ids_per_shopper']}\n      missed: {missed}\n      honest: {honest}")
+            f"  shopper {s['right_shopper_of_paired_picks']}  ids {s['store_wide_ids_per_shopper']} (on two people {s.get('ids_covering_two_shoppers')} of {s.get('ids_with_5_boxes')})  clips {len(res['clips'])}\n      missed: {missed}\n      honest: {honest}")
 
 
 if __name__ == "__main__":

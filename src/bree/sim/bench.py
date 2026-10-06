@@ -802,6 +802,8 @@ def main(argv=None) -> None:
     clips = clip_dirs(a.split, only, a.batch)
     if a.smoke:
         clips, a.max_frames = clips[:1], a.max_frames or 60
+    if a.score_only and any(not (c / "clip.json").exists() for c in clips):      # the split is still rendering: score what is there, leave results/ alone
+        clips, only = [c for c in clips if (c / "clip.json").exists()], only or [-1]
     missing = [c for c in clips if not (c / "clip.json").exists()]
     if missing:
         raise SystemExit(f"not rendered: {', '.join(str(c) for c in missing)}\nrender with: .venv/bin/python scripts/bench/render_split.py {a.split}")

@@ -543,20 +543,42 @@ function frame2(i, render = true) {
     return vc._busy || still.get(vc.name) !== vc._key;
   });
   const n = real.shutter() > 0 ? (real.light() === 'night' ? 3 : 2) : 0;
-  if (i > 0) SUB.forEach((dt, k) => { stepBy(dt); if (n && k >= SUB.length - n) need.forEach((vc, j) => withCover(vc, () => real.expose(vc, { shadow: j === 0 }))); });
+  if (i > 0) SUB.forEach((dt, k) => { stepBy(dt); if (n && k >= SUB.length - n) need.forEach((vc, j) => withCover(vc, () => expose2(vc, j === 0))); });
   sim.time = t;
   return { t, world: world(), need: need.map(v => v.name), inStore: sim.shoppers.length, pending: B.arrive.length - B.k };
 }
 const idRTs = new Map();
+// Every read of pixels from the GPU waits for the GPU, and on a busy machine that wait is most of a frame (measured: about 50 ms a
+// read, two reads per camera). So the exposures are summed here (as realism.js expose() does), each camera's picture and id render
+// are read into a pixel buffer object without waiting, and the buffers are fetched together once every camera has been drawn.
+const acc2 = new Map(), pbos = new Map();
+function expose2(vc, shadow) {
+  const [W, H] = real.srcSize(vc, ...vc.res), src = real.target(W, H, 'src');
+  let a = acc2.get(vc.name);
+  if (!a || a.rt.width !== W || a.rt.height !== H) { a?.rt.dispose(); a = { rt: new THREE.WebGLRenderTarget(W, H, { type: THREE.HalfFloatType, depthBuffer: false }), n: 0 }; acc2.set(vc.name, a); }
+  if (shadow) renderer.shadowMap.needsUpdate = true;
+  real.renderScene(vc, src);
+  a.rt.viewport.set(0, 0, W, H); a.rt.scissorTest = false; renderer.setRenderTarget(a.rt);
+  const m = real.copyMat; m.uniforms.map.value = src.texture; m.uniforms.k.value = 1; m.blending = THREE.AdditiveBlending;
+  if (!a.n) { renderer.setClearColor(0x000000, 1); renderer.clear(); }
+  real.drawQuad(m); a.n++; renderer.setRenderTarget(null);
+}
+function queueRead(key, rt, w, h) {
+  const gl = renderer.getContext(); let b = pbos.get(key);
+  if (!b || b.size !== w * h * 4) { if (b) gl.deleteBuffer(b.buf); b = { buf: gl.createBuffer(), size: w * h * 4 }; gl.bindBuffer(gl.PIXEL_PACK_BUFFER, b.buf); gl.bufferData(gl.PIXEL_PACK_BUFFER, b.size, gl.STREAM_READ); pbos.set(key, b); }
+  renderer.setRenderTarget(rt); gl.bindBuffer(gl.PIXEL_PACK_BUFFER, b.buf); gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, 0); gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+  return b;
+}
+function fetchRead(b, out) { const gl = renderer.getContext(); gl.bindBuffer(gl.PIXEL_PACK_BUFFER, b.buf); gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, out); gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null); return out; }
 // JPEG encoding and the hand-over to render_clip.mjs happen in a few workers: the pixels of a frame are passed to a worker, which
 // encodes them and posts the JPEG to the address render_clip.mjs listens on. (A data URL through the debugger took most of a frame's time.)
-const enc = { workers: null, pending: new Map(), n: 0 };
+const enc = { workers: null, pending: new Map(), n: 0, size: 4 };
 function encode(px, w, h, url, quality) {
   if (!enc.workers) {
     const src = `onmessage = async e => { const { id, url, w, h, buf, quality } = e.data; try { const c = new OffscreenCanvas(w, h); c.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(buf), w, h), 0, 0);
       const b = await c.convertToBlob({ type: 'image/jpeg', quality }); const r = await fetch(url, { method: 'POST', body: new Blob([b], { type: 'text/plain' }) }); if (!r.ok) throw new Error('post ' + r.status); postMessage({ id }); } catch (err) { postMessage({ id, error: String(err) }); } };`;
     const u = URL.createObjectURL(new Blob([src], { type: 'text/javascript' }));
-    enc.workers = Array.from({ length: 4 }, () => { const k = new Worker(u); k.onmessage = e => { const p = enc.pending.get(e.data.id); enc.pending.delete(e.data.id); if (e.data.error) p[1](new Error(e.data.error)); else p[0](); }; return k; });
+    enc.workers = Array.from({ length: enc.size }, () => { const k = new Worker(u); k.onmessage = e => { const p = enc.pending.get(e.data.id); enc.pending.delete(e.data.id); if (e.data.error) p[1](new Error(e.data.error)); else p[0](); }; return k; });
   }
   return new Promise((ok, no) => { const id = ++enc.n; enc.pending.set(id, [ok, no]); enc.workers[id % enc.workers.length].postMessage({ id, url, w, h, buf: px.buffer, quality }, [px.buffer]); });
 }
@@ -564,17 +586,27 @@ function encode(px, w, h, url, quality) {
 // The pictures go to `post` as JPEG (one POST per camera, ?f=frame&c=camera); the truth rows come back once every picture has arrived.
 function shots(names, i, post, quality = 0.9) {
   const t = i / 10, held = new Map(sim.shoppers.flatMap(sh => sh.items.map(it => [it.mesh, { sh, it }]))), lo = B.minItem, sent = [];
-  const rows = names.map((name, j) => {
+  const drawn = names.map((name, j) => {
     const vc = camOf(name), [w, h] = vc.res, p = real.camParams(vc), s = p.overscan, a = p.a, Wi = Math.ceil(w * s / 2), Hi = Math.ceil(h * s / 2);
-    const pic = withCover(vc, () => real.capture(vc, { frame: i, t, shadow: j === 0 }));
-    sent.push(encode(pic.data, w, h, `${post}?f=${i}&c=${encodeURIComponent(name)}`, quality));
+    const acc = acc2.get(name), ldr = real.target(w, h, 'ldr');
+    let tex, scale = 1;
+    if (acc && acc.n) { tex = acc.rt.texture; scale = 1 / acc.n; acc.n = 0; }
+    else { if (j === 0) renderer.shadowMap.needsUpdate = true; const src = real.target(...real.srcSize(vc, w, h), 'src'); withCover(vc, () => real.renderScene(vc, src)); tex = src.texture; }
+    ldr.viewport.set(0, 0, w, h); ldr.scissorTest = false; renderer.setRenderTarget(ldr);
+    real.develop(vc, tex, { size: [w, h], flipY: true, srcScale: scale, frame: i, t });
+    const picture = queueRead('p:' + name, ldr, w, h);
     let rt = idRTs.get(`${Wi}x${Hi}`); if (!rt) { rt = new THREE.WebGLRenderTarget(Wi, Hi, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter }); idRTs.set(`${Wi}x${Hi}`, rt); }
     const hidden = [], fov = vc.cam.fov;
     scene.traverse(o => { if (o.isMesh && o.visible && [].concat(o.material).some(m => m.transparent)) { o.visible = false; hidden.push(o); } });
     vc.cam.fov = THREE.MathUtils.radToDeg(2 * Math.atan(s * Math.tan(vc.vfov / 2))); vc.cam.updateProjectionMatrix();      // the lens shows a little more than the pinhole field
     scene.overrideMaterial = idMat; renderer.setRenderTarget(rt); renderer.setClearColor(0x000000, 1); renderer.clear(); withCover(vc, () => renderer.render(scene, vc.cam));
     scene.overrideMaterial = null; hidden.forEach(o => { o.visible = true; }); vc.cam.fov = fov; vc.cam.updateProjectionMatrix();
-    const buf = new Uint8Array(Wi * Hi * 4); renderer.readRenderTargetPixels(rt, 0, 0, Wi, Hi, buf); renderer.setRenderTarget(null);
+    const ids = queueRead('i:' + name, rt, Wi, Hi); renderer.setRenderTarget(null);
+    return { name, vc, w, h, p, s, a, Wi, Hi, picture, ids };
+  });
+  const rows = drawn.map(({ name, vc, w, h, p, s, a, Wi, Hi, picture, ids }) => {
+    sent.push(encode(fetchRead(picture, new Uint8ClampedArray(w * h * 4)), w, h, `${post}?f=${i}&c=${encodeURIComponent(name)}`, quality));
+    const buf = fetchRead(ids, new Uint8Array(Wi * Hi * 4));
     const box = new Map(), fx = vc.fx, fy = vc.fy, kx = 2 * p.tanH * s / Wi, ky = 2 * p.tanV * s / Hi;
     for (let r = 0, q = 0; r < Hi; r++) for (let x = 0; x < Wi; x++, q += 4) {
       const id = buf[q] | (buf[q + 1] << 8) | (buf[q + 2] << 16);
@@ -612,4 +644,4 @@ const acts = () => [...B.acts, ...sim.events.filter(e => e.staff).map(e => { con
 
 window.__breeBench = { setup, advance, capture, world, events, calibration, layout: layoutOut, shoppers: () => B.shoppers, plan: () => ({ arrive: B.arrive, plans: B.plans }),
   state: () => ({ t: sim.time, inStore: sim.shoppers.length, pending: B.arrive.length - B.k }),
-  frame2, shots, run2, acts, given: () => B.given, faults: () => B.faults, FEATURES };
+  frame2, shots, run2, acts, given: () => B.given, faults: () => B.faults, FEATURES, encoders: n => { enc.size = n; } };

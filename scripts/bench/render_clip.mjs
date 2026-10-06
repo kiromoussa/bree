@@ -66,7 +66,8 @@ try {
     if (a.stills) fs.mkdirSync(path.join(out, 'stills'), { recursive: true });
     const params = await call((y, { seed, layout, o }) => y.setup(seed, layout, o), { seed, layout, o: opts(window) });
     const given = await call(y => y.given());
-    const enc = Object.fromEntries(cams.map(c => [c, spawn('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-c:v', 'mjpeg', '-framerate', String(fps), '-i', '-', '-c:v', 'libx264', '-threads', '2', '-preset', 'veryfast', '-crf', String(crf), '-pix_fmt', 'yuv420p', '-g', String(fps), path.join(out, `${c}.mp4`)], { stdio: ['pipe', 'inherit', 'inherit'] })]));
+    const enc = Object.fromEntries(cams.map(c => [c, spawn('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-c:v', 'mjpeg', '-framerate', String(fps), '-i', '-', '-c:v', 'libx264', '-threads', '2', '-preset', 'veryfast', ...(a.x264 === 'zerolatency' ? ['-tune', 'zerolatency'] : []), '-crf', String(crf), '-pix_fmt', 'yuv420p', '-g', String(fps), path.join(out, `${c}.mp4`)], { stdio: ['pipe', 'inherit', 'inherit'] })]));
+    await call((y, n) => y.encoders(n), +(a.workers ?? 4));      // --workers N, --x264 zerolatency: measured, no faster on a busy machine
     const f0 = a.from ? Math.floor(+a.from * fps) : 0, f1 = a.to ? Math.min(n, Math.ceil(+a.to * fps)) : n;
     const frames = fs.createWriteStream(path.join(out, 'truth/frames.jsonl')), tracks = fs.createWriteStream(path.join(out, 'truth/tracks.jsonl')), last = {};
     let reused = 0, drawn = 0;

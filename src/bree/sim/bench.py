@@ -693,8 +693,11 @@ def markdown(res: dict) -> str:
     if st:
         L += ["", f"Stressed: the same clips and pipeline with worse inputs, {json.dumps(st['settings'])} (`python -m bree.sim.bench --help`). No ground truth is used to make them worse."]
     plain, hard = _score_rows(s, res.get("intervals")), _score_rows(st["scorecard"], st.get("intervals")) if st else None
-    L += ["", "| Metric | Value |" + (" Stressed |" if st else ""), "|---|---|" + ("---|" if st else "")]
-    L += [f"| {k} | {v} |" + (f" {hard[i][1]} |" if st else "") for i, (k, v) in enumerate(plain)] + [""]
+    same = st and st.get("plain_on_the_same_clips")
+    mid = _score_rows(same["scorecard"], same.get("intervals")) if same else None
+    n = st["scorecard"]["clips"] if st else 0
+    L += ["", "| Metric | Value |" + (f" Plain, the {n} clips that were also stressed |" if same else "") + (f" Stressed ({n} clips) |" if st else ""), "|---|---|" + ("---|" if same else "") + ("---|" if st else "")]
+    L += [f"| {k} | {v} |" + (f" {mid[i][1]} |" if same else "") + (f" {hard[i][1]} |" if st else "") for i, (k, v) in enumerate(plain)] + [""]
 
     def table(f, title):
         out = [f"### {title}: {f['picks']} picks, {f['through_every_stage']} through every stage", "",
@@ -827,15 +830,21 @@ def main(argv=None) -> None:
             run_all(out, None)
         if stress:
             run_all(hard, stress)
+    ran = lambda folder, c: (folder / c.name / "run.json").exists() and (folder / c.name / "pipeline" / "events.jsonl").exists()      # noqa: E731
+    if a.score_only and not all(ran(out, c) for c in clips):      # runs still going: score the finished ones, leave results/ alone
+        print("no finished run yet for: " + ", ".join(c.name for c in clips if not ran(out, c)))
+        clips, only = [c for c in clips if ran(out, c)], only or [-1]
     scored = [score_clip(c, out / c.name) for c in clips]
     commit = subprocess.run(["git", "-C", str(ROOT), "log", "-1", "--format=%h"], capture_output=True, text=True).stdout.strip()
     dirty = bool(subprocess.run(["git", "-C", str(ROOT), "status", "--porcelain", "--", "src"], capture_output=True, text=True).stdout.strip())
     res = {"split": a.split + batch.replace("_", " batch "), "data": NOTE, "runner": a.runner, "options": {"backend": a.backend, "edge": not a.no_edge, "max_frames": a.max_frames},
            "scored_at": time.strftime("%Y-%m-%d %H:%M"), "commit": commit + (" plus uncommitted changes in src" if dirty else ""),
            "wall_s": round(time.time() - t0, 1), **aggregate(scored), "stage_help": STAGE_HELP, "clips": scored}
-    if stress and all((hard / c.name / "pipeline" / "events.jsonl").exists() for c in clips):
-        worse = [score_clip(c, hard / c.name) for c in clips]
+    if stress and any(ran(hard, c) for c in clips):
+        worse = [score_clip(c, hard / c.name) for c in clips if ran(hard, c)]
         res["stress"] = {"settings": stress, "runs": str(hard.relative_to(ROOT)) if hard.is_relative_to(ROOT) else str(hard), **aggregate(worse), "clips": worse}
+        if len(worse) < len(scored):      # the stressed runs cover fewer clips: the plain score of those same clips goes beside them
+            res["stress"]["plain_on_the_same_clips"] = aggregate([c for c in scored if c["clip"] in {w["clip"] for w in worse}])
     full = not a.max_frames and not only
     targets = [out / "bench"] + ([ROOT / "results" / f"bench_{tag}"] if full else [])
     for t in targets:

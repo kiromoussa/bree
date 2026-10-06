@@ -857,3 +857,29 @@ SIMULATED data only. Code: `scripts/bench/`, `src/bree/sim/bench.py`. No pipelin
 - **Checkpoint seeds are marked used before they render.** A crashed render still spends the seed.
 - **Not done:** no Makefile target (the Makefile is not this stream's file; commands are in
   `scripts/bench/README.md`), no change to README.md or REPORT.md at the top level.
+
+## dev2 baseline (2026-10-06, benchmark agent)
+
+SIMULATED data only. No pipeline file was changed.
+
+- **Finished the interrupted dev2 render and baseline.** 13 of 20 clips were rendered and 3 plain and 2 stressed runs
+  were done when the earlier attempt stopped. Half-written run folders (plain 11004 to 11006, stressed 11003) were
+  deleted and run again; finished runs were kept.
+- **Playwright.** The scratch install in `/private/tmp` was gone after a restart. The render used an install that was
+  already on this machine (`BREE_PLAYWRIGHT=~/gstack/node_modules/playwright`, version 1.62.1); the renderer drives
+  the installed Chrome, so the Playwright version does not change the pixels. Nothing was installed.
+- **Parallelism.** Three renders plus three pipeline runs at once made every job crawl (a pipeline run got through
+  2 of about 28 cameras in 35 minutes). One pipeline run beside the render, then three runs once the render was over,
+  was the fast order.
+- **The laptop slept twice** (once idle, once for 54 minutes at 2 percent battery). `caffeinate -i -w <queue pid>`
+  was used against idle sleep. Nothing can be done from here about the battery.
+- **Stressed column on 18 clips.** The committed pipeline crashed on the stressed inputs of 11004 and 11007 (floor
+  tracker, `tracks.remove` on a dataclass that holds numpy arrays). Not fixed here because it is pipeline code; it is
+  written up in `scripts/bench/README.md` and should be the first fix of the pipeline stream.
+- **The baseline ran in a worktree of commit b551623** (`out/wt-baseline`), not in the working tree, because the working
+  tree held uncommitted pipeline changes of other streams (`calib/camera.py`, `shelf/hand.py`, `shelf/store.py`).
+- **One line of `src/bree/sim/bench.py` is left uncommitted on purpose**: `load_calibration` passing the lens term
+  `k_div` to `Camera`. It needs the uncommitted `calib/camera.py` change of the lens work and fails without it, so it
+  belongs in that stream's commit, with a measured before and after.
+- **`/usr/bin/git` stopped working mid run** ("You have not agreed to the Xcode license agreements"). The licence was
+  not accepted on the founder's behalf; git was run with `DEVELOPER_DIR=/Library/Developer/CommandLineTools`.

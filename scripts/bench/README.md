@@ -84,10 +84,67 @@ other jobs (dev 7001 to 7005). The 12 clips take 15 GB. A camera with nothing mo
 frame instead of rendering it again (checked byte identical on a slice). If Chrome closes mid clip the split
 renderer starts that clip again, up to 3 times.
 
+## The dev2 baseline (committed pipeline, its own folder)
+
+The baseline of the committed pipeline on dev2 is kept apart from tuning runs, because tuning runs of other streams
+write to `out/bench/dev2`. It runs in a worktree of the committed code (`git worktree add out/wt-baseline <commit>`,
+with `models` linked in) and writes to `out/bench/dev2_baseline` and
+`out/bench/dev2_baseline_stress`. The scorecard is `results/bench_dev2_baseline.md` and `.json`; its first line says
+how many clips it covers.
+
+```
+nohup scripts/bench/queue/dev2_baseline.sh plain  > out/bench/dev2_baseline_plain.log 2>&1 &    # one clip at a time, as each clip is rendered
+nohup scripts/bench/queue/dev2_baseline.sh stress > out/bench/dev2_baseline_stress.log 2>&1 &   # the stressed run of each clip whose plain run is done
+nohup scripts/bench/queue/dev2_baseline_score.sh  > out/bench/dev2_baseline_score.log 2>&1 &    # scores again after every finished run
+cd out/wt-baseline && PYTHONPATH=$PWD/src ../../.venv/bin/python -m bree.sim.bench dev2 --score-only --stress --name baseline --out ../../out/bench/dev2_baseline   # score by hand
+```
+
+The render and the queues stop while the laptop sleeps: `caffeinate -i -w <pid of a queue>` keeps it awake for as long
+as that queue runs. The queue scripts hold the paths of this machine; read them before
+running them again. `--score-only` scores the clips that are rendered and have a finished run, and leaves `results/`
+alone until the whole split is there (the score loop copies the partial scorecard to `results/` itself).
+
+### Result of the baseline (SIMULATED, commit b551623, scored 2026-10-06)
+
+All 20 clips: 120 shoppers (44 thieves, 76 honest), 7 staff, 230 picks, 55 stolen items. Square brackets are the 95
+percent bootstrap interval. The full scorecard, funnel and per clip table are in `results/bench_dev2_baseline.md`.
+
+| | plain, 20 clips | plain, the 18 clips also stressed | stressed, 18 clips |
+|---|---|---|---|
+| Thefts flagged, alert tier | 0 of 55 | 0 of 50 | 0 of 50 |
+| Thefts flagged, alert or review | 33 of 55 (60.0%) [0.44 to 0.74] | 29 of 50 (58.0%) [0.41 to 0.74] | 15 of 50 (30.0%) [0.16 to 0.46] |
+| Honest shoppers flagged for review | 16 of 76 (21.1%) [0.13 to 0.30] | 15 of 68 (22.1%) [0.13 to 0.32] | 7 of 68 (10.3%) [0.03 to 0.18] |
+| Staff members flagged | 4 of 7 | 4 of 7 | 4 of 7 |
+| Staff takes listed as unpaid | 3 of 6 | 3 of 6 | 5 of 6 |
+| Shifted items counted as a pick | 8 of 16 | 8 of 16 | 4 of 16 |
+| Picks found | 204 of 230 (88.7%) [0.85 to 0.93] | 185 of 210 (88.1%) | 155 of 210 (73.8%) [0.68 to 0.80] |
+| Right slot, of paired picks | 66.7% [0.60 to 0.73] | 67.0% | 44.5% [0.36 to 0.53] |
+| Right SKU, nominal planogram | 75.5% [0.69 to 0.81] | 75.7% | 66.5% [0.58 to 0.74] |
+| Put-back recall | 17 of 34 (50.0%) [0.33 to 0.67] | 16 of 32 | 18 of 32 (56.2%) |
+| Put-back precision | 41.8% of 55 events [0.31 to 0.55] | 44.9% of 49 | 46.2% of 52 |
+| Identities per person | 1.551 [1.46 to 1.65] | 1.539 | 1.878 [1.75 to 2.02] |
+| Identities that cover two people | 84 of 191 (44.0%) [0.36 to 0.51] | 76 of 173 (43.9%) | 128 of 212 (60.4%) |
+
+The stressed column has 18 clips because **the committed pipeline crashed on the stressed inputs of 11004 and 11007**
+(`src/bree/track/floor.py` line 478, `self.tracks.remove(q)`: the track dataclass compares numpy arrays with `==`,
+`ValueError: The truth value of an array with more than one element is ambiguous`). The logs are
+`out/bench/dev2_baseline_stress/clip_11004.log` and `clip_11007.log`. A crash is worse than a miss: read the stressed
+column as an upper bound until that is fixed. `--score-only` leaves a clip without a finished run out and says how many
+clips it scored; the plain command (`bench dev2 --stress`) refuses to score when a clip fails.
+
+Fewer honest shoppers are flagged under stress only because the stressed pipeline sees fewer picks at all.
+
+Render cost of dev2 (in `clips.json`): 32.9 minutes of wall time per clip on average (11.1 to 73.7) with three clips at
+a time on a 10 core laptop that other jobs were using; the clips rendered with the least competition took 11 to 19
+minutes. 25.2 cameras and 639 frames per clip on average, 11129 camera frames drawn per clip (the rest repeated
+because nothing moved), 42 GB for the 20 clips. A pipeline run of one clip took 5 to 6 minutes with two or three runs
+at a time and nothing else heavy running, and over an hour when three renders and three runs shared the machine: run
+the render first, or one pipeline run beside it.
+
 ## Commands
 
 ```
-export BREE_PLAYWRIGHT=/path/to/node_modules/playwright
+export BREE_PLAYWRIGHT=/path/to/node_modules/playwright     # any Playwright install works (the renderer drives the installed Chrome). The install in /private/tmp is gone after a restart
 .venv/bin/python scripts/bench/render_split.py dev            # render (skips finished clips); test likewise
 .venv/bin/python scripts/bench/render_split.py train --seeds 1240:1250     # training clips with the same truth files
 node scripts/bench/render_clip.mjs --seed 7001 --out /tmp/x --dry          # scenario and cameras only

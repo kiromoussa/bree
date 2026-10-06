@@ -4,6 +4,11 @@
 //   node scripts/bench/render_clip.mjs --seed 7001 --out data/synth/bench/dev/clip_7001
 //   options: --layout f.json  --fps 10  --dry (scenario and cameras only, no frames)  --from S --to S (render a slice)
 //            --stills N (also keep every Nth frame as a JPEG in <out>/stills)  --max-item-cams 12  --spare-cams 2  --crf 16
+//   --gen 2 (the DEV2 and CHECKPOINT sets; scripts/bench/sim/bench.js lists what it adds). Its options:
+//            --features group,staff,wrongSlot,shift,bump,block,dropScan,night (force on; -name forces off; the rest stay as the seed draws them)
+//            --realism 0.5 (strength of the camera pass; off for none)  --aisles all (every aisle has cameras)  --crf 23
+//   Generator 2 also writes truth/acts.jsonl (touches, staff takes and puts), truth/planogram.json (what is really in each slot;
+//   layout.json holds the nominal planogram) and truth/faults.json (the options of the clip, camera faults, the dropped scan).
 //
 // What the pipeline may read (top level of <out>):
 //   <camera>.mp4       H.264, constant frame rate; frame i is sim time i / fps
@@ -15,6 +20,7 @@
 //   events.jsonl  shoppers.json  tracks.jsonl (floor position per frame)  frames.jsonl (boxes per camera and frame)
 import { execFileSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
+import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -40,6 +46,90 @@ const s = await openSim({ headed: !!a.headed }), page = s.page;
 try {
   for (const m of ['synth', 'bench']) { await page.addScriptTag({ type: 'module', url: `/js/${m}.js` }); await page.waitForFunction(m => window[m === 'synth' ? '__breeSynth' : '__breeBench'], m, { timeout: 30000 }); }
   const call = (fn, arg) => page.evaluate(([f, x]) => (0, eval)(`(${f})`)(window.__breeBench, x), [fn.toString(), arg]);
+  // ---------- generator 2 (DEV2, CHECKPOINT): harder scenes, cameras by aisle, camera pass, nominal planogram ----------
+  async function gen2() {
+    const feats = {}; for (const f of String(a.features ?? '').split(',').filter(Boolean)) feats[f.replace(/^-/, '')] = !f.startsWith('-');     // --features group,staff,-night forces options on or off
+    const amount = a.realism === 'off' ? 0 : +(a.realism ?? 0.5), crf = a.crf ?? 23;
+    const opts = w => ({ gen: 2, window: w, features: feats, realism: amount, aisles: a.aisles });
+    const dryRun = w => call((y, { seed, layout, o }) => { const params = y.setup(seed, layout, o), { end } = y.run2(); return { end, params, events: y.events(10), acts: y.acts(), shoppers: y.shoppers() }; }, { seed, layout, o: opts(w) });
+    let dry = null, window = null;
+    for (const w of a.window ? [+a.window] : [16, 12, 20, 9, 24, 30]) { const d = await dryRun(w); if (!dry || Math.abs(d.end - 55) < Math.abs(dry.end - 55)) { dry = d; window = w; } if (d.end >= 40 && d.end <= 70) { dry = d; window = w; break; } }      // a visit of 40 to 70 s
+    const cams = a.cams ? a.cams.split(',') : dry.params.cameras, n = Math.round(dry.end * fps) + fps, P = dry.params, count = (rows, key) => rows.reduce((o, e) => (o[e[key]] = (o[e[key]] ?? 0) + 1, o), {});
+    const summary = { seed, gen: 2, window, sim_seconds: +dry.end.toFixed(2), frames: n, shoppers: dry.shoppers.filter(x => x.role !== 'staff').length, staff: dry.shoppers.filter(x => x.role === 'staff').length,
+      thieves: dry.shoppers.filter(x => x.thief).length, picks: dry.events.length, outcomes: count(dry.events, 'outcome'), zones: count(dry.events, 'zone'),
+      features: Object.keys(P.features).filter(k => P.features[k]), aisles: P.aisles, group_picks: dry.events.filter(e => e.group).length, put_backs_into_another_slot: dry.events.filter(e => e.putBackSlot).length,
+      acts: count(dry.acts, 'kind'), faults: P.faults, camera_pass_strength: amount, cameras: cams, item_cameras: P.item_cameras,
+      picks_without_an_item_camera: dry.events.filter(e => !e.cameras.some(v => cams.includes(v.id) && v.px >= 8 && !['entrance', 'overhead'].includes(v.kind) && v.id !== 'REGISTER-top')).length };
+    console.error(JSON.stringify(summary));
+    if (a.dry) { console.log(JSON.stringify({ ...summary, params: P, events: dry.events, acts: dry.acts, shoppers: dry.shoppers }, null, 1)); return; }
+    fs.mkdirSync(path.join(out, 'truth'), { recursive: true });
+    if (a.stills) fs.mkdirSync(path.join(out, 'stills'), { recursive: true });
+    const params = await call((y, { seed, layout, o }) => y.setup(seed, layout, o), { seed, layout, o: opts(window) });
+    const given = await call(y => y.given());
+    const enc = Object.fromEntries(cams.map(c => [c, spawn('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-c:v', 'mjpeg', '-framerate', String(fps), '-i', '-', '-c:v', 'libx264', '-threads', '2', '-preset', 'veryfast', '-crf', String(crf), '-pix_fmt', 'yuv420p', '-g', String(fps), path.join(out, `${c}.mp4`)], { stdio: ['pipe', 'inherit', 'inherit'] })]));
+    const f0 = a.from ? Math.floor(+a.from * fps) : 0, f1 = a.to ? Math.min(n, Math.ceil(+a.to * fps)) : n;
+    const frames = fs.createWriteStream(path.join(out, 'truth/frames.jsonl')), tracks = fs.createWriteStream(path.join(out, 'truth/tracks.jsonl')), last = {};
+    let reused = 0, drawn = 0;
+    // the page posts each JPEG here (see encode() in sim/bench.js)
+    const jpeg = new Map(), srv = http.createServer((req, res) => { const parts = []; req.on('data', c => parts.push(c)); req.on('end', () => { const u = new URL(req.url, 'http://x');
+      jpeg.set(`${u.searchParams.get('f')}:${u.searchParams.get('c')}`, Buffer.concat(parts)); res.writeHead(200, { 'access-control-allow-origin': '*' }).end('ok'); }); });
+    await new Promise(ok => srv.listen(0, '127.0.0.1', ok));
+    const post = `http://127.0.0.1:${srv.address().port}/`;
+    if (f0) await call((y, f0) => { for (let i = 0; i < f0; i++) y.frame2(i, false); }, f0);
+    for (let i = f0; i < f1; i++) {
+      const k = i - f0, fr = await call((y, i) => y.frame2(i), i), got = {};
+      tracks.write(JSON.stringify({ frame: k, t: +(k / fps).toFixed(3), shoppers: fr.world }) + '\n');
+      const need = fr.need.filter(c => cams.includes(c));
+      if (need.length) for (const r of await call((y, { names, i, post }) => y.shots(names, i, post), { names: need, i, post })) got[r.name] = r;
+      for (const c of cams) {
+        let r = got[c];
+        if (r) { r.buf = jpeg.get(`${i}:${c}`); jpeg.delete(`${i}:${c}`); if (!r.buf?.length) throw new Error(`no picture for ${c} frame ${i}`); last[c] = r; drawn++; } else { r = last[c]; reused++; }     // nothing moved in view: the last frame again
+        if (!enc[c].stdin.write(r.buf)) await new Promise(ok => enc[c].stdin.once('drain', ok));
+        if (a.stills && k % +a.stills === 0) fs.writeFileSync(path.join(out, 'stills', `${c}_${String(k).padStart(4, '0')}.jpg`), r.buf);
+        if (r.persons.length || r.items.length) frames.write(JSON.stringify({ frame: k, t: +(k / fps).toFixed(3), camera: c, persons: r.persons, items: r.items }) + '\n');
+      }
+      if (k % 50 === 0) console.error(`seed ${seed}: frame ${k + 1}/${f1 - f0}, ${((Date.now() - t0) / 1000).toFixed(0)} s`);
+    }
+    await Promise.all([...Object.values(enc).map(p => new Promise(ok => { p.on('close', ok); p.stdin.end(); })), new Promise(ok => frames.end(ok)), new Promise(ok => tracks.end(ok))]);
+    srv.close();
+    const off = f0 / fps, sh = x => x === null || x === undefined ? x : +(x - off).toFixed(3);
+    const ev = (await call(y => y.events(10))).map(e => ({ ...e, t: sh(e.t), frame: e.frame - f0, tResolved: sh(e.tResolved), tExit: sh(e.tExit), tConceal: sh(e.tConceal), tPay: sh(e.tPay), tPutBack: sh(e.tPutBack), tHand: sh(e.tHand) }));
+    const acts = (await call(y => y.acts())).map(x => ({ ...x, t: sh(x.t), ...(x.tPut !== undefined && { tPut: sh(x.tPut) }) }));
+    const shoppers = (await call(y => y.shoppers())).map(x => ({ ...x, tEnter: sh(x.tEnter), tExit: sh(x.tExit) }));
+    // register: one receipt per paying shopper (whoever stood at the register), 1.5 to 4.5 s after the payment. dropScan: one paid item never reaches the feed
+    const D = mulberry32(seed * 5081 + 7), paidRows = ev.filter(e => e.outcome === 'paid');
+    let dropped = null;
+    if (params.features.dropScan && paidRows.length) {
+      const per = paidRows.reduce((o, e) => (o[e.paidBy ?? e.shopper] = (o[e.paidBy ?? e.shopper] ?? 0) + 1, o), {}), many = paidRows.filter(e => per[e.paidBy ?? e.shopper] > 1), pool = many.length ? many : paidRows;
+      dropped = pool[Math.floor(D() * pool.length)]; dropped.scanDropped = true;
+    }
+    const paid = {}; for (const e of paidRows) (paid[e.paidBy ?? e.shopper] ??= []).push(e);
+    const receipts = Object.values(paid).sort((x, y) => x[0].tPay - y[0].tPay).map((es, k) => {
+      const items = {}; for (const e of es) if (!e.scanDropped) items[e.skuId] = (items[e.skuId] ?? 0) + 1;
+      return { t: +(Math.max(...es.map(e => e.tPay)) + 1.5 + 3 * D()).toFixed(2), terminal: 'pos_1', txn_id: `SIM${String(k + 1).padStart(4, '0')}`, items: Object.entries(items).map(([sku, qty]) => ({ sku, qty })) };
+    }).filter(r => r.items.length).sort((x, y) => x.t - y.t);
+    const w = (f, rows) => fs.writeFileSync(path.join(out, f), rows.map(r => JSON.stringify(r) + '\n').join(''));
+    w('truth/events.jsonl', ev); w('truth/acts.jsonl', acts); w('register.jsonl', receipts);
+    fs.writeFileSync(path.join(out, 'truth/shoppers.json'), JSON.stringify(shoppers, null, 1));
+    fs.writeFileSync(path.join(out, 'layout.json'), JSON.stringify(given.layout, null, 1));
+    const exact = given.planogram.exact, nominal = given.planogram.nominal;
+    fs.writeFileSync(path.join(out, 'truth/planogram.json'), JSON.stringify({ note: 'what is really in each slot when the clip starts; layout.json holds the nominal planogram', exact, slots_where_the_item_differs: Object.keys(exact).filter(k => exact[k] !== nominal[k]) }));
+    fs.writeFileSync(path.join(out, 'truth/faults.json'), JSON.stringify({ features: params.features, tags: params.tags, light: params.realism.light, camera_faults: await call(y => y.faults()),
+      dropped_scan: dropped && { shopper: dropped.shopper, paidBy: dropped.paidBy ?? dropped.shopper, skuId: dropped.skuId, tPay: dropped.tPay } }, null, 1));
+    fs.writeFileSync(path.join(out, 'calibration.json'), JSON.stringify({ frame: 'store metres, y up, +z toward the front door (the layout frame)',
+      model: 'pinhole with one radial lens term. A pinhole point (x, y) = ((u - cx) / fx, (v - cy) / fy) is imaged at (x, y) / (1 + k_div (x^2 + y^2)); to undo it, scale an image point (x, y) by 2 / (1 + sqrt(1 - 4 k_div (x^2 + y^2))). dist is the same lens as OpenCV rational coefficients [k1 k2 p1 p2 k3 k4 k5 k6]. R rows are right, down, forward',
+      note: 'pose and lens as measured when the cameras were installed. A camera that is knocked later is not updated here.', cameras: given.calibration.filter(c => cams.includes(c.id)) }, null, 1));
+    const seconds = +((Date.now() - t0) / 1000).toFixed(0);
+    fs.writeFileSync(path.join(out, 'clip.json'), JSON.stringify({ source: 'browser simulator copy (SIMULATED)', generator: 2, simulator: simInfo, layout: path.basename(layoutFile), seed, fps, frames: f1 - f0, sim_seconds: +((f1 - f0) / fps).toFixed(2),
+      slice: a.from || a.to ? [f0 / fps, f1 / fps] : null, cameras: cams,
+      camera_choice: { rule: 'every people camera, and every item camera of the layout whose main view (the aisle it sees most slots of) is an aisle this store has cameras in. Chosen from the layout, not from what happens in the clip', aisles: params.aisles },
+      planogram: 'nominal: layout.json names the product each slot is meant to hold. Single items can be misplaced and the shelf changes during the clip',
+      camera_pass: { strength: amount, effects: amount > 0 ? 'lens distortion and vignette, auto exposure and gain drift, motion blur, sensor noise, codec blocks, white balance, glare' : 'off' },
+      video: `H.264 (libx264 crf ${crf}) from JPEG quality 0.9; a camera with nothing moving in view repeats its last frame (its noise stands still then)` }, null, 1));
+    fs.writeFileSync(path.join(out, 'truth/render.json'), JSON.stringify({ ...summary, frames: f1 - f0, params, frames_drawn: drawn, frames_repeated_because_nothing_moved: reused, render_seconds: seconds, seconds_per_drawn_frame: +(seconds / Math.max(drawn, 1)).toFixed(3) }, null, 1));
+    console.error(`seed ${seed}: ${f1 - f0} frames x ${cams.length} cameras (${drawn} drawn, ${reused} repeated), ${ev.length} picks, ${seconds} s`);
+  }
+  if (+(a.gen ?? 1) === 2) await gen2(); else {
   // 1. dry runs: the arrival window that makes the visit 60 to 90 s long, what happens, which cameras see it
   const dryRun = window => call((y, { seed, layout, window }) => { const params = y.setup(seed, layout, { window }); let st; do st = y.advance(y.state().t + 1); while ((st.inStore || st.pending) && st.t < 240); return { end: st.t, params, events: y.events(10), cams: y.layout().cameras, shoppers: y.shoppers() }; }, { seed, layout, window });
   let dry = null, window = null;
@@ -109,6 +199,7 @@ try {
       slice: a.from || a.to ? [f0 / fps, f1 / fps] : null, cameras: cams, camera_choice: { always: fixed, item_cameras_that_see_a_pick: item, item_cameras_that_see_no_pick: idle }, params, video: `H.264 (libx264 crf ${a.crf ?? 16}) from JPEG quality 0.92; a camera with nothing moving in view repeats its last frame` }, null, 1));
     fs.writeFileSync(path.join(out, 'truth/render.json'), JSON.stringify({ ...summary, frames: f1 - f0, frames_repeated_because_nothing_moved: reused, render_seconds: seconds }, null, 1));
     console.error(`seed ${seed}: ${f1 - f0} frames x ${cams.length} cameras, ${ev.length} picks, ${seconds} s`);
+  }
   }
   if (s.errors.length) { console.error('console errors:\n' + s.errors.join('\n')); process.exitCode = 1; }
 } finally { await s.close(); }

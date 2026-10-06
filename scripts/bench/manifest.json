@@ -1,12 +1,71 @@
 {
- "what": "Fixed benchmark of SIMULATED store clips (browser simulator copy, scripts/bench/render_clip.mjs). Splits are by scenario seed and never overlap.",
+ "what": "Fixed benchmark of SIMULATED store clips (browser simulator copy, scripts/bench/render_clip.mjs). Splits are by scenario seed and never overlap. dev and test are generator 1 (kept as regression sets); dev2 and checkpoint are generator 2 (harder scenes, cameras by aisle, camera pass, nominal planogram).",
  "layout": "recommended-3d-45.json",
  "root": "data/synth/bench",
  "fps": 10,
  "splits": {
-  "train": {"seeds": "1000:5000", "use": "training data only. 1000:1240 are the scenes the sim_sku detector was trained and validated on (make sku-data). Render any seed in this range with render_clip.mjs or scripts/train/render_synth.mjs."},
-  "scratch": {"seeds": "5000:6000", "use": "not part of the benchmark. 5001 is the clip of the first end to end run (make sku-clip-door); it was looked at while building the pipeline."},
-  "dev": {"seeds": [7001, 7002, 7003, 7004, 7005, 7006], "use": "tuning and diagnosis: make bench-dev"},
-  "test": {"seeds": [9001, 9002, 9003, 9004, 9005, 9006], "use": "final numbers only: make bench-test. Do not tune on it and do not look at its frames."}
+  "train": {
+   "seeds": "1000:5000",
+   "use": "training data only. 1000:1240 are the scenes the sim_sku detector was trained and validated on (make sku-data). Render any seed in this range with render_clip.mjs or scripts/train/render_synth.mjs."
+  },
+  "scratch": {
+   "seeds": "5000:6000",
+   "use": "not part of the benchmark. 5001 is the clip of the first end to end run (make sku-clip-door); it was looked at while building the pipeline."
+  },
+  "dev": {
+   "seeds": [
+    7001,
+    7002,
+    7003,
+    7004,
+    7005,
+    7006
+   ],
+   "use": "regression set (generator 1). Was the tuning set of rounds 0 to 5: make bench-dev"
+  },
+  "test": {
+   "seeds": [
+    9001,
+    9002,
+    9003,
+    9004,
+    9005,
+    9006
+   ],
+   "use": "regression set (generator 1). Was run once as the held-out set on commit 9068c1a: make bench-test"
+  },
+  "dev2": {
+   "seeds": [
+    11001,
+    11002,
+    11003,
+    11004,
+    11005,
+    11006,
+    11007,
+    11008,
+    11009,
+    11010,
+    11011,
+    11012,
+    11013,
+    11014,
+    11015,
+    11016,
+    11017,
+    11018,
+    11019,
+    11020
+   ],
+   "gen": 2,
+   "use": "the tuning set from 2026-10-05 on: make bench-dev2. Tune and diagnose here, never on checkpoint clips."
+  },
+  "checkpoint": {
+   "seeds": "13001:13031",
+   "gen": 2,
+   "used": [],
+   "batches": [],
+   "use": "held-out pool of 30 seeds, rendered 6 at a time: `.venv/bin/python scripts/bench/render_split.py checkpoint --next 6` renders the next 6 unused seeds and marks them used. A batch is scored once (`python -m bree.sim.bench checkpoint --stress`), by a pipeline that was not tuned on it. Nobody looks at the frames or the truth of an unused seed."
+  }
  }
 }

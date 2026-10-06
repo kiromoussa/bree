@@ -806,3 +806,54 @@ An independent audit re-ran the commands behind the reports and probed the code.
 - **Tests at wrap-up:** full suite 416 passed, 0 failed, 0 skipped (the browser test ran, `BREE_PLAYWRIGHT` was set),
   counted from the progress lines of `out/bench/wrapup/tests_full.log` because pytest prints no closing summary line
   here; `scripts/bench/test_bench.py` 3 passed. No file under `src/` changed in the wrap-up.
+
+## Benchmark version 2 (2026-10-05, benchmark agent)
+
+SIMULATED data only. Code: `scripts/bench/`, `src/bree/sim/bench.py`. No pipeline file was changed.
+
+- **Generator 2 is a second path, not a rewrite.** `render_clip.mjs --gen 2` and `setup(..., { gen: 2 })` in
+  `sim/bench.js`. Generator 1 keeps its stream of random numbers: a dry run of TRAIN seed 4903 gives the stored
+  truth events and the stored camera list. DEV and TEST stay as rendered, as regression sets.
+- **The simulator copy was refreshed to commit 1f5586e** (camera pass, day and night). The old copy is kept in
+  `out/sim-copy.bff1f32`. Other streams render from `out/sim-copy` too (`scripts/train`, `scripts/conceal`): with
+  the camera pass off, which is the headless default, the simulator says it renders as before, but the store art
+  changed (price tags on the shelf rails), so frames from before and after the refresh are not pixel equal.
+- **Seeds.** dev2 is 11001 to 11020, the checkpoint pool 13001 to 13030. Scratch seeds 5101 to 5108 were used to
+  build and look at the generator. No dev2 or checkpoint frame was looked at while building it.
+- **Camera pass at strength 0.5 for every effect, people and shelf mess left to synth.js.** The simulator's
+  "people" and "shelves" switches rebuild figures and shelves that synth.js already randomises and checks against
+  the store build order; switching them on risked breaking the id render for no test value.
+- **Lens distortion is in the picture and its coefficient is in `calibration.json`.** The pipeline's camera model
+  is a pinhole. This will cost it accuracy until it undistorts, most on the 120 degree overhead cameras. That is
+  the point of the item, and the coefficient a real calibration would measure is given, so it is fair.
+- **Truth under the lens.** Boxes come from an id render at half size with the field widened, each id pixel moved
+  through the lens model; hand, head and feet points go through the simulator's own `distortPoint`. Checked by
+  drawing them on stills of scratch seed 5101 (overhead and register camera).
+- **Idle frames are still repeated.** Measured on an idle machine: about 50 ms for a drawn 4 MP frame, of which
+  28 ms is the JPEG and 16 ms the readback, so drawing an empty view again only for fresh noise would cost nearly
+  as much as a busy frame. The noise of an empty view therefore stands still. Stated in the README.
+- **Cameras by aisle, by main view.** First rule tried: a camera belongs to an aisle when it sees 8 slots of it.
+  Ceiling and drop-rod cameras see slivers of several aisles, so three aisles pulled in 35 to 40 of 45 cameras.
+  Rule kept: a camera belongs to the aisle it sees most slots of. Which aisles a clip uses is drawn from the seed
+  before any shopper exists.
+- **Nominal planogram is what the pipeline is given.** `layout.json` of a generator 2 clip holds the most common
+  product of each planogram block; the exact content is in `truth/planogram.json`. So "right SKU" on dev2 needs
+  no re-scoring script. `nominal_sku.py` stays for the generator 1 sets.
+- **A dropped scan is scored as an honest shopper.** The shopper paid; the feed lost the line. A review on that
+  shopper counts as a review on an honest shopper and is also shown under its own tag, because a pipeline cannot
+  be expected to clear it without seeing the item on the counter. An alert on it would be wrong.
+- **Staff come in through the front door** (a vendor restocking, or an employee starting a shift) in a work vest
+  or the clerk's shirt. The uniform is a cue a real pipeline could also use. A PICK event on a staff take is
+  counted as a true shelf event for pick precision and reported apart; it is "wrongly counted" when a record
+  lists it as unpaid.
+- **In a group the carrier is honest.** The item was paid for by the companion. A review on the carrier counts
+  against the honest review rate. A paid pick counts as "pay classified" when the PAY event is on the payer.
+- **Stress is applied to the pipeline's inputs, never to the clip.** Camera drop, pose noise, receipt delay and
+  planogram errors are drawn from (stress seed, clip seed). The register camera is never dropped. Pose noise goes
+  into `calibration.json` (what the pipeline reads) and noise of the same size into the camera poses of
+  `layout.json`; the two are not the same draw.
+- **Intervals.** Percentile bootstrap, 2000 draws, seed 0. Shoppers are the unit for rates about people and their
+  picks; clips are the unit for pick precision, put-back precision and identity numbers.
+- **Checkpoint seeds are marked used before they render.** A crashed render still spends the seed.
+- **Not done:** no Makefile target (the Makefile is not this stream's file; commands are in
+  `scripts/bench/README.md`), no change to README.md or REPORT.md at the top level.

@@ -745,6 +745,9 @@ make bench-smoke     # one clip, 60 frames per camera, writes nothing to results
   on sightings of its own product): 8 of 55 stolen items at alert tier, 6 of 6 alerts on thieves, 35 of 55 flagged,
   11 of 76 honest shoppers reviewed. After round 5 (register receipts given out together where their items are,
   `bree.shelf.store.JOINT_RECEIPTS`): the same headline, stolen items listed as unpaid 29 of 55 (was 28).
+  After round 6 (a clean shelf picture under the pixel comparison, `DiffConfig.restore`, and the ledger's "under
+  another name" discount only where the paid product is stocked, `bree.shelf.store.MISREAD_WHERE_STOCKED`): 36 of
+  55 flagged, 8 of 76 honest shoppers reviewed, pick precision 0.803 (was 0.776), put-backs found 22 of 34.
 - A put event names the take it undoes (`undoes` against the take's `eids`) and says whether the item was seen going
   into the slot (`item_in`); `bree.events.shelf.confirm_puts` returns takes on that basis.
 

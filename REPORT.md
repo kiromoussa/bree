@@ -12,6 +12,144 @@ intervals. The goal on DEV2: thefts flagged at least 0.90, at alert tier at leas
 0.80 with precision 0.75, identities per shopper at most 1.2, and no more than 10 points of thefts flagged lost with
 20 percent of the item cameras removed.
 
+## 2026-10-07: round 6 on DEV2 (SIMULATED): false shelf events at the source. Kept: a clean shelf picture under the pixel comparison, and a paid item explains an unpaid pick only where that product is stocked
+
+**Result.** The goal is not met. Two changes are kept, and together they move the headline in the right direction
+for the first time since round 2: honest shoppers reviewed 11 to 8 of 76, thefts flagged 35 to 36 of 55, pick
+precision 0.776 to 0.803, put-backs found 20 to 22 of 34. Everything is inside the intervals of the round 5 numbers
+(the sample is small). Pick recall went down three picks (206 to 203 of 230), and with 20 percent of the item
+cameras removed the drop is now 10.9 points (36 to 30 of 55) against a bar of 10, because the plain number rose by
+one and the stressed one did not.
+
+### Gap chosen
+
+False shelf events. Rounds 2 to 5 ended at the same place from the ledger side: every ledger rule trades thieves
+for honest shoppers, and the unpaid items on reviewed honest shoppers are mostly picks that match no take. The
+build order of the patent research starts there too ("diff only quiet, person-free frames", item 1.1). Nobody had
+looked at the raw readings of the item cameras before they are fused.
+
+### What the raw readings were (`scripts/bench/study/r6_raw.py`, truth for scoring only)
+
+Take readings of the pixel comparison and the held-item cue on DEV2, before fusing: 725, of which 277 at a true
+take, 47 at a true put, 14 at a touch and 387 at nothing. Of the 387, 223 are taken back later by a put of the same
+camera (an arm over a slot, gone when the arm leaves; the join already handles those). 164 are never taken back.
+
+### Root cause
+
+One sentence: the pixel comparison takes every small still patch into its reference picture, event or not, so
+pieces of an arm or sleeve that paused in front of the shelf become "the shelf", and when the arm leaves the place
+differs from the reference again and is read as a take of the slot under it, with no earlier take to undo.
+
+Seen in frames: 11003, camera G4R-drop-rod-1, take of G4R-S4-47 read at frame 207. The slot looks the same at
+frames 180 and 207; an arm crossed it at 193. The trace of the comparison shows 14 by 14 pixel patches around the
+arm being taken into the reference in the frames before. A second fault in the same code: a second reading of a
+slot overwrote the picture kept from before its first take, so the item coming back later was a take as well.
+
+### What changed
+
+- `bree.shelf.diff.ShelfDiff` keeps a second picture, `base`: the shelf as the last event left it
+  (`DiffConfig.restore`, on). A still patch whose changed pixels look like `base` again is nothing. The picture
+  "before" a take is cut from `base`, not from the reference. The pictures kept per slot are a list, newest
+  first, so a put can undo an older take and names every reading it undoes. No new threshold: the test is the
+  existing `put_match`.
+- `bree.ledger.ledger.Ledger.stocked` (planogram products per fixture; given by `run_ledger(...,
+  misread_where_stocked=True)`, on in the store pipeline through `bree.shelf.store.MISREAD_WHERE_STOCKED`): the
+  discount "a paid item nobody saw them take is this unpaid pick under another name" applies only if the paid
+  product is stocked on the fixture the pick was read at. A chocolate bar picked at the counter display is not a
+  painkiller from an aisle. No number in it; the planogram is used as nominal input.
+- Three tests: two in `tests/test_shelf_store.py`, one in `tests/test_ledger.py`.
+- `scripts/bench/shelf_again.py` takes a slice (`0/2`, `1/2`) so two processes can share a split.
+
+### Before and after, raw readings (the shelf pass run again on all 20 clips, `out/bench/r6b/dev2`)
+
+| take readings at | round 5 | round 6 |
+|---|---|---|
+| a true take | 277 | 277 |
+| a true put | 47 | 46 |
+| a touch | 14 | 14 |
+| nothing, taken back later by the same camera | 223 | 225 |
+| nothing, never taken back | 164 | 73 |
+
+### DEV2 scorecard (`results/bench_dev2.md`, `results/bench_dev2_drop.md`)
+
+| SIMULATED, 20 clips | round 5 | clean picture only | round 6 (both) | goal |
+|---|---|---|---|---|
+| Thefts flagged, alert or review | 35 of 55 (0.636) | 32 of 55 | 36 of 55 (0.655) [0.50 to 0.80] | 0.90 |
+| Thefts at alert tier | 8 of 55 (0.145) | 8 | 8 of 55 (0.145) [0.04 to 0.26] | 0.50 |
+| Alert precision | 6 of 6 | 6 of 6 | 6 of 6 | 0.90 |
+| Honest shoppers reviewed | 11 of 76 (0.145) | 7 of 76 | 8 of 76 (0.105) [0.04 to 0.18] | 0.05 |
+| Stolen items listed as unpaid on a record | 29 of 55 | | 30 of 55 | |
+| Staff flagged (of them alert tier) | 3 of 7 (0) | | 3 of 7 (0) | |
+| Picks found | 206 of 230 (0.896) | 203 | 203 of 230 (0.883) [0.84 to 0.92] | 0.95 |
+| Pick precision | 0.776 of 272 | 0.803 of 259 | 0.803 of 259 [0.76 to 0.85] | |
+| Right slot, right SKU, right shopper | 0.641, 0.733, 0.772 | | 0.655, 0.744, 0.773 | 0.92, 0.90 |
+| Put-back recall, precision | 20 of 34 (0.588), 0.519 of 54 | | 22 of 34 (0.647), 0.508 of 59 | 0.80, 0.75 |
+| Put-backs into another slot found | 8 of 15 | | 9 of 15 | |
+| Identities per person; on two people | 1.417; 77 of 175 | | 1.417; 77 of 175 | 1.2; 5 percent |
+| 20 percent of item cameras removed: thefts flagged; honest reviewed | 30 of 55 (9.1 points); 8 of 76 | | 30 of 55 (10.9 points); 8 of 76; 6 at alert tier, 4 of 4 alerts on thieves | at most 10 points |
+
+The middle column is the same run joined with the ledger rule off (`scripts/bench/whatif.py r6pic_only --ledger
+'{"misread_where_stocked": false}'`). The ledger rule alone on the round 5 shelf events gives 36 of 55 and 11 of 76.
+
+What the clean picture does to the headline, case by case: three flagged thefts were flagged through a take that
+never happened. 11005 P003: the "take" of 10W-30 oil at 45.0 s was a small patch by a price label, covered for a
+moment, 0.8 m from the slot the thief took from; the camera now reads that place going back at 49.0 s and the join returns the pick.
+The real take is not read by any camera: the box behind the taken one looks the same. 11006 P008: a false take of
+a cable had lifted a record with the real stolen item over the review bar. Without the false picks these records
+held one unpaid item each, halved by "a paid item did not match the basket". The second change takes that discount
+off where it cannot be true, and all three are flagged again on real evidence, plus 11007 P007.
+Honest shoppers no longer reviewed: 11004 P002, 11009 P006, 11017 P001, 11019 P005. New: 11019 P004.
+
+### Regression sets
+
+- Old DEV, shelf pass run again (`out/bench/r6b/dev`): 16 of 20 thefts flagged (17 before), 2 of 22 honest
+  shoppers reviewed (2), pick precision 0.958 of 71 (0.944 of 72), picks found 0.971, right slot 0.868, right SKU
+  0.926, all as before. The theft no longer flagged (7005 P005) had been flagged with a false second pick on the
+  record. This run is also the first on old DEV with the detector looks stored, so the concealment cue has data
+  there: 4 stolen items at alert tier, 3 alerts, all on thieves.
+- TRAIN-range clips, ledger rule only on their stored events: 16 of 19 and 2 of 36, unchanged. Their shelf pass
+  was not run again.
+- Ledger rule alone on the old DEV events of round 5: 17 of 20 and 3 of 22 (one more honest shopper, 7005 P004);
+  with the new shelf events that review is gone.
+
+### Measured and not kept
+
+- **A take undone by a put that was given to somebody else, or undone as a second take, makes no PICK and no
+  PUT_BACK** (they cancel in the ledger; 17 of 54 PUT_BACK events on DEV2, 2 at a true put-back). Pick precision
+  0.776 to 0.800 and put-back precision 0.519 to 0.595, but picks found 0.896 to 0.865 and put-backs found 0.588
+  to 0.471, with the same 35 and 11. Two goal lines worse for one better: reverted.
+- **The "under another name" discount off altogether** (10 clips, measurement only): thefts flagged 16 to 24 of
+  31, honest shoppers reviewed 3 to 6 of 38. The where-stocked condition gets 4 of those thefts on the first 12
+  clips for no honest shopper, so the blunt version was not taken.
+- **Hand-only events** (`scripts/bench/study/r6_handonly.py`, tracks rebuilt from the stored detector looks): a
+  product seen in a hand, starting at a slot of that product and moving away, with no shelf change. They would
+  reach 28 of the 44 picks the round 5 funnel lost at "hand or item detected" and 23 of the 54 lost at "right
+  slot", but 378 of 482 such takes match nothing (185 of 275 with six or more sightings): a shopper carrying a
+  product past its own shelf.
+  Not switched on. This is the size of the prize for whoever can gate it.
+
+### What is left, in order
+
+1. **Takes no camera reads (pipeline, not the simulator):** 45 of 230 picks are lost at "hand or item detected"
+   and 50 at "right slot". The item behind the taken one fills the same pixels, so the picture does not change
+   (11005 P003, black oil box in front of a black oil box). The held-item track sees most of them (51 picks) and
+   is too noisy alone. The next gate to try, from the patent build order: a hand-only take counts only if the
+   hand crossed the shelf front at that slot and the person did not already carry that product.
+2. **Thefts the ledger holds and drops:** of the 19 unflagged stolen items (`r5_missed.py r6final`), 8 have a
+   PICK with the right product, slot and shopper; 5 of those were picked at the counter display while standing
+   at the register. The records read to the end: five close at 0.15 to 0.30 after "crowded pick", "at the
+   register, no receipt" or "a paid item did not match" (11003, 11011, 11016, 11019, 11020), one as all paid on
+   a receipt that was another person's (11013 P006). These are the identity and crowd discounts; see the
+   simulator limit below.
+3. **SIMULATOR LIMIT, unchanged, fourth round:** 77 of 175 identities cover two people, and round 3 counted 94 of
+   159 identity changes starting from two simulated people within 0.3 m of each other (63 at the pay point).
+   Generator 2 needs personal space and a queue; DEV2 then has to be rendered again.
+4. Put-backs (0.647 and 0.508), the alert tier (0.145), right slot (0.655): moved a little or not at all.
+
+Tests: full suite 442 passed, 1 skipped, 0 failed (counted from the progress lines of
+`out/bench/r6/tests_full.log`); `scripts/bench/test_bench.py` passes. Logs: `out/bench/r6/`. The round 5 shelf
+events of DEV2 are kept in `out/bench/r5shelf/`.
+
 ## 2026-10-07: round 5 on DEV2 (SIMULATED): the ledger and the shelf evidence it is given. Kept: receipts are given out together. No goal line moved
 
 **Result.** The goal is not met and no goal line moved. Kept: in the store pipeline, register receipts are given out

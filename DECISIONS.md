@@ -1105,3 +1105,47 @@ SIMULATED data only. Numbers are in REPORT.md, round 5 on DEV2.
 - **No checkpoint seeds were rendered or looked at. No TRAIN data was rendered. Nothing was fitted.**
 - Study scripts of this round: `scripts/bench/study/r5_missed.py`, `r5_unpaid.py`, `r5_pickfeat.py`, `r5_puts.py`,
   `r5_dir.py` (they read truth, for scoring only).
+
+## Improvement round 6 on DEV2 (2026-10-07)
+
+All SIMULATED. Numbers and files: REPORT.md, "round 6 on DEV2".
+
+- **Gap chosen: false shelf events at the source, not one more ledger rule.** Rounds 2 to 5 each ended with a ledger
+  rule that trades thieves for honest shoppers. The raw take readings of the item cameras had not been counted:
+  277 at a true take against 387 at nothing, 164 of those never taken back.
+- **A clean shelf picture beside the reference (`DiffConfig.restore`, on), kept.** It removes 91 of the 164 false
+  readings that nothing undid and no reading at a true take (277 before and after). It uses the existing
+  `put_match` threshold and nothing fitted. To overrule: `DiffConfig(restore=False)`.
+- **Kept although it lowers "thefts flagged" on its own (35 to 32 of 55).** The three thefts it loses were flagged
+  through takes that did not happen (checked in frames for 11005 P003, in the ledger log for 11006 P008). A flag
+  that rests on a false event is not a detection, and the same false events review honest shoppers (11 to 7 of 76).
+- **The "under another name" discount applies only where the paid product is stocked
+  (`bree.shelf.store.MISREAD_WHERE_STOCKED`, on), kept.** With cleaner picks a record often holds one unpaid item,
+  and the old rule halved it whenever the receipt held anything unseen. Where-stocked is a fact of the planogram,
+  not a number. Together: 36 of 55 and 8 of 76. Alone on the round 5 events: 36 of 55 and 11 of 76; on old DEV
+  alone it reviews one more honest shopper (3 of 22), with the new shelf events it does not (2 of 22).
+  To overrule: set it to False.
+- **It is off in `run_ledger` by default and on in the store pipeline**, like `JOINT_RECEIPTS`: the per-camera
+  engine and `floor_bench` also call `run_ledger`, and it was not measured there.
+- **The fixture is the unit, not a distance.** A distance would be a number to fit (round 5: of 55 misnamed
+  picks the true product is within 0.4 m in 11). Fixture is coarse (a gondola stocks most products), so the rule
+  mostly frees counter and cooler picks. That is where 5 of the 8 well-read unflagged thefts are.
+- **Old DEV went from 17 to 16 of 20 thefts flagged and that is accepted.** Same cause (7005 P005 was flagged
+  with a false second pick). Honest shoppers reviewed stay 2 of 22, pick precision 0.944 to 0.958.
+- **The camera-drop line is now missed by one theft (10.9 points against 10).** The stressed count is 30 of 55 as
+  in round 5; the plain count rose from 35 to 36. Reported as not met, not argued away.
+- **Not kept: quiet undo** (no PICK and no PUT_BACK for a take undone by somebody else's put). It bought
+  precision with recall on two goal lines (picks found 0.896 to 0.865, put-backs found 0.588 to 0.471). Reverted
+  in git, no switch left.
+- **Not built: hand-only takes.** 378 of 482 would match nothing. Counted from stored detector looks
+  (`r6_handonly.py`) so the next round can design the gate before running a shelf pass.
+- **The stored shelf events of DEV2 were replaced in place** (`out/bench/dev2`, `out/bench/dev2_drop`,
+  `out/bench/r6/install.sh`); the round 5 ones are in `out/bench/r5shelf/`. Old DEV's stored run in
+  `out/bench/dev` was not replaced; its new shelf pass is in `out/bench/r6b/dev`.
+- **The shelf pass took 7 to 25 minutes a clip this round** (2 minutes in round 2) with the laptop busy; two
+  processes of three workers gave about twice the throughput of one.
+- **The generator was not changed, a fourth time**, for the same reason. This round shows there was pipeline work
+  left that did not depend on it.
+- **No checkpoint seeds were rendered or looked at. No TRAIN data was rendered. Nothing was fitted.**
+- Study scripts of this round: `scripts/bench/study/r6_raw.py`, `r6_putev.py`, `r6_handonly.py`, `r6_sub.py`
+  (they read truth, for scoring only).

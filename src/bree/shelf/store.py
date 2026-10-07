@@ -30,9 +30,11 @@ SKU_WEIGHTS = "sim_sku_hands_v3"      # items + the hand class; better than sim_
 POS_LAG_S = (1.5, 4.5)
 # The concealment cue of the item cameras (bree.concealment.cue) and its tier rule (bree.concealment.tier). The shelf
 # pass always keeps the detector's looks (<out>/pipeline/conceal), so either can be switched at rejoin without reading
-# video again. REPORT.md, round 1 of 2026-10-06, has the dev2 numbers behind these defaults.
-CONCEAL = False
-CONCEAL_TIER = False
+# video again. On since round 4 on dev2 (REPORT.md, 2026-10-07): with ConcealConfig.own_product a take only scores when its own
+# product was seen in the hand, so a put read as a take (staff restocking) no longer gets a cue from shelf stock.
+# ponytail: staff who carry product off unpaid are not told from shoppers; enrol the staff look (uniform, roster) before a real store.
+CONCEAL = True
+CONCEAL_TIER = True
 ARRIVALS = True        # bree.shelf.events.arrivals: a product that newly stands in a slot is a put, not a take
 
 
@@ -145,8 +147,11 @@ def rejoin(clip: Path, out: Path, review: bool = True, floor=None, assoc=None, j
     if conceal and (pipe / "conceal").exists():
         from bree.concealment.cue import conceal_cues, load_looks
         who = [a.person_id for a in associate(acts, tracker.people(), layout, cams=cams, cfg=assoc)]
-        cues, scores = conceal_cues(load_looks(pipe / "conceal"), load_calibration(clip), tracker.people(), acts, who, layout, fps)
+        takes: list = []
+        from bree.concealment.cue import ConcealConfig
+        cues, scores = conceal_cues(load_looks(pipe / "conceal"), load_calibration(clip), tracker.people(), acts, who, layout, fps, ConcealConfig(**conceal) if isinstance(conceal, dict) else None, takes_out=takes)
         _dump(pipe / "conceal_cues.jsonl", cues)
+        _dump(pipe / "conceal_takes.jsonl", takes)
         (pipe / "conceal_scores.json").write_text(json.dumps(scores, indent=1))
     events, assocs = store_events(acts, tracker.people(), layout, cams=cams, assoc_cfg=assoc, conceal=cues, **(join or {}))
     alerts, book = run_ledger(events, load_payments(clip / "register.jsonl"), layout, **{"pos_lag_s": POS_LAG_S, **(ledger or {})})

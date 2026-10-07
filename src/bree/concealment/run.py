@@ -29,7 +29,10 @@ def context(clip: Path, out: Path, floor=None, assoc=None, reach: dict | None = 
     calib = load_calibration(clip)
     cams = {c: v for c, v in calib.items() if c in meta["cameras"] and kind[c] in PEOPLE_KINDS}
     tracker, _ = track_people(cams, layout, {c: _jsonl(pipe / f"people_{c}.jsonl") for c in cams}, fps, floor)
-    acts = fuse_views(_jsonl(pipe / "shelf_events.jsonl"), layout)
+    from bree.shelf import store
+    from bree.shelf.events import arrivals
+    shelf = _jsonl(pipe / "shelf_events.jsonl")
+    acts = fuse_views(arrivals(shelf, layout) if store.ARRIVALS else shelf, layout)      # as rejoin does
     for _ in range(3):
         n = len(acts)
         acts = one_act_per_reach(acts, [a.person_id for a in associate(acts, tracker.people(), layout, cams=cams, cfg=assoc)], **(reach or {}))

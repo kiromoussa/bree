@@ -60,7 +60,7 @@ if __name__ == "__main__":
     for k in ("join", "reach", "assoc", "ledger", "floor", "arrive"):
         ap.add_argument(f"--{k}", type=json.loads)
     ap.add_argument("--src", help="folder of the finished runs (default out/bench/<split>)")
-    ap.add_argument("--conceal", action="store_true", default=None, help="the concealment cue on (bree.shelf.store.CONCEAL)")
+    ap.add_argument("--conceal", nargs="?", const=True, default=None, type=json.loads, help="the concealment cue on (bree.shelf.store.CONCEAL), or the settings of bree.concealment.cue.ConcealConfig as JSON")
     ap.add_argument("--conceal-tier", action="store_true", default=None, help="and its tier rule (bree.concealment.tier)")
     a = ap.parse_args()
     if "test" in a.splits:

@@ -68,6 +68,8 @@ class ConcealConfig:
     sweep_m: float = 1.5         # ... and distance
     sweep_score: float = 0.3     # what a sweep adds to the shopper's score
     bypass_score: float = 0.15   # what leaving without entering the register zone adds, for a shopper with a take
+    past_next: bool = False      # with own_product: the window of a take runs past their next take of another product (sightings are told apart by name)
+    own_product: bool = True     # the item of a take is a sighting that names its product (as read by any camera, or planned for a candidate slot). A moment with only another product seen on them is no evidence either way: shelf stock past the person, or the item under another name. False: any held item is the item (on dev2, 1096 of 1171 sightings on a thief after the hide named another product)
 
 
 @dataclass
@@ -95,6 +97,7 @@ class Take:
     feats: dict = field(default_factory=dict)
     where: str = ""              # "shelf" (a put of theirs) or "not_seen" (no item seen in the hand): never scored
     p: float = 0.0
+    sight: list = field(default_factory=list)     # the item sightings of the window (t, product, camera, confidence, height, distance), for study scripts
 
 
 def load_looks(folder: Path) -> dict[str, list[dict]]:
@@ -199,39 +202,45 @@ def _to_line(cam, u: float, v: float, X) -> float:
     return float(np.linalg.norm(w - (w @ d) * d))
 
 
-def takes_of(people: list, held: dict, hands: dict, acts: list[dict], who: list, register_xz, cfg: ConcealConfig, cams: dict | None = None) -> list[Take]:
+def takes_of(people: list, held: dict, hands: dict, acts: list[dict], who: list, register_xz, cfg: ConcealConfig, cams: dict | None = None, names: list | None = None) -> list[Take]:
+    """names[k]: the products act k may be (bree.concealment.cue.analyse), used when cfg.own_product."""
     out = []
     for p in people:
-        mine = sorted(((float(a["t"]), a.get("sku_id"), a["kind"], a.get("point_3d")) for a, w in zip(acts, who) if w == p.id), key=lambda x: x[0])
-        from_ = [x for _, _, k, x in mine if k == "take"]
+        mine = sorted(((float(a["t"]), a.get("sku_id"), a["kind"], a.get("point_3d"), (names[k] if names else None) or {a.get("sku_id")}) for k, (a, w) in enumerate(zip(acts, who)) if w == p.id), key=lambda x: x[0])
+        from_ = [x for _, _, k, x, _ in mine if k == "take"]
+        may_be = [n for _, _, k, _, n in mine if k == "take"]
         mine = [m[:3] for m in mine]
         ts = [(t, sku) for t, sku, k in mine if k == "take"]
         puts = [(t, sku) for t, sku, k in mine if k == "put"]
         for i, (tk, sku) in enumerate(ts):
             t_reg = next((t for t, x, z in p.path if t > tk and register_xz is not None and math.hypot(x - register_xz[0], z - register_xz[1]) <= cfg.register_m), None)
-            ends = [(max(ts[i + 1][0] - cfg.before_next_s, tk), "next_take")] if i + 1 < len(ts) else []      # the reach for the next item is not in the window
+            # the reach for the next item is not in the window. past_next: only the next take that may be the same product ends it
+            nxt = next((j for j in range(i + 1, len(ts)) if not (cfg.own_product and cfg.past_next) or may_be[j] & may_be[i]), None)
+            ends = [(max(ts[nxt][0] - cfg.before_next_s, tk), "next_take")] if nxt is not None else []
             ends += [(t_reg, "register")] if t_reg is not None else []
             stop, why = min(ends + [(p.path[-1][0], "track_end")])
             # a sighting named as another product this person had already taken belongs to that take; any other one to this take
-            H = [s for s in held.get(p.id, []) if tk + cfg.lead_s < s.t < stop and not any(x == s.sku != sku and t < s.t for j, (t, x) in enumerate(ts) if j != i)]
+            H = [s for s in held.get(p.id, []) if tk + cfg.lead_s < s.t < stop and (s.sku in may_be[i] if cfg.own_product else not any(x == s.sku != sku and t < s.t for j, (t, x) in enumerate(ts) if j != i))]
             # moments (detector looks) in which a camera saw a hand of theirs or an item on them, and whether an item was seen.
             # One false sighting must not hide a concealment and one missed sighting must not make one, so the split is
             # the moment after which "hand seen, no item" outweighs "item seen" the most (a CUSUM change point).
             G = [s for s in hands.get(p.id, []) if tk + cfg.lead_s < s.t < stop]
             seen_at = {s.t for s in H}
+            # own_product: a moment with some other product seen on them says nothing (shelf stock past the person, or the item under another name)
+            other_at = {s.t for s in held.get(p.id, []) if tk + cfg.lead_s < s.t < stop} - seen_at if cfg.own_product else set()
             M = sorted(seen_at | {s.t for s in G})
             n_in_cam: dict = {}
             for s in G:
                 n_in_cam[s.t, s.cam] = n_in_cam.get((s.t, s.cam), 0) + 1
             both = {t for (t, _), k in n_in_cam.items() if k >= 2}
-            gain = [(sum((cfg.two_hand_w if t in both else 1.0) if t not in seen_at else -cfg.seen_cost for t in M[j:]), j) for j in range(len(M) + 1)]
+            gain = [(sum(-cfg.seen_cost if t in seen_at else 0.0 if t in other_at else cfg.two_hand_w if t in both else 1.0 for t in M[j:]), j) for j in range(len(M) + 1)]
             cus, j = max(gain, key=lambda g: (g[0], g[1]))
             before = [s for s in H if s.t < M[j]] if j < len(M) else H
             t_last = before[-1].t if before else tk
             after = M[j:]
             tail = before[-3:]
-            f = {"cusum": float(cus), "seen_before": len({s.t for s in before}), "seen_after": sum(t in seen_at for t in after), "empty_bins": sum(t not in seen_at for t in after),
-                 "empty_cams": len({s.cam for s in G if s.t > t_last and s.t not in seen_at}), "t_last": t_last, "tail_s": stop - t_last,
+            f = {"cusum": float(cus), "seen_before": len({s.t for s in before}), "seen_after": sum(t in seen_at for t in after), "empty_bins": sum(t not in seen_at and t not in other_at for t in after),
+                 "empty_cams": len({s.cam for s in G if s.t > t_last and s.t not in seen_at and s.t not in other_at}), "t_last": t_last, "tail_s": stop - t_last,
                  "y_last": float(np.mean([s.y for s in tail])) if tail else 1.0,
                  "y_drop": (max(s.y for s in before[-8:]) - float(np.mean([s.y for s in tail]))) if tail else 0.0, "last_cam": before[-1].cam if before else None,
                  # how close the last sightings came to the slot the item was taken from (a put back ends there, a pocket does not)
@@ -243,7 +252,7 @@ def takes_of(people: list, held: dict, hands: dict, acts: list[dict], who: list,
                  "shelf_after": _second([s.at_shelf for s in G if t_last - 0.5 <= s.t <= t_last + cfg.back_s and s.at_shelf is not None]) if before else 0.0,
                  "item_after": float(np.mean([max((s.item or 0.0) for s in G if s.t == t) >= 0.5 for t in after if t not in seen_at and any(s.t == t for s in G)] or [0.0])),
                  "hand_back_m": min((_to_line(cams[s.cam], s.u, s.v, from_[i]) for s in G if t_last - 0.5 <= s.t <= t_last + cfg.back_s), default=9.0) if cams and from_[i] is not None and before else 9.0}
-            tk_ = Take(p.id, tk, sku, stop, why, f)
+            tk_ = Take(p.id, tk, sku, stop, why, f, sight=[(s.t, s.sku, s.cam, round(s.conf, 2), round(s.y, 2), round(s.off, 2)) for s in H])
             # the item went back to the shelf: a put of theirs once it was last seen, or a put of this product once the hand
             # had time to come away from the shelf and go back. Or it was never seen in the hand at all.
             tk_.where = ("shelf" if f["back_m"] <= cfg.back_m or any((max(tk, t_last - cfg.put_before_s) < t or (x == sku and t >= tk + cfg.put_after_take_s)) and t <= stop + cfg.put_grace_s for t, x in puts)
@@ -291,14 +300,17 @@ def analyse(looks: dict[str, list[dict]], cams: dict, people: list, acts: list[d
     people = [p for p in people if not getattr(p, "staff", False) and p.path]
     held, hands = sightings(looks, cams, people, fps, cfg, layout)
     reg = (layout.get("poi") or {}).get("register")
-    out = takes_of(people, held, hands, acts, who, (reg[0], reg[2]) if reg else None, cfg, cams)
+    planned = {x["id"]: x.get("skuId") for x in layout.get("slots", [])}
+    # what a take may be: the product it was read as, by any camera, and what is planned for its candidate slots
+    names = [{a.get("sku_id"), *(r[1] for r in (a.get("read_as") or {}).values()), *(planned.get(sid) for sid, _ in a.get("slots") or [])} - {None} for a in acts]
+    out = takes_of(people, held, hands, acts, who, (reg[0], reg[2]) if reg else None, cfg, cams, names)
     for t in out:
         t.p = 0.0 if t.where else score_take(t.feats, model, cfg)
     return out
 
 
 def conceal_cues(looks: dict[str, list[dict]], cams: dict, people: list, acts: list[dict], who: list, layout: dict, fps: float,
-                 cfg: ConcealConfig | None = None, model: dict | None | str = "default") -> tuple[list[dict], dict[int, dict]]:
+                 cfg: ConcealConfig | None = None, model: dict | None | str = "default", takes_out: list | None = None) -> tuple[list[dict], dict[int, dict]]:
     """-> (cues for bree.events.shelf.store_events(conceal=...), per-person concealment score).
 
     looks: bree.concealment.cue.load_looks(folder). cams: {camera id: bree.calib.camera.Camera} of the item cameras.
@@ -306,6 +318,8 @@ def conceal_cues(looks: dict[str, list[dict]], cams: dict, people: list, acts: l
     cfg = cfg or ConcealConfig()
     model = load_model() if model == "default" else model
     takes = analyse(looks, cams, people, acts, who, layout, fps, cfg, model)
+    if takes_out is not None:      # every take with its features, for study scripts
+        takes_out += [{"person_id": t.person_id, "t": t.t, "sku": t.sku, "stop": t.stop, "stop_why": t.stop_why, "where": t.where, "p": round(t.p, 3), **t.feats, "sight": t.sight} for t in takes]
     sw = sweeps(acts, who, cfg)
     by = {p.id: p for p in people}
     score: dict[int, dict] = {}

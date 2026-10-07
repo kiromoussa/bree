@@ -165,3 +165,20 @@ def test_tier_rule_raises_only_unpaid_concealed_and_sure_of_identity():
     assert retier([], high) == [] and retier([_record(unpaid_items=[])], high)[0]["tier"] == "review"     # never makes a record: no unpaid item, no alert
     rec = _record()
     assert retier([rec], None)[0]["tier"] == "alert" and rec["tier"] == "review"                          # no scores given: the mark alone; input unchanged
+
+
+def test_another_product_seen_on_them_says_nothing():
+    """Shelf stock seen past the person (another product) after the hide: with own_product it neither hides the
+    concealment nor counts as "no item"; without it every such look is the item still in the hand."""
+    cam = camera()
+    steps = [(t, [(0.2, 1.0, 0.0, "soda" if t <= 5.0 else "chips")] if t <= 5.0 or int(round(t * 5)) % 2 else [], [(0.2, 0.95, 0.0)]) for t in np.arange(2.4, 14.0, 0.2)]
+    looks = looks_for(cam, steps)
+    assert len(conceal_cues(looks, {"CAM": cam}, [stand(1)], [take()], [1], LAYOUT, FPS, ConcealConfig(own_product=True), model=None)[0]) == 1
+    assert conceal_cues(looks, {"CAM": cam}, [stand(1)], [take()], [1], LAYOUT, FPS, ConcealConfig(own_product=False), model=None)[0] == []
+
+
+def test_window_runs_past_a_take_of_another_product_when_asked():
+    cam, looks = scene(item_until=5.0)
+    acts = [take(), take(t=6.0, sku="chips")]
+    assert conceal_cues(looks, {"CAM": cam}, [stand(1)], acts, [1, 1], LAYOUT, FPS, ConcealConfig(past_next=False), model=None)[0] == []      # 4.5 s window: too few moments
+    assert [c["sku_id"] for c in conceal_cues(looks, {"CAM": cam}, [stand(1)], acts, [1, 1], LAYOUT, FPS, ConcealConfig(past_next=True), model=None)[0]] == ["soda"]

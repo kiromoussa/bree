@@ -150,15 +150,20 @@ def test_payment_clears_least_suspicious_item_first():
 # ------------------------------------------------------ payment attribution
 
 def test_pos_payment_before_visit_is_recorded_is_held_then_matched():
-    L = ledger()
-    L.on_event(enter(0, 1))
-    L.on_event(pick(5, 1, "soda"))
-    L.on_payment(pos(22, "COKE"))                 # arrives while nobody's visit is known yet
-    assert len(L.unassigned_payments) == 1
-    for e in visit(20, 30, 1):
-        L.on_event(e)
-    assert L.unassigned_payments == []
-    assert [li.category for li in L.people[1].paid] == ["soda"]
+    for joint in (False, True):
+        L = ledger(joint_receipts=joint)
+        L.on_event(enter(0, 1))
+        L.on_event(pick(5, 1, "soda"))
+        L.on_payment(pos(22, "COKE"))                 # arrives while nobody's visit is known yet
+        assert len(L.unassigned_payments) == 1
+        for e in visit(20, 30, 1):
+            L.on_event(e)
+        if joint:                                     # given out when the payer is reconciled, not on arrival
+            assert len(L.unassigned_payments) == 1
+            L.on_event(leave(35, 1))
+            assert L.finalize() == []
+        assert L.unassigned_payments == []
+        assert [li.category for li in L.people[1].paid] == ["soda"]
 
 
 def test_queue_payment_goes_to_person_at_the_counter_not_person_who_just_left():
@@ -509,12 +514,39 @@ def test_receipt_that_prints_late_goes_to_who_was_served_not_to_the_next_in_line
 
 
 def test_a_receipt_cannot_pay_for_an_item_taken_after_it_printed():
-    lg = ledger()
-    for e in [enter(0, 1), enter(0, 2), pick(3, 1, "candy"), *visit(8, 12, 1), *visit(8, 20, 2)]:
-        lg.on_event(e)
-    lg.on_payment(Payment(t=11.0, terminal="pos_1", items=[LineItem(sku="SNICKERS")]))
-    lg.on_event(pick(14, 2, "candy"))                 # person 2 takes the same product from the counter afterwards
-    assert [li.category for li in lg.people[1].paid] == ["candy"] and not lg.people[2].paid
+    for joint in (False, True):
+        lg = ledger(joint_receipts=joint)
+        for e in [enter(0, 1), enter(20, 2), pick(3, 1, "candy"), *visit(8, 12, 1), *visit(8, 20, 2)]:
+            lg.on_event(e)
+        lg.on_payment(Payment(t=11.0, terminal="pos_1", items=[LineItem(sku="SNICKERS")]))
+        lg.on_event(pick(14, 2, "candy"))                 # person 2 takes the same product from the counter afterwards
+        for e in [leave(22, 1), leave(23, 2)]:
+            lg.on_event(e)
+        lg.finalize()
+        assert [li.category for li in lg.people[1].paid] == ["candy"] and not lg.people[2].paid
+
+
+def test_receipts_are_given_out_together_where_their_items_are():
+    """Two people at the counter at once (or a track swap there): receipt A is stamped while only person 2 stands
+    there by the tracks, and lists what person 1 took. One at a time by who stood there, person 2 gets it and person
+    1 is left unpaid; given out together, each receipt goes where its items are."""
+    ev = [enter(0, 1), enter(10, 2), pick(5, 1, "soda"), pick(6, 1, "candy"), pick(12, 2, "chips"),
+          *visit(20, 24, 1), *visit(21, 34, 2), leave(36, 1), leave(38, 2)]
+    pays = [pos(26, "COKE", "SNICKERS"), pos(30, "CHIPS")]
+    old, new = ledger(), ledger(joint_receipts=True)
+    old.replay(ev, pays), new.replay(ev, pays)
+    assert len(old.people[1].unpaid) == 2 and not new.people[1].unpaid and not new.people[2].unpaid
+    assert sorted(li.category for li in new.people[1].paid) == ["candy", "soda"] and [li.category for li in new.people[2].paid] == ["chips"]
+
+
+def test_joint_receipts_do_not_hand_a_thief_the_next_customers_receipt():
+    """Person 1 takes a soda and pays for nothing; person 2, next at the counter, buys a soda and a candy bar. The
+    one receipt goes to person 2, whose basket it matches whole."""
+    ev = [enter(0, 1), enter(10, 2), pick(5, 1, "soda"), pick(12, 2, "soda"), pick(13, 2, "candy"),
+          *visit(20, 24, 1), *visit(24, 30, 2), leave(27, 1), leave(34, 2)]
+    lg = ledger(joint_receipts=True)
+    lg.replay(ev, [pos(26, "COKE", "SNICKERS")])
+    assert [it.category for it in lg.people[1].unpaid] == ["soda"] and not lg.people[1].paid and not lg.people[2].unpaid
 
 
 def test_party_from_the_tracker_replaces_the_entry_window():

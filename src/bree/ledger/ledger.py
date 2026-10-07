@@ -89,6 +89,13 @@ class LedgerConfig:
     # receipt prints after the customer has turned away, and the next one in line is often already at the counter.
     # A property of the store's POS feed, measured once per store. (0, 0): the receipt is stamped while they stand there.
     pos_lag_s: tuple[float, float] = (0.0, 0.0)
+    # Register receipts are given out together, when somebody who could be the payer is reconciled, not one at a time
+    # as they arrive: among everyone at the counter within `register_slack_s` of when a receipt's payer was served,
+    # the receipts go where most of their items are found in the baskets, each receipt once (`_settle_receipts`).
+    # Two people at the counter at once, or a track swap there, make "who stood there at that second" a guess.
+    # Off here: a receipt is then credited as it arrives (the per-camera engine and the dashboard read `paid` live).
+    # The store pipeline (bree.shelf.store.JOINT_RECEIPTS) switches it on.
+    joint_receipts: bool = False
     payment_expiry_s: float = 300.0  # unmatched payments are dropped (and logged) after this
     # A receipt that reaches us after the decision (batched POS export, network lag) can still
     # lower it if it arrives within this long after the exit. 0 = never retract.
@@ -407,6 +414,8 @@ class Ledger:
         #   4. got to the counter first
         # Time before content: baskets come from vision and have wrong and missing items, and a
         # thief's unpaid item must not pull in the receipt of the next customer who bought the same.
+        if self.cfg.joint_receipts:
+            return None          # held until one of the people who could be the payer is reconciled (`_settle_receipts`)
         s = self.cfg.register_slack_s
         lo, hi = pay.t - max(self.cfg.pos_lag_s), pay.t - min(self.cfg.pos_lag_s)     # when the payer was being served
 
@@ -431,6 +440,77 @@ class Ledger:
                 return None
         best[5].n_payments += 1
         return best[4]
+
+    def _settle_receipts(self, party: list[PersonRecord]) -> list[Payment]:
+        """Give out the open register receipts together. A receipt can go to anyone not yet reconciled (or in `party`)
+        who was at that counter within the slack of when its payer was served. Of all ways to hand them out, take the
+        one with the most receipt items found among the unpaid picks of the people they go to; then fewest receipts
+        given on the slack alone, fewest second receipts for one person, closest in time. A receipt that adds no
+        matched item goes by time only when one person could be its payer; otherwise it stays open. Receipts that
+        fall to `party` are credited now. -> the receipts kept for somebody else (not to be claimed by basket match)."""
+        s = self.cfg.register_slack_s
+        opts: list[tuple[Payment, Counter, list[tuple[PersonRecord, float]]]] = []
+        for pay in self.unassigned_payments:
+            zone = self.terminal_zones.get(pay.terminal, pay.terminal)
+            if pay.person_id is not None or self.zone_kinds.get(zone, "register") != "register":
+                continue
+            lo, hi = pay.t - max(self.cfg.pos_lag_s), pay.t - min(self.cfg.pos_lag_s)
+            who = []
+            for q in self._recent(lo - s):
+                if q.reconciled and q not in party:
+                    continue
+                off = min((max(0.0, v.t_start - hi, lo - (float("inf") if v.t_end is None else v.t_end)) for v in q.register_visits if v.zone == zone), default=float("inf"))
+                if off <= s:
+                    who.append((q, off))
+            if who:
+                opts.append((pay, Counter(self.catalog.category_of(li.sku, li.category) for li in pay.items for _ in range(li.qty)), who))
+        if not opts:
+            return []
+        unpaid: dict[tuple[int, float], Counter] = {}
+
+        def matched(give: tuple) -> int:
+            got: dict[int, list[int]] = {}
+            for i, q in enumerate(give):
+                if q is not None:
+                    got.setdefault(q.person_id, []).append(i)
+            n = 0
+            for pid, rs in got.items():
+                t = max(opts[i][0].t for i in rs)
+                if (pid, t) not in unpaid:
+                    unpaid[(pid, t)] = self._receipt_party_unpaid(self.people[pid], t)
+                n += sum((sum((opts[i][1] for i in rs), Counter()) & unpaid[(pid, t)]).values())
+            return n
+
+        def rank(give: tuple):
+            offs = [dict((q.person_id, off) for q, off in opts[i][2])[g.person_id] for i, g in enumerate(give) if g is not None]
+            per = Counter(g.person_id for g in give if g is not None)
+            return (-matched(give), sum(o > 0 for o in offs), sum(n - 1 for n in per.values()), round(sum(offs), 3), [g.person_id if g else -1 for g in give])
+        ways = math.prod(len(w) for _, _, w in opts)
+        if ways <= 20000:
+            best = min(itertools.product(*[[q for q, _ in w] for _, _, w in opts]), key=rank)
+        else:
+            # ponytail: a counter this crowded is handed out one receipt at a time, in time order; split by people in common if a store needs it
+            best = (None,) * len(opts)
+            for i in range(len(opts)):
+                best = min((best[:i] + (q,) + best[i + 1:] for q, _ in opts[i][2]), key=rank)
+        best, total = list(best), matched(tuple(best))
+        for i, (pay, _, who) in enumerate(opts):          # no item of it found on them, and others stood there too: don't guess
+            if len(who) > 1 and matched(tuple(None if k == i else g for k, g in enumerate(best))) == total:
+                best[i] = None
+                total = matched(tuple(best))
+        kept = []
+        for (pay, _, _), q in zip(opts, best):
+            if q is None:
+                continue
+            if q not in party:
+                kept.append(pay)
+                continue
+            self.unassigned_payments.remove(pay)
+            for li in pay.items:
+                for _ in range(li.qty):
+                    q.paid.append(LineItem(sku=li.sku, category=self.catalog.category_of(li.sku, li.category)))
+            q.log.append(f"{pay.t:7.1f}s payment {pay.txn_id or ''} at {pay.terminal}: {[(li.sku or li.category, li.qty) for li in pay.items]}")
+        return kept
 
     def _receipt_party_unpaid(self, p: PersonRecord, before: float = float("inf")) -> Counter:
         """Unpaid picks (by category) of p's party: p + people who came in with p. `before`: only
@@ -499,7 +579,7 @@ class Ledger:
             self.pending.discard(q.person_id)
             q.group = sorted(r.person_id for r in party)
 
-        self._claim_unassigned_receipts(p, party)
+        self._claim_unassigned_receipts(p, party, self._settle_receipts(party) if self.cfg.joint_receipts else [])
 
         # Pool baskets and payments across the party.
         basket = [(q, it) for q in party for it in q.basket]
@@ -542,7 +622,7 @@ class Ledger:
             return []
         return self._score_and_emit(p, party, still_unpaid, paid, surplus)
 
-    def _claim_unassigned_receipts(self, p: PersonRecord, party: list[PersonRecord]) -> None:
+    def _claim_unassigned_receipts(self, p: PersonRecord, party: list[PersonRecord], kept: list[Payment] = ()) -> None:
         """Fallback when time/place attribution failed (register visit not seen, POS clock
         off): a still-unassigned receipt from while the party was in the store, whose items
         are mostly among the party's unpaid picks, is theirs."""
@@ -554,6 +634,8 @@ class Ledger:
                 Counter(li.category for q in party for li in q.paid)
             best, best_overlap = None, 0
             for pay in self.unassigned_payments:
+                if any(pay is k for k in kept):          # the joint hand-out gave it to somebody still to be reconciled
+                    continue
                 if not (t0 <= pay.t <= t1) or self.zone_kinds.get(self.terminal_zones.get(pay.terminal, ""), "") == "cooler":
                     continue
                 receipt = Counter(self.catalog.category_of(li.sku, li.category) for li in pay.items for _ in range(li.qty))
@@ -561,7 +643,7 @@ class Ledger:
                 if overlap > best_overlap and overlap >= 0.5 * sum(receipt.values()):
                     best, best_overlap = pay, overlap
             if best is None:
-                best = self._receipt_during_visit(party, t0, t1)
+                best = self._receipt_during_visit(party, t0, t1, kept)
                 if best is None:
                     return
             self.unassigned_payments.remove(best)
@@ -572,7 +654,7 @@ class Ledger:
             p.log.append(f"{best.t:7.1f}s receipt {best.txn_id} claimed by basket match "
                          f"(register visit not seen / POS clock off)")
 
-    def _receipt_during_visit(self, party: list[PersonRecord], t0: float, t1: float) -> Payment | None:
+    def _receipt_during_visit(self, party: list[PersonRecord], t0: float, t1: float, kept: list[Payment] = ()) -> Payment | None:
         """Last resort for a party that stood at the register but has no receipt at all:
         an unassigned register receipt printed while they were standing there."""
         if any(q.paid for q in party):
@@ -580,7 +662,7 @@ class Ledger:
         s = self.cfg.register_slack_s
         for pay in self.unassigned_payments:
             zone = self.terminal_zones.get(pay.terminal, pay.terminal)
-            if self.zone_kinds.get(zone, "register") != "register":
+            if self.zone_kinds.get(zone, "register") != "register" or any(pay is k for k in kept):
                 continue
             if any(v.zone == zone and v.contains(pay.t, s) for q in party for v in q.register_visits):
                 return pay
@@ -749,7 +831,7 @@ class Ledger:
         for f in self.flagged:
             if self.now - f.alert.t_exit > self.cfg.late_receipt_window_s:
                 continue
-            self._claim_unassigned_receipts(f.payer, f.party)
+            self._claim_unassigned_receipts(f.payer, f.party, self._settle_receipts(f.party) if self.cfg.joint_receipts else [])
             new = [li for q in f.party for li in q.paid[f.n_paid[q.person_id]:]]
             if not new:
                 continue

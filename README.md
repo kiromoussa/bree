@@ -737,7 +737,9 @@ make bench-smoke     # one clip, 60 frames per camera, writes nothing to results
   `.venv/bin/python -m bree.sim.bench dev2 --stress` writes `results/bench_dev2.md`;
   `--drop-item-cameras 0.2 --stress-only --name drop` (with `out/bench/dev2_drop` linked to `out/bench/dev2`) writes
   `results/bench_dev2_drop.md`. Baseline of the committed pipeline: 33 of 55 thefts flagged, 16 of 76 honest
-  shoppers reviewed, 1.551 identities per person. After round 1 (lens term): 34 of 55, 12 of 76, 1.417.
+  shoppers reviewed, 1.551 identities per person. After round 1 (lens term): 34 of 55, 12 of 76, 1.417. After round 2 (a product
+  that arrives in a slot is a put, `bree.shelf.events.arrivals`): 34 of 55, 10 of 76, put-backs found 20 of 34
+  (was 16), into another slot 8 of 15 (was 4).
 - A put event names the take it undoes (`undoes` against the take's `eids`) and says whether the item was seen going
   into the slot (`item_in`); `bree.events.shelf.confirm_puts` returns takes on that basis.
 

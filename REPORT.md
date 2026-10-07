@@ -12,6 +12,132 @@ intervals. The goal on DEV2: thefts flagged at least 0.90, at alert tier at leas
 0.80 with precision 0.75, identities per shopper at most 1.2, and no more than 10 points of thefts flagged lost with
 20 percent of the item cameras removed.
 
+## 2026-10-06: round 2 on DEV2 (SIMULATED): a product that arrives in a slot is a put, not a take
+
+**Result.** The goal is not met. Kept: the shelf pass now reads the picture after each change with the SKU detector,
+and a product that newly stands in a slot it is not planned for is a put-back of that product. Put-backs found 16 to
+20 of 34, put-backs into another slot 4 to 8 of 15, put-back precision 0.468 to 0.519, honest shoppers reviewed 12
+to 10 of 76, staff flagged 4 to 3 of 7, PICK events 277 to 272 with one more true pick found. Thefts flagged stay at
+34 of 55. Every change is inside its bootstrap interval; the set is small.
+
+### Why put-backs (gap chosen)
+
+Put-backs were at 0.47 recall and 0.47 precision against 0.80 and 0.75, and they are what sends honest shoppers to
+review: 11 of the 12 reviewed honest shoppers in round 1 carry the put-back tag (7 of them a put into another slot),
+and 0 of the 25 honest shoppers with no tag were reviewed. The ledger cannot make up for it. With the review bar at
+0 the ledger holds an unpaid item on 28 honest identities and 38 thief identities, so any change of its discounts
+trades one for the other: `ambiguous_factor` 1.0 gives 36 thefts and 14 honest reviews, `misread_factor` 1.0 gives
+40 and 19, `no_receipt_factor` 1.0 gives 39 and 18, all three 49 and 28 (`scripts/bench/whatif.py --ledger`). The
+unpaid items on honest shoppers in round 1 (47 on 28 identities, truth read for scoring only): 12 paid under the
+right name with the receipt credited to somebody else, 11 false picks, 10 put back with the put not credited, 7
+takes of another person, 6 paid under another name, 1 staff take.
+
+### Root cause
+
+The pixel comparison calls every change of a slot's picture a take unless it restores the picture from before that
+camera's own take, so an item put into a slot it did not come from is read as a take. A put-back into another slot
+therefore cost an honest shopper twice: the put was not credited, and a false pick was added. Staff placing a
+product read the same way. Seen in the frames: dev2 11004, camera G4R-drop-rod-1, 17.1 s: a caramel bar stands in
+front of the acetaminophen slot G4R-S4-25 after the change, and two cameras report "take, relieva_aceta". Of the 34
+shopper put-backs in round 1, 18 were missed: 10 with no reading of any kind at the fixture, 6 with only the reading
+of an arm leaving another slot (3 of them also read as a take at the slot the item went into), 2 read only as a
+take at that slot. Of the 15 into another slot, 4 were found.
+
+### What changed (commit f672c8e)
+
+- `bree.shelf.events.ShelfCamera._after`: when the pixel comparison reports a take, the SKU detector reads the
+  picture at the changed patch once. The reading keeps, for each product standing there: its name, the confidence,
+  whether the detector saw that product at that place in the camera's first frames, and how often it was seen in a
+  hand near the slot in the 3 s before. One detector call on one tile per reading.
+- `bree.shelf.events.arrivals` (at the join, switch `bree.shelf.store.ARRIVALS`, on): a take whose after-picture
+  shows a product that is planned for none of the candidate slots, was not there at the start and was seen in a
+  hand on the way is a put of that product with the item seen going in. Two cues have to agree (picture and hand).
+  Another camera's take of the same slot at that moment goes with it.
+- The product of such a put is the one read from the picture, not the planogram entry of the slot.
+- Arrival puts are their own act in `fuse_views` and `one_act_per_reach`; before that they were merged into the
+  arm-leaves readings next to them and dropped.
+- `confirm_puts`: a product that arrives within reach of the pay point is goods on the counter, not a put-back.
+- `scripts/bench/whatif.py --arrive false` switches the rule off at the join; `scripts/bench/shelf_again.py` runs
+  the shelf pass again on stored person boxes.
+
+The rule has no fitted number: confidence 0.5 and "seen in a hand at least once" were set before the run and not
+tuned. Checked reading by reading on DEV2 (truth for scoring only): of the take readings whose top product is
+foreign, new and held, 14 are puts, 1 is a take (under the 0.5 confidence, not flipped) and 5 are neither (4 goods
+on the counter or a second reading of an item that had just arrived, 1 other). Readings where the product was there
+at the start: 16 puts (staff putting a product into its own slot), 111 takes. So the cue does not separate those,
+and that is where the rest of the staff puts are.
+
+Moved afterwards only to see how much hangs on the two settings (`whatif.py --arrive`, not adopted): confidence 0.3
+or 0.8, or three sightings in a hand for one, leave put-backs at 20 of 34, honest reviews at 10 and thefts at 34
+(precision 0.49 to 0.54). Without the hand cue (0 sightings) thefts flagged fall to 32 of 55: true takes become
+puts. The second cue is what keeps the rule off thieves.
+
+### DEV2 scorecard (`results/bench_dev2.md`, `results/bench_dev2_drop.md`; round 1 numbers from the same shelf events with `--arrive false`)
+
+| SIMULATED, 20 clips | round 1 | round 2 | goal |
+|---|---|---|---|
+| Thefts flagged, alert or review | 34 of 55 (0.618) | 34 of 55 (0.618) [0.45 to 0.76] | 0.90 |
+| Thefts at alert tier | 0 of 55 (cue off) | 0 of 55 (cue off) | 0.50 |
+| Alert precision | no alerts | no alerts | 0.90 |
+| Honest shoppers reviewed | 12 of 76 (0.158) | 10 of 76 (0.132) [0.07 to 0.21] | 0.05 |
+| Staff members flagged | 4 of 7 | 3 of 7 | |
+| Picks found | 205 of 230 (0.891) | 206 of 230 (0.896) [0.86 to 0.93] | 0.95 |
+| Pick precision | 0.758 of 277 | 0.776 of 272 [0.72 to 0.83] | |
+| Right slot, of paired picks | 0.644 | 0.641 [0.58 to 0.70] | 0.92 |
+| Right SKU, nominal planogram | 0.741 | 0.733 [0.68 to 0.79] | 0.90 |
+| Right shopper, of paired picks | 0.776 | 0.772 [0.71 to 0.83] | |
+| Put-back recall | 16 of 34 (0.471) | 20 of 34 (0.588) [0.42 to 0.76] | 0.80 |
+| Put-back precision | 0.468 of 47 | 0.519 of 54 [0.40 to 0.66] | 0.75 |
+| Put-backs into another slot found | 4 of 15 | 8 of 15 | |
+| Identities per person | 1.417 | 1.417 [1.35 to 1.50] | 1.2 |
+| Identities that cover two people | 77 of 175 | 77 of 175 (0.440) | 0.05 of visits |
+| Thefts flagged with 20 percent of item cameras removed | 29 of 55 | 29 of 55 (0.527) [0.36 to 0.68], 9.1 points under plain | at most 10 points under plain |
+| Thefts flagged, four-way stress (cameras, 0.5 degrees of pose noise, receipts 5 s late, 5 percent of the planogram wrong) | 17 of 55 | 17 of 55 (0.309) [0.17 to 0.45] | |
+
+Under the four-way stress (run from pixels again): put-backs found 19 of 34 for 15, put-back precision 0.500 of 58
+for 0.440 of 50, honest shoppers reviewed 11 of 76 for 11, picks found 167 of 230 for 170, staff flagged 2 of 7 for 3.
+
+With the rule off the new shelf pass gives round 1's numbers exactly (34 of 55, 12 of 76, 277 PICK events, 16 of 34
+and 0.468), so the extra detector call changes nothing by itself. Right slot and right SKU move by two paired picks
+each because the pairing changed; neither is a slot or SKU change. With cameras removed: honest shoppers reviewed 8
+of 76, put-backs 18 of 34, precision 0.511 of 45.
+
+Regression sets, joined again from their stored shelf events: old DEV 17 of 20 thefts flagged and 2 of 22 honest
+shoppers reviewed, TRAIN-seed clips 15 of 19 and 2 of 36. Unchanged, and they could not have changed: their stored
+events carry no after-picture reading, so the rule does nothing there. They were not run from pixels again.
+
+Tests: `tests/test_shelf_events.py`, `test_shelf_store.py`, `test_association.py`, `scripts/bench/test_bench.py`
+pass; full suite 434 passed, 1 skipped, 0 failed (counted from the progress lines of `out/bench/r2/tests_full2.log`).
+
+### What is left for put-backs (14 of 34 still missed)
+
+- 9 have no reading of any kind at the fixture: no camera reported the put (4 into another slot, 5 into the same
+  slot). 4 have only the reading of an arm leaving another slot, 1 is still read as a take.
+- The take of those 14: found right 6, found on another person 4, found with the wrong slot 1, not found 3.
+- Precision: of the 21 PUT_BACK events more than 3 s from any true put, 16 undo a take (an arm that had covered a
+  slot went away) and 5 are other.
+- A put-back whose product is not in that shopper's basket is ignored by the ledger: 11 times on DEV2. The take was
+  read under another name (right SKU is 0.733).
+
+### What is left, in order
+
+1. **Receipts credited to the wrong person at the register.** With the review bar at 0, the unpaid items on the 10
+   honest shoppers still reviewed are (24 items): paid under the right name and the receipt not credited 7, false
+   pick 5, put back and not credited 5, paid under another name 3, take of another person 3, staff take 1. The
+   first group is now the largest. In the logs the pattern is two identities marked "may have been swapped" at the
+   counter, the receipt going to the one standing there, and the other left with a basket that matches a receipt
+   word for word (dev2 11009 person 6: receipt SIM0001 lists exactly three of the five unpaid items). The same
+   doubt is behind the "no receipt matched" discount (taking it away flags 5 more thefts and 6 more honest shoppers).
+   Attack: settle the
+   two identities of a possible swap (and a party) as one basket once both have left, instead of one at a time.
+2. **Thefts the ledger holds and drops (10 of the 21 unflagged)**: unchanged from round 1. It needs 1 first; the
+   discounts cannot be relaxed while honest baskets do not close.
+3. **Right slot (0.641)**: of the 73 paired picks with the wrong slot in round 1, 12 are the scorer pairing a pick
+   with another PICK although one at the true slot exists, 21 had a camera reading at the true slot that the fused
+   act did not keep (two true takes of one shopper within 4 s and 1 m merged into one is one cause, dev2 11001
+   P003), 15 had the true slot as the second candidate, 25 were never read at the true slot.
+4. **Staff on the floor** (3 of 7 flagged; blocks the alert tier), **identity** (1.417), **stress**.
+
 ## 2026-10-06: round 1 on DEV2 (SIMULATED): the lens term, the concealment cue wired in, a tracker crash
 
 **Result.** The goal is not met. Kept: the camera model now has the lens term that is in every clip's calibration.

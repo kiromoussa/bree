@@ -965,3 +965,45 @@ SIMULATED data only. Numbers are in REPORT.md, round 1 on DEV2.
   `/Library/Developer/CommandLineTools/usr/bin`, which also has to be first on PATH for the bench to stamp the commit.
 - **Old DEV and TRAIN-seed clips as regression**: scored from their stored events (their clips have no lens term, so
   their shelf pass is unchanged): 17 of 20 and 2 of 22, 15 of 19 and 2 of 36, as before.
+
+## Improvement round 2 on DEV2 (2026-10-06)
+
+SIMULATED data only. Numbers are in REPORT.md, round 2 on DEV2.
+
+- **Gap chosen: put-backs, not the ledger discounts round 1 pointed at.** The discounts were looked at first. With
+  the review bar at 0 the ledger ends with an unpaid item on 28 honest identities and 38 thief identities, and each
+  discount taken away buys thefts with honest reviews at about one for one (36 and 14, 40 and 19, 39 and 18, all
+  three 49 and 28). The ledger is not where the two can be told apart; the baskets of honest shoppers have to close
+  first. 11 of the 12 reviewed honest shoppers had put something back and none of the 25 untagged ones was
+  reviewed, and put-back recall and precision are the goal lines furthest from their bars. To overrule: the what-if
+  lines are in `out/bench/r2/` and can be run again with `scripts/bench/whatif.py --ledger`.
+- **The rule was built on DEV2, not on TRAIN-range clips.** The TRAIN-range clips that are rendered are generator 1
+  and have no put-back into another slot and no staff, so there was nothing to build it on, and rendering
+  generator 2 TRAIN clips would have taken most of the round. DEV2 is the tuning set, so this is allowed, but the
+  first fresh checkpoint is the first honest test of it. To limit fitting, the two numbers in the rule (detector
+  confidence 0.5, seen in a hand at least once) were written before the run and not changed after it.
+- **Two cues have to agree before a take becomes a put**: the product stands on the changed patch and was not there
+  in the camera's first frames, and it was seen in a hand near the slot in the 3 s before. The picture alone would
+  also flip readings where the detector misnames the next item of the row.
+- **"Planned for none of the candidate slots" stays in the rule.** Without it (new and held, but the slot's own
+  product) the same readings are 3 puts, 2 takes and 4 neither on DEV2: no better than a coin. So an item put into
+  a slot of its own product that the camera never saw leave is still read as a take. That is most staff puts (16
+  readings). The slot watch's row position is the place to read it from; not done.
+- **"Was it there at the start" compares the detector with itself, not with the planogram**, so a slot that holds
+  another product than planned (a wrong or old planogram) does not turn its takes into puts.
+- **The decision is made at the join (`arrivals`), the camera only records what it saw (`after`).** The rule can be
+  switched and changed on stored shelf events without reading video again (`whatif.py --arrive`).
+- **The other camera's take goes with the arrival only at the same slot.** A first version took any take within
+  0.45 m and 2.5 s and turned a thief's true take one shelf up into a put (dev2 11004, G4R-S3-26).
+- **Goods on the counter are not put-backs.** A product arriving within reach of the pay point is dropped (10
+  events on DEV2), with the same reach the join already uses for pixel-only takes there.
+- **A put-back whose product is not in the basket is still ignored by the ledger** (11 on DEV2). Taking the most
+  doubtful other item out instead was considered and not done: it would let a thief clear a stolen item by putting
+  something else on a shelf.
+- **Only the shelf pass was run again** (`scripts/bench/shelf_again.py`, person boxes linked from the earlier run).
+  The round 1 runs are kept in `out/bench/dev2_r1`. With the rule off the new shelf events give round 1's numbers
+  exactly, which is the before of this round.
+- **Old DEV and TRAIN-seed clips were joined again from stored events and are unchanged**, but that is not a test
+  of this change: their events have no after-picture reading. A fresh shelf pass on them would be the real
+  regression check (about 35 minutes); not done this round.
+- **Not looked at: checkpoint seeds.** None rendered, none used.

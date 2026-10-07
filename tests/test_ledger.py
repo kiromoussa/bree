@@ -569,3 +569,14 @@ def test_a_paid_item_nobody_saw_taken_explains_one_unpaid_pick():
     assert [a.tier for a in run(pick(7, 1, "chips", conf=1.0))] == ["review"]
     assert [a.tier for a in ledger(misread_factor=1.0).replay(
         [enter(0, 1), pick(5, 1, "candy", conf=1.0), *visit(10, 15, 1), leave(17, 1)], [Payment(t=14.0, terminal="pos_1", items=[LineItem(sku="COKE")])])] == ["review"]
+
+
+def test_a_paid_item_explains_an_unpaid_pick_only_where_that_product_is_stocked():
+    """With the planogram's products per fixture (Ledger.stocked), the soda on the receipt can be the "candy" picked
+    from the shelf that stocks soda, not the candy picked at the counter display, which stocks none."""
+    def run(zone):
+        led = ledger()
+        led.stocked = {"shelf_A": {"candy", "soda"}, "counter": {"candy"}}
+        evs = [enter(0, 1), pick(5, 1, "candy", zone=zone, conf=1.0), *visit(10, 15, 1), leave(17, 1)]
+        return [a.tier for a in led.replay(evs, [Payment(t=14.0, terminal="pos_1", items=[LineItem(sku="COKE")])])]
+    assert run("shelf_A") == [] and run("counter") == ["review"]

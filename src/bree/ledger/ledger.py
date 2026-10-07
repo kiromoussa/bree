@@ -170,6 +170,10 @@ class Ledger:
         self.cfg = config or LedgerConfig()
         self.terminal_zones = terminal_zones or {}   # terminal name -> zone name
         self.zone_kinds = zone_kinds or {}           # zone name -> shelf/cooler/register/exit
+        # zone (fixture) -> products the planogram stocks there. When given, a paid item nobody saw them take stands for
+        # an unpaid pick only if that product is stocked where the pick was read: a pick at the counter display cannot be
+        # a painkiller from an aisle under another name. None: any paid item stands for any pick (as before).
+        self.stocked: dict[str, set[str]] | None = None
         self.people: dict[int, PersonRecord] = {}
         self.unassigned_payments: list[Payment] = []
         self.orphan_payments: list[Payment] = []
@@ -743,7 +747,16 @@ class Ledger:
                                     item.concealed, item.held_at_exit, item.ambiguous_with, round(s, 3)))
         # each paid-but-not-seen item explains one open unpaid pick, the weakest ones first
         open_ = sorted((i for i, (_, it) in enumerate(unpaid_owned) if not it.concealed and not it.held_at_exit), key=lambda i: scores[i])
-        for i in open_[:sum(surplus.values())]:
+        if self.stocked is None:
+            hit = open_[:sum(surplus.values())]
+        else:
+            hit, left = [], list(surplus.elements())
+            for i in open_:
+                cat = next((c for c in left if c is None or c in self.stocked.get(unpaid_owned[i][1].zone, ())), "")
+                if cat != "":
+                    left.remove(cat)
+                    hit.append(i)
+        for i in hit:
             scores[i] *= self.cfg.misread_factor
             items[i].score = round(scores[i], 3)
             reasons.append(f"{items[i].category}: a paid item did not match the basket, this pick may be that item under another name")

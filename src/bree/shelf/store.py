@@ -39,6 +39,9 @@ ARRIVALS = True        # bree.shelf.events.arrivals: a product that newly stands
 # LedgerConfig.joint_receipts: receipts are given out together when a possible payer is reconciled, where most of their
 # items are found in the baskets, not one at a time to whoever stood at the counter. On since round 5 on dev2 (REPORT.md, 2026-10-07).
 JOINT_RECEIPTS = True
+# Ledger.stocked: a paid item nobody saw them take stands for an unpaid pick ("one product under two names") only if the
+# planogram stocks that product on the fixture the pick was read at. On since round 6 on dev2 (REPORT.md, 2026-10-07).
+MISREAD_WHERE_STOCKED = True
 
 
 def _jsonl(p: Path) -> list[dict]:
@@ -157,7 +160,7 @@ def rejoin(clip: Path, out: Path, review: bool = True, floor=None, assoc=None, j
         _dump(pipe / "conceal_takes.jsonl", takes)
         (pipe / "conceal_scores.json").write_text(json.dumps(scores, indent=1))
     events, assocs = store_events(acts, tracker.people(), layout, cams=cams, assoc_cfg=assoc, conceal=cues, **(join or {}))
-    alerts, book = run_ledger(events, load_payments(clip / "register.jsonl"), layout, **{"pos_lag_s": POS_LAG_S, "joint_receipts": JOINT_RECEIPTS, **(ledger or {})})
+    alerts, book = run_ledger(events, load_payments(clip / "register.jsonl"), layout, **{"pos_lag_s": POS_LAG_S, "joint_receipts": JOINT_RECEIPTS, "misread_where_stocked": MISREAD_WHERE_STOCKED, **(ledger or {})})
     write_run(out, events, alerts, boxes, ids, fps)
     if conceal_tier and cues is not None:
         from bree.concealment.cue import ConcealConfig

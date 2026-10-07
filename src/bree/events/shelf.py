@@ -246,12 +246,18 @@ def load_payments(path) -> list[Payment]:
     return out
 
 
-def run_ledger(events: list[Event], payments: list[Payment], layout: dict, **ledger_overrides):
-    """Events + receipts through the existing ledger. Products are matched by exact SKU. -> (alerts, ledger)."""
+def run_ledger(events: list[Event], payments: list[Payment], layout: dict, misread_where_stocked: bool = False, **ledger_overrides):
+    """Events + receipts through the existing ledger. Products are matched by exact SKU. -> (alerts, ledger).
+    misread_where_stocked: give the ledger the planogram's products per fixture (Ledger.stocked)."""
     from bree.ledger.ledger import Ledger, LedgerConfig
     skus = {s["id"]: s["id"] for s in layout.get("skus", [])} | {s["skuId"]: s["skuId"] for s in layout.get("slots", []) if s.get("skuId")}
     ledger = Ledger(Catalog(skus), LedgerConfig(**ledger_overrides), terminal_zones={p.terminal: REGISTER for p in payments},
                     zone_kinds={REGISTER: "register", "exit": "exit"})
+    if misread_where_stocked:
+        ledger.stocked = {}
+        for sl in layout.get("slots", []):
+            if sl.get("skuId"):
+                ledger.stocked.setdefault(sl.get("fixtureId"), set()).add(sl["skuId"])
     return ledger.replay(events, payments), ledger
 
 

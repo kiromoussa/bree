@@ -12,6 +12,128 @@ intervals. The goal on DEV2: thefts flagged at least 0.90, at alert tier at leas
 0.80 with precision 0.75, identities per shopper at most 1.2, and no more than 10 points of thefts flagged lost with
 20 percent of the item cameras removed.
 
+## 2026-10-07: round 5 on DEV2 (SIMULATED): the ledger and the shelf evidence it is given. Kept: receipts are given out together. No goal line moved
+
+**Result.** The goal is not met and no goal line moved. Kept: in the store pipeline, register receipts are given out
+together when a possible payer is reconciled, not one at a time to whoever stood at the counter. DEV2 headline
+unchanged: 35 of 55 thefts flagged, 8 at alert tier, 6 of 6 alerts on thieves, 11 of 76 honest shoppers reviewed.
+What the change does move is small and inside every interval: stolen items listed as unpaid 28 to 29 of 55; with
+the four-way stress thefts flagged 17 to 18 and honest shoppers reviewed 12 to 11; with 20 percent of item cameras
+removed honest shoppers reviewed 9 to 8. Five other ideas were measured and not kept. The main finding repeats
+rounds 2 to 4 from new angles: the remaining gaps sit under the ledger, in identity and in the shelf events.
+
+### Gap chosen
+
+Thefts flagged (0.636 against 0.90) and honest shoppers reviewed (0.145 against 0.05), from the ledger side:
+round 2 named "receipts credited to the wrong person" as the largest group on reviewed honest shoppers and nobody
+had attacked it. Then, when that did not move the headline, the evidence under it: false PICK events and put-backs.
+
+### Where the 20 unflagged stolen items were at the start of the round (`scripts/bench/study/r5_missed.py`, truth for scoring only)
+
+| | stolen items |
+|---|---|
+| on a record the ledger drops: one unpaid pick at 0.15 to 0.35 after "at the register, no receipt", "a paid item did not match" or "also fits another person" | 9 |
+| the PICK or its record is on another person, under another name, or missing | 7 |
+| on an identity that never leaves: the track is lost inside the store, so it is never reconciled | 4 |
+
+Identities with picks and no exit (19 on DEV2) hold 5 stolen items, 13 items honest shoppers paid for, 5 items
+honest shoppers put back and 11 picks that match no take. Settling them at the end would add about as many honest
+shoppers as thieves, so it was not built.
+
+### Root cause (receipts)
+
+A receipt was credited the moment it arrived, to whoever the floor tracks said stood at the counter in that second,
+with the basket only as a tie-break. On DEV2 two people stand on the pay point at once and tracks swap there, so
+"who stood there" is often wrong. Example: 11009, receipt SIM0001 (cocoa, caramel, teriyaki) is the basket of
+identity 6 item for item; its register visit ends at 58.3 s, where it stood within 0.2 m of identity 7, the receipt was stamped
+at 62.9 s and went to identity 5, and identity 6 was reviewed with five unpaid items.
+
+### What changed
+
+- `LedgerConfig.joint_receipts` (`src/bree/ledger/ledger.py`, `_settle_receipts`): open register receipts are
+  given out together when somebody who could be the payer is reconciled. A receipt can go to anyone not yet
+  reconciled who was at that counter within the existing 3 s slack of when its payer was served. Of all ways to
+  hand them out, the one with the most receipt items found in the baskets wins; then fewest receipts given on the
+  slack alone, fewest second receipts for one person, closest in time. A receipt that adds no matched item goes by
+  time only when one person could be its payer, as before. Receipts kept for somebody still in the store cannot be
+  claimed by basket match. Late receipts use the same hand-out. No number was fitted.
+- It is off in `LedgerConfig` (the per-camera engine reads `paid` as receipts arrive; two of its tests check that)
+  and on in the store pipeline: `bree.shelf.store.JOINT_RECEIPTS`.
+- Four tests in `tests/test_ledger.py` (two new, two now run in both modes).
+
+### DEV2 scorecard (`results/bench_dev2.md`, `results/bench_dev2_drop.md`, joined again from the stored runs with `--keep`)
+
+| SIMULATED, 20 clips | round 4 | round 5 | goal |
+|---|---|---|---|
+| Thefts flagged, alert or review | 35 of 55 (0.636) | 35 of 55 (0.636) [0.48 to 0.78] | 0.90 |
+| Thefts at alert tier | 8 of 55 (0.145); 6 of 44 thieves | 8 of 55 (0.145) [0.04 to 0.26] | 0.50 |
+| Alert precision | 6 of 6 | 6 of 6 | 0.90 |
+| Honest shoppers reviewed | 11 of 76 (0.145) | 11 of 76 (0.145) [0.08 to 0.22] | 0.05 |
+| Stolen items listed as unpaid on a record | 28 of 55 | 29 of 55 | |
+| Staff flagged (of them alert tier) | 3 of 7 (0) | 3 of 7 (0) | |
+| Picks found | 0.896 | 0.896 | 0.95 |
+| Right slot, right SKU | 0.641, 0.733 | 0.641, 0.733 | 0.92, 0.90 |
+| Put-back recall, precision | 0.588, 0.519 | 0.588, 0.519 | 0.80, 0.75 |
+| Identities per person; on two people | 1.417; 77 of 175 | 1.417; 77 of 175 | 1.2; 5 percent |
+| 20 percent of item cameras removed: thefts flagged; honest reviewed | 30 of 55 (9.1 points); 9 of 76 | 30 of 55 (9.1 points); 8 of 76; 6 at alert tier, 4 of 4 alerts on thieves | at most 10 points |
+| Four-way stress: thefts flagged, at alert tier, honest reviewed | 17 of 55, 0, 12 of 76 | 18 of 55, 0, 11 of 76 | |
+
+The same 35 is not the same 35: 11005 P003 (two items) is now flagged, 11009 P004 and 11017 P004 no longer are.
+11009 P004 had been flagged through a receipt credited to the wrong identity; with the right receipt the record is
+retracted, and the stolen item itself was never in a basket (its take was read as another product and "put back").
+Honest shoppers: 11003 P003 is no longer reviewed, 11019 P005 now is.
+
+With the review bar at 0 (`scripts/bench/study/r5_unpaid.py`, measurement only), items an honest shopper paid for
+under the right name and still listed as unpaid: 11 to 8 (in records at or above the review bar 7 to 3). The ledger
+then holds 49 of 55 stolen items and 27 of 76 honest shoppers (26 before). What is left on the 11 reviewed honest
+shoppers: 9 picks that match no take, 5 items they put back, 5 they paid for, 3 takes of another person.
+
+Regression sets, joined again from their stored events (`out/bench/r5/whatif_final.log`): old DEV 17 of 20 thefts
+flagged and 2 of 22 honest shoppers reviewed, TRAIN-range clips 16 of 19 and 2 of 36, as with the switch off.
+
+### Measured and not kept (all on DEV2, SIMULATED)
+
+- **A lower confidence for takes only the pixels speak for.** Of 272 PICK events 61 match no take: 21 are a second
+  event near a true take, 17 have nothing near, 11 sit at a staff put, 7 at a put-back, 5 at a touch
+  (`scripts/bench/study/r5_pickfeat.py`). The weakest group (no slot-watch cue, the item in a hand in fewer than
+  two frames, the slot's own product still read in the picture afterwards) is 19 true and 24 false of 43. Giving
+  those 0.6 confidence changed no decision at all (35 of 55, 11 of 76, the same names): the 9 false picks on reviewed
+  honest shoppers are well evidenced ones, 4 at a put-back (3 into another slot), 3 next to another person's take.
+- **Telling a put from a take by when the item is in the hand.** From the stored detector looks
+  (`scripts/bench/study/r5_dir.py`): of 46 take readings at a true put the product is seen in a hand before the shelf
+  change and not after in 19; of 332 at a true take, in 52. Coming towards the slot: 6 and 7. No rule here.
+- **A put-back of a product not in the basket returns the latest open pick at that fixture** (the take was
+  misnamed): 2 of the 11 ignored put-backs matched. One right (11019 P005, honest reviews 11 to 10), one wrong (11012,
+  another shopper's peanut put-back cancelled the voltlink take of thief P004). Removed from the code.
+- **Matching receipts by the products of neighbouring slots.** Of 55 paired picks with the wrong SKU, the true
+  product's nearest slot is within 0.25 m of the slot the event names in 3, within 0.4 m in 11; the median is 1.04
+  m. Misnamed picks are mostly not the neighbour, so this was not built.
+- **The cue's bar.** Stolen items scored under the bar have p 0.17 to 0.52; 8 paid takes score 0.32 to 0.54
+  (`r4_conceal.py`). No bar separates them. 18 stolen items are never seen in the hand twice; several of those have
+  many "hand, no item" moments, but so does any false pick, and that would alert an honest shopper.
+- **Scorer, not changed (round 3 left it to the benchmark agent):** pairing a true pick with a PICK at its true
+  slot first, then the fixture, then time, on the same events gives right slot 0.699 for 0.641, right SKU 0.777
+  for 0.733, right shopper 0.806 for 0.772. Measured with a one-line edit of `score_clip` that was reverted.
+
+Put-backs, counted by fixture within 3 s (`scripts/bench/study/r5_puts.py`): of 34, take and put both found 14 (11
+of them with one more PICK at that fixture), take found and put not found 12, take not found 8.
+
+### What is left, in order
+
+1. **SIMULATOR LIMIT, third round running:** identity. The ledger cannot be made to separate thieves from honest
+   shoppers further while 77 of 175 identities cover two people: every ledger rule tried in rounds 2, 4 and 5 trades
+   one for the other. Generator 2 needs personal space and a queue at the pay point, then DEV2 rendered again and a
+   new baseline. This is a benchmark decision that three improvement rounds have now passed on.
+2. Pipeline: put-backs (12 of 34 with the take found and the put not; 4 of the 9 false picks on reviewed honest
+   shoppers are a put read as a take). The readings of one put are many and contradictory (arms covering
+   neighbouring slots); it needs frame-level work on the shelf pass, one case at a time.
+3. Pipeline: baskets on identities lost inside the store (5 stolen items, 13 paid ones). Needs the tracker to hand
+   a lost track's basket to the track that replaces it; settling them alone flags as many honest shoppers.
+4. Alert tier (0.145 against 0.50), staff enrolment, right slot: unchanged from round 4.
+
+Tests: `tests/test_ledger.py` 54 passed, with `test_closed_world.py`, `test_reid.py` and `test_shelf_store.py` 114
+passed; full suite 439 passed, 1 skipped, 0 failed (counted from the progress lines of `out/bench/r5/tests_full.log`); `scripts/bench/test_bench.py` passes. Logs: `out/bench/r5/`.
+
 ## 2026-10-07: round 4 on DEV2 (SIMULATED): the alert tier is no longer empty. Kept: the concealment cue reads only the taken product, and is on
 
 **Result.** The goal is not met. Kept: the concealment cue and its tier rule are on by default, after one change

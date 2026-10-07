@@ -1069,3 +1069,39 @@ SIMULATED data only. Numbers are in REPORT.md, round 4 on DEV2.
   2 of 22), only the scorer's newer layout differed.
 - Study scripts of this round: `scripts/bench/study/r4_ledger.py`, `r4_false.py`, `r4_conceal.py`, `r4_staff.py`
   (they read truth, for scoring only).
+
+## Improvement round 5 on DEV2 (2026-10-07)
+
+SIMULATED data only. Numbers are in REPORT.md, round 5 on DEV2.
+
+- **Gap chosen: thefts flagged and honest reviews, from the ledger side, then the shelf evidence under it.** Round 2
+  had named receipts credited to the wrong person and nobody had built the fix.
+- **Receipts are given out together (`LedgerConfig.joint_receipts`), on in the store pipeline, kept although no goal
+  line moved.** It is the more correct rule where two people stand at the counter at once, it lowers the paid items
+  of honest shoppers listed as unpaid (11 to 8 with the review bar at 0), it makes nothing worse on DEV2, old DEV,
+  the TRAIN-range clips or under either stress, and it has no fitted number. To overrule: set
+  `bree.shelf.store.JOINT_RECEIPTS` to False.
+- **Content before "stood there in that second", inside the slack only.** The old rule put time first so that a
+  thief's unpaid item could not pull in the next customer's receipt. Handing all open receipts out together covers
+  that case: the receipt goes where it matches whole (test
+  `test_joint_receipts_do_not_hand_a_thief_the_next_customers_receipt`). Who can get a receipt at all is still
+  decided by time (the existing 3 s slack).
+- **It is off in `LedgerConfig` itself.** With it on, a receipt is credited when its payer is reconciled, not when
+  it arrives, and the per-camera engine path reads `paid` live (`tests/test_closed_world.py`, `tests/test_reid.py`
+  failed with it on by default). The store pipeline is where it was measured, so that is where it is switched on.
+- **The scorer was not changed, again.** Pairing by the true slot first gives right slot 0.699 for 0.641, right SKU
+  0.777 for 0.733 and right shopper 0.806 for 0.772 on the same events. Round 3 left this to the benchmark agent
+  because it changes the meaning of a goal line; this round measured it and left it there too.
+- **Lost identities are not settled at the end of the day.** 19 identities with picks never leave (the track is lost
+  inside the store). They hold 5 stolen items and 13 items honest shoppers paid for under another identity, plus 11
+  picks that match no take. Settling them alone would review about as many honest shoppers as thieves.
+- **Four ideas were measured and dropped without leaving switches in the code:** a lower confidence for takes only
+  the pixels speak for (no decision changed), put or take from when the item is in the hand (no separation), a
+  put-back of a product not in the basket returning the latest pick at that fixture (1 right, 1 wrong), receipts
+  matched by the products of neighbouring slots (misnamed picks are mostly not the neighbour).
+- **The generator was not changed, a third time.** Same reason as rounds 3 and 4: it means rendering DEV2 again
+  and a new baseline. This round's finding makes the case stronger: every ledger rule tried in three rounds trades
+  thieves for honest shoppers while 77 of 175 identities cover two people.
+- **No checkpoint seeds were rendered or looked at. No TRAIN data was rendered. Nothing was fitted.**
+- Study scripts of this round: `scripts/bench/study/r5_missed.py`, `r5_unpaid.py`, `r5_pickfeat.py`, `r5_puts.py`,
+  `r5_dir.py` (they read truth, for scoring only).

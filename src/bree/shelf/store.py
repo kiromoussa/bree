@@ -20,7 +20,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from bree.events.shelf import load_payments, run_ledger, store_events, track_people, write_run
-from bree.shelf.events import fuse_views, run_clip, unreliable_windows
+from bree.shelf.events import arrivals, fuse_views, run_clip, unreliable_windows
 from bree.track.associate import associate
 from bree.track.people import PEOPLE_KINDS, appearance, frames, person_detector
 
@@ -33,6 +33,7 @@ POS_LAG_S = (1.5, 4.5)
 # video again. REPORT.md, round 1 of 2026-10-06, has the dev2 numbers behind these defaults.
 CONCEAL = False
 CONCEAL_TIER = False
+ARRIVALS = True        # bree.shelf.events.arrivals: a product that newly stands in a slot is a put, not a take
 
 
 def _jsonl(p: Path) -> list[dict]:
@@ -80,7 +81,8 @@ def one_act_per_reach(acts: list[dict], who: list, within_s: float = 4.0, within
     for e, pid in sorted(zip(acts, who), key=lambda x: x[0]["t"]):
         e = {**e, "times": e.get("times") or {x: e["t"] for x in e.get("eids") or []}}
         g = next((g for g in reversed(out) if pid is not None and g["by"] == pid and g["kind"] == e["kind"] and e["t"] - (g["t_last"] if from_last else max(g["t"], when(g))) <= within_s
-                  and e.get("point_3d") is not None and g.get("point_3d") is not None and math.dist(g["point_3d"][::2], e["point_3d"][::2]) <= within_m and not two_things(g, e)), None)
+                  and e.get("point_3d") is not None and g.get("point_3d") is not None and math.dist(g["point_3d"][::2], e["point_3d"][::2]) <= within_m and not two_things(g, e)
+                  and bool(g.get("arrived")) == bool(e.get("arrived"))), None)     # a product seen arriving is its own act, never one more reading of a put that undoes a take
         if g is None:
             out.append({**e, "by": pid, "repeats": e.get("repeats", 0), "t_last": e.get("t_last", e["t"])})
         else:
@@ -116,7 +118,7 @@ def people_boxes(clip: Path, pipe: Path, cams: list[str], max_frames: int | None
 
 
 def rejoin(clip: Path, out: Path, review: bool = True, floor=None, assoc=None, join=None, ledger: dict | None = None, reach: dict | None = None,
-           conceal: bool | None = None, conceal_tier: bool | None = None) -> dict:
+           conceal: bool | None = None, conceal_tier: bool | None = None, arrive: dict | bool | None = None) -> dict:
     """Stored shelf events and person boxes -> floor tracks, PICK / PUT_BACK, ledger, alerts, review store.
     conceal: give the ledger the concealment cues of the item cameras (default CONCEAL). conceal_tier: then raise a
     review to an alert by bree.concealment.tier.retier (default CONCEAL_TIER; the ledger's records stay in alerts_ledger.jsonl)."""
@@ -130,6 +132,9 @@ def rejoin(clip: Path, out: Path, review: bool = True, floor=None, assoc=None, j
     boxes = {c: _jsonl(pipe / f"people_{c}.jsonl") for c in cams}
     shelf = _jsonl(pipe / "shelf_events.jsonl")
     tracker, ids = track_people(cams, layout, boxes, fps, floor)
+    arrive = ARRIVALS if arrive is None else arrive
+    if arrive is not False:          # arrive: True, or the settings of `arrivals` (what-if)
+        shelf = arrivals(shelf, layout, **(arrive if isinstance(arrive, dict) else {}))
     acts = fuse_views(shelf, layout)
     for _ in range(3):         # merging repeats changes who fits what is left (two reads of one reach can go to two people), so look again
         n = len(acts)

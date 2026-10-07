@@ -82,6 +82,7 @@ class ShelfCamera:
         self.emitted: list[dict] = []
         self.pending: list[dict] = []      # shelf-diff events waiting for the confirm window to close
         self.dropped: list[tuple[dict, dict]] = []     # (take, put) pairs dropped as a passing change
+        self.first: list[tuple[np.ndarray, str]] = []  # what the detector read on the shelf in the first frames: (box, SKU)
         self.f = -1
 
     def update(self, image: np.ndarray) -> list[dict]:
@@ -89,13 +90,37 @@ class ShelfCamera:
         new = self.diff.update(image)
         if self.cue is not None:
             self.cue.update(image, self.f)
+        if self.det is not None and self.cue is not None:
+            for e in new:
+                if e["kind"] == "take":
+                    self._after(e, image)
         if self.watch is not None:
             if self.f < self.cfg.slots.learn:          # the first frames: one look at the whole picture to learn every row
                 boxes, _, cls = self.det(image, None)
+                self.first += [(np.asarray(b, float), self.det.names[int(k)]) for b, k in zip(boxes, cls)]
                 self.watch.update(self.f, boxes, [self.det.names[int(k)] for k in cls])
             elif self.cue.last is not None:
                 new += self.watch.update(*self.cue.last)
         return self._step(new)
+
+    def _after(self, e: dict, image: np.ndarray) -> None:
+        """The picture after a change the pixel comparison calls a take, read by the SKU detector: e["after"] =
+        [[SKU, conf, was there at the start]] for each item now standing on the changed patch. The pixel comparison
+        calls every change a take unless it restores the picture from before its own take, so an item put into a slot
+        it did not come from looks like a take to it; a product that stands there now and did not at the start
+        arrived. `arrivals` decides with it; nothing is decided here."""
+        u, v = e["hand_px"]              # centre of the changed patch, full resolution
+        m = self.cfg.hand.roi_margin_px
+        boxes, confs, cls = self.det(image, np.array([[u - m, v - m, u + m, v + m]], float))
+        out = []
+        for b, cf, k in zip(boxes, confs, cls):
+            if not (b[0] <= u <= b[2] and b[1] <= v <= b[3]):
+                continue
+            sku, b = self.det.names[int(k)], np.asarray(b, float)
+            was = any(s == sku and min(b[2], fb[2]) > max(b[0], fb[0]) and min(b[3], fb[3]) > max(b[1], fb[1])
+                      and (min(b[2], fb[2]) - max(b[0], fb[0])) * (min(b[3], fb[3]) - max(b[1], fb[1])) >= 0.3 * (b[2] - b[0]) * (b[3] - b[1]) for fb, s in self.first)
+            out.append([sku, round(float(cf), 3), bool(was)])
+        e["after"] = sorted(out, key=lambda r: -r[1])
 
     def _step(self, new: list[dict]) -> list[dict]:
         """Take in this frame's raw events of both cues; give back the ones whose waiting time is over."""
@@ -207,6 +232,9 @@ class ShelfCamera:
                    if e["t_start"] + c.confirm_window_s[0] <= f / self.fps <= e["t_end"] + c.confirm_window_s[1] and np.hypot(u - centre[0], v - centre[1]) <= reach]
             if obs and (best is None or len(obs) * (tr["sku"] == e["sku_id"]) + len(obs) > best[0]):
                 best = (len(obs) * (tr["sku"] == e["sku_id"]) + len(obs), tr, obs)
+        for a in e.get("after") or []:       # the item that now stands on the patch: how often it was seen in a hand on its way there
+            a.append(sum(1 for tr in self.cue.tracks if tr["sku"] == a[0] for f, u, v, _ in tr["obs"]
+                         if e["t_start"] - 3.0 <= f / self.fps <= e["t_end"] and np.hypot(u - centre[0], v - centre[1]) <= 2 * reach))
         hands = [(f, u, v) for f, u, v, _ in self.cue.hands if e["t_start"] - 1.0 <= f / self.fps <= e["t_end"] + 0.5 and np.hypot(u - centre[0], v - centre[1]) <= reach]
         if best is None:
             if hands:       # no item seen, but a hand was at the slot: keep its point and time of closest approach
@@ -328,6 +356,35 @@ def run_clip(clip: Path, cfg: ShelfConfig | None = None, jobs: int = 4, detector
     return sorted((e for r in runs for e in r[0]), key=lambda e: e["t"])
 
 
+def arrivals(events: list[dict], layout: dict, cfg: ShelfConfig | None = None, conf: float = 0.5, held: int = 1) -> list[dict]:
+    """Readings of the pixel comparison that are an item arriving, not leaving: the picture after the change shows a
+    product that is not planned for any slot under the patch, was not there when the camera first read the shelf, and
+    was seen in a hand on its way there (two cues). Such a "take" becomes a put of that product with the item seen
+    going in. Another camera's take of the same slot at that moment is the same act (the same slot only: on dev2 a
+    true take one shelf up, 0.3 m away and 2 s earlier, would have gone with it). This is how an item put back into
+    another slot, or put on the shelf by staff, is read: the pixel comparison only knows a put that restores the
+    picture from before its own take. Events without "after" (older runs) pass unchanged.
+    ponytail: an item put into a slot of its own product that this camera never saw it leave still reads as a take;
+    the row position of the slot watch is the upgrade."""
+    cfg, plan = cfg or ShelfConfig(), {s["id"]: s.get("skuId") for s in layout["slots"]}
+    out, came = [dict(e) for e in events], []
+    for e in out:
+        a = (e.get("after") or [None])[0]
+        if e["kind"] != "take" or a is None or len(a) < 4:
+            continue
+        sku, cf, was, n = a[:4]
+        if cf >= conf and not was and n >= held and sku not in {plan.get(e["slot_id"]), *(plan.get(sid) for sid, _ in e.get("slots") or [])}:
+            e.update(kind="put", sku_id=sku, source="both", item_in=True, arrived=True, t=e["t_end"], took_eids=e.pop("eids", None))
+            came.append(e)
+    for e in out:          # the same act through another camera, which saw the change and not the product
+        if e["kind"] == "take" and e.get("point_3d") is not None and e.get("cue") != "slot_state":
+            g = next((g for g in came if g["camera_id"] != e["camera_id"] and abs(g["t_start"] - e["t_start"]) <= cfg.same_act_s
+                      and g["slot_id"] in {e["slot_id"], *(sid for sid, _ in e.get("slots") or [])}), None)
+            if g is not None:
+                e.update(kind="put", sku_id=g["sku_id"], source="both", item_in=True, arrived=True, t=e["t_end"], took_eids=e.pop("eids", None))
+    return out
+
+
 def fuse_views(events: list[dict], layout: dict, cfg: ShelfConfig | None = None) -> list[dict]:
     """One event per act: events of different cameras with the same kind, close in time and place, are merged. The
     slot is a vote (each view's candidate slots weighted by overlap, a detector-confirmed view counts double)."""
@@ -338,7 +395,7 @@ def fuse_views(events: list[dict], layout: dict, cfg: ShelfConfig | None = None)
             continue
         p = np.asarray(e["point_3d"], float)
         for g in out:
-            if (g.get("point_3d") is not None and g["kind"] == e["kind"] and e["camera_id"] not in g["cameras"]
+            if (g.get("point_3d") is not None and g["kind"] == e["kind"] and e["camera_id"] not in g["cameras"] and bool(g.get("arrived")) == bool(e.get("arrived"))
                     and (abs(g["t_start"] - e["t_start"]) <= cfg.same_act_s or abs(g["t"] - e["t"]) <= cfg.same_act_s)
                     and np.linalg.norm(np.asarray(g["point_3d"], float) - p) <= cfg.same_act_m):
                 g["cameras"].append(e["camera_id"])
@@ -370,6 +427,9 @@ def fuse_views(events: list[dict], layout: dict, cfg: ShelfConfig | None = None)
                  sku_conf=round(sum(w for s, w in votes.items() if slots[s].get("skuId") == sku) / sum(votes.values()), 3),
                  t=min(v["t"] for v in timed), t_start=min(v["t_start"] for v in g["views"]), t_end=min(v["t_end"] for v in g["views"]),
                  source="both" if {v["source"] for v in g["views"]} != {"shelf_diff"} and {v["source"] for v in g["views"]} != {"hand_item"} else g["views"][0]["source"])
+        came = next((v for v in g["views"] if v.get("arrived")), None)
+        if came is not None:           # the product was read from the picture: the slot it was put into does not name it
+            g.update(sku_id=came["sku_id"], arrived=True)
     return out
 
 

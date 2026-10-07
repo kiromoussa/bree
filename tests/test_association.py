@@ -285,6 +285,17 @@ def test_pixels_changing_at_the_pay_point_with_no_item_seen_are_not_a_pick():
         assert [e.type for e in store_events(evs, [visit(1, pay=False)], where)[0] if e.type == EventType.PICK] == [EventType.PICK]
 
 
+def test_a_product_put_into_another_slot_goes_back_and_goods_on_the_counter_do_not():
+    other = next(s for s in LAY["slots"] if s["id"] != SLOT["id"] and s["fixtureId"] == SLOT["fixtureId"] and 0.25 < abs(s["face"][2] - SLOT["face"][2]) < 0.6 and s["normal"] == SLOT["normal"])
+    came = {**shelf(other, 7.0, kind="put", source="both"), "sku_id": SLOT["skuId"], "arrived": True, "item_in": True}      # read from the picture
+    events, _ = store_events([shelf(SLOT, 6.0), came], [visit(1, pay=False)], LAY)
+    assert [(e.type, e.sku) for e in events if e.type in (EventType.PICK, EventType.PUT_BACK)] == [(EventType.PICK, SLOT["skuId"]), (EventType.PUT_BACK, SLOT["skuId"])]
+    assert not run_ledger(events, [], LAY)[0]
+    x, _, z = other["face"]
+    events, assocs = store_events([shelf(SLOT, 6.0), came], [visit(1, pay=False)], {**LAY, "poi": {"register": [x + 0.5, 0.0, z + 0.2]}})
+    assert not [e for e in events if e.type == EventType.PUT_BACK] and "goods on the counter" in assocs[1].why
+
+
 def test_a_track_can_be_taken_out_of_a_list_that_holds_another_with_the_same_numbers():
     from bree.track.floor import Track
     a, b = Track(1, np.zeros(4), 0.0, 0.0), Track(2, np.zeros(4), 0.0, 0.0)      # a dataclass == on numpy fields raised here

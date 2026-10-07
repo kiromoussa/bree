@@ -129,6 +129,10 @@ def test_one_reach_read_twice_is_one_take_and_two_shoppers_stay_two():
     got = one_act_per_reach(acts, [1, 1, 2, 1])
     assert [(g["t"], g["sku_id"], g["by"], g["repeats"]) for g in got] == [(5.0, "sku3", 1, 1), (6.0, "sku2", 2, 0), (20.0, "sku1", 1, 0)]
     assert len(one_act_per_reach(acts[:2], [None, None])) == 2                    # nobody attached: nothing is merged
+    # a product seen arriving in a slot is its own act: not one more reading of a put that undoes a take next to it
+    put = lambda t, x, **kw: {**ev(t, x, "sku1"), "kind": "put", **kw}  # noqa: E731
+    assert len(one_act_per_reach([put(5.0, 0.2, undoes=["a:1"]), put(5.5, 0.4, arrived=True)], [1, 1])) == 2
+    assert len(one_act_per_reach([put(5.0, 0.2, arrived=True), put(5.5, 0.4, arrived=True)], [1, 1])) == 1
 
 
 def shifted(img, dx, dy):

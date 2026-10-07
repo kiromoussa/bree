@@ -4,7 +4,7 @@ and the ledger with other settings and score again. Nothing before tracking is r
     .venv/bin/python scripts/bench/whatif.py base                                  # dev and train as the code stands
     .venv/bin/python scripts/bench/whatif.py reach6 --reach '{"within_s": 6}'      # bree.shelf.store.one_act_per_reach
     --assoc '{"max_unseen_s": 3}'  --ledger '{"misread_factor": 1.0}'  --join '{"register_dwell_s": 2}'  --splits dev
-    --floor '{"other_m": 99}'  (bree.track.floor.FloorConfig)
+    --floor '{"other_m": 99}'  (bree.track.floor.FloorConfig)   --arrive false  (or the settings of bree.shelf.events.arrivals)
     --join '{"put_returns": "none"}' (or "both")  --reach '{"from_last": true}'       # the round 3 choices
 
 Never give it the test split: it is for tuning. --splits dev2 takes the dev2 clips that have a finished run. Output: out/bench/whatif/<name>/<split>/ and one line per split.
@@ -25,7 +25,7 @@ from bree.track.associate import AssocConfig  # noqa: E402
 from bree.track.floor import FloorConfig  # noqa: E402
 
 
-def run(name: str, split: str, join=None, reach=None, assoc=None, ledger=None, src: str | None = None, floor=None, conceal=None, conceal_tier=None) -> dict:
+def run(name: str, split: str, join=None, reach=None, assoc=None, ledger=None, src: str | None = None, floor=None, conceal=None, conceal_tier=None, arrive=None) -> dict:
     scored = []
     for clip in clip_dirs(split):
         stored = Path(src or ROOT / "out" / "bench" / split) / clip.name / "pipeline"
@@ -37,7 +37,7 @@ def run(name: str, split: str, join=None, reach=None, assoc=None, ledger=None, s
             link = out / "pipeline" / f.name
             if not link.exists():
                 link.symlink_to(f.resolve())
-        rejoin(public_view(clip, out), out, review=False, floor=FloorConfig(**floor) if floor else None, join=join, reach=reach, assoc=AssocConfig(**assoc) if assoc else None, ledger=ledger, conceal=conceal, conceal_tier=conceal_tier)
+        rejoin(public_view(clip, out), out, review=False, floor=FloorConfig(**floor) if floor else None, join=join, reach=reach, assoc=AssocConfig(**assoc) if assoc else None, ledger=ledger, conceal=conceal, conceal_tier=conceal_tier, arrive=arrive)
         scored.append(score_clip(clip, out))
     res = {"split": split, **aggregate(scored), "clips": scored}
     (out.parent / "bench.json").write_text(json.dumps(res, indent=1))
@@ -50,14 +50,14 @@ def line(res: dict) -> str:
     honest = [f"{c['clip']} {a['shopper']} {a['skus']}" for c in res["clips"] for a in c["alerts"] if not a["true_theft"]]
     return (f"{res['split']:5s} thefts {s['thefts_alerted_or_reviewed']}/{s['stolen_items']} (alert tier {s['thefts_alerted']})  honest flagged {s['reviews_on_honest_shoppers'] + s['false_alerts_on_honest_shoppers']}"
             f"/{s['honest_shoppers']}  picks {s['pick_recall']} prec {s['pick_precision']} ({s['pipeline_picks']})  sku {s['right_sku_of_paired_picks']}  slot {s['right_slot_of_paired_picks']}"
-            f"  shopper {s['right_shopper_of_paired_picks']}  ids {s['store_wide_ids_per_shopper']} (on two people {s.get('ids_covering_two_shoppers')} of {s.get('ids_with_5_boxes')})  clips {len(res['clips'])}\n      missed: {missed}\n      honest: {honest}")
+            f"  shopper {s['right_shopper_of_paired_picks']}  puts {s.get('put_back_recall')} prec {s.get('put_back_precision')} ({s.get('pipeline_put_backs')})  ids {s['store_wide_ids_per_shopper']} (on two people {s.get('ids_covering_two_shoppers')} of {s.get('ids_with_5_boxes')})  clips {len(res['clips'])}\n      missed: {missed}\n      honest: {honest}")
 
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("name")
     ap.add_argument("--splits", default="dev,train")
-    for k in ("join", "reach", "assoc", "ledger", "floor"):
+    for k in ("join", "reach", "assoc", "ledger", "floor", "arrive"):
         ap.add_argument(f"--{k}", type=json.loads)
     ap.add_argument("--src", help="folder of the finished runs (default out/bench/<split>)")
     ap.add_argument("--conceal", action="store_true", default=None, help="the concealment cue on (bree.shelf.store.CONCEAL)")
@@ -66,4 +66,4 @@ if __name__ == "__main__":
     if "test" in a.splits:
         raise SystemExit("the test split is for final numbers only")
     for split in a.splits.split(","):
-        print(a.name, line(run(a.name, split, a.join, a.reach, a.assoc, a.ledger, a.src, a.floor, a.conceal, a.conceal_tier)), flush=True)
+        print(a.name, line(run(a.name, split, a.join, a.reach, a.assoc, a.ledger, a.src, a.floor, a.conceal, a.conceal_tier, a.arrive)), flush=True)

@@ -170,3 +170,25 @@ def test_a_take_is_timed_by_the_item_in_the_hand_when_the_slot_was_hidden_for_lo
     assert sc._confirm({**ev(6.2, 6.6), "kind": "put"})["item_in"] is True
     sc.cue.tracks = [{"sku": s["skuId"], "obs": [(60, u + 2, v, 0.8), (64, u + 60, v, 0.8)]}]
     assert sc._confirm({**ev(6.2, 6.6), "kind": "put"})["item_in"] is False
+
+
+def _reading(cam, slot, after, t=10.0, **kw):
+    s = next(x for x in SLOTS if x["id"] == slot)
+    return {"camera_id": cam, "t": t, "t_start": t, "t_end": t + 1.0, "kind": "take", "slot_id": slot, "sku_id": s.get("skuId"), "source": "shelf_diff",
+            "point_3d": list(s["face"]), "slots": [(slot, 0.6)], "eids": [f"{cam}:{slot}"], "after": after, **kw}
+
+
+def test_a_product_that_newly_stands_in_a_slot_is_a_put_not_a_take():
+    from bree.shelf.events import arrivals
+    a, b = SLOTS[2]["id"], SLOTS[0]["id"]
+    planned = SLOTS[2].get("skuId")
+    evs = [_reading("c1", a, [["foreign_sku", 0.9, False, 4]]),          # a product of another slot arrived: put
+           _reading("c2", a, []),                                       # the same act through another camera: put
+           _reading("c1", a, [[planned, 0.9, True, 2]], t=30.0),        # the slot's own product behind the one taken: take
+           _reading("c1", b, [["foreign_sku", 0.9, True, 3]], t=50.0),  # it stood there from the start (planogram out of date): take
+           _reading("c1", b, [["foreign_sku", 0.9, False, 0]], t=70.0), # never seen in a hand: one cue alone, take
+           _reading("c1", b, None, t=90.0)]                             # an older run without the reading: unchanged
+    got = arrivals(evs, LAYOUT)
+    assert [e["kind"] for e in got] == ["put", "put", "take", "take", "take", "take"]
+    assert got[0]["sku_id"] == got[1]["sku_id"] == "foreign_sku" and got[0]["item_in"] and "eids" not in got[0]
+    assert evs[0]["kind"] == "take"       # the stored readings are not changed

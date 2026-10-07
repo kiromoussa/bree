@@ -142,6 +142,10 @@ def confirm_puts(shelf: list[dict], assocs: list[Assoc], slots: dict, margin: fl
             continue
         if a.person_id is None:
             continue
+        if ev.get("arrived") and pay_xz is not None and at is not None and float(np.hypot(at[0] - pay_xz[0], at[2] - pay_xz[1])) <= pay_reach_m:
+            keep[i] = False             # goods put on the counter to be paid for are not put back (dev2 11004: 3 of 3 such events)
+            a.why += "; a product arrived within reach of where the payer stands (goods on the counter): not passed to the ledger"
+            continue
         if ev["kind"] == "take":
             if ev.get("cue") == "slot_state" and ev.get("source") != "both":
                 keep[i] = False         # 0 of 6 such events matched an act on the TRAIN-seed clips (make shelf-eval)

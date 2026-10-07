@@ -1149,3 +1149,35 @@ All SIMULATED. Numbers and files: REPORT.md, "round 6 on DEV2".
 - **No checkpoint seeds were rendered or looked at. No TRAIN data was rendered. Nothing was fitted.**
 - Study scripts of this round: `scripts/bench/study/r6_raw.py`, `r6_putev.py`, `r6_handonly.py`, `r6_sub.py`
   (they read truth, for scoring only).
+
+## Round 7 on DEV2 (2026-10-07, SIMULATED)
+
+- **Gap: takes no camera reads** (45 of 230 picks lost at "hand or item detected"), the step round 6 handed over.
+  Not the ledger (four rounds of trades) and not identity (simulator limit).
+- **Hand-only takes are on (`bree.shelf.store.HAND_ONLY`), kept, with a known cost.** DEV2: thefts flagged 36 to
+  38 of 55, alert tier 8 to 10, picks found 203 to 209, camera-drop line met again (34 of 55, 7.3 points). Honest
+  shoppers reviewed 8 to 11 of 76. That is the wrong direction on a headline line and inside its interval (0.04
+  to 0.18). Round 6 turned down a ledger rule with a similar trade; this one is kept because it adds evidence
+  that was missing (cooler takes) and does not loosen a rule, it helps under every stress, and old DEV does not
+  move. To overrule: `HAND_ONLY = False`, which gives the round 6 numbers exactly.
+- **Two cameras must see the item (`min_cams=2`).** Chosen on DEV2 and old DEV together: with one camera, 4 of 6
+  hand-only takes given to a person were false and old DEV got a third honest review; with two or more, 2 of 13.
+  It costs two true picks on DEV2 (one cooler, one counter display seen by one camera).
+- **The gate numbers (6 sightings, hand in the slot within 1.5 s, 3 s and 1 m to a pixel take) were set once from
+  the counts in `r7_handgate.py` and not swept.** 6 is the split round 6 already printed; 3 s and 1 m are the
+  windows the study used to say "the pixel comparison read it".
+- **It runs at the join from the stored looks, not in the shelf pass.** Same input as `ShelfConfig.hand_only`
+  would see, no video pass (a shelf pass was 7 to 25 minutes a clip last round), and it can be switched in a
+  what-if. `ShelfConfig.hand_only` stays off and is now the older, ungated version.
+- **The slot of a hand-only take is knowingly poor** (nearest facing of that product in one picture). Right slot
+  0.655 to 0.636. The product is what the ledger needs; triangulating the first sighting is the upgrade, marked
+  in the code.
+- **Hand-only puts are in the code, off.** Measured: no goal line moved. Kept as an option because cooler
+  put-backs are the next step and the basket rule in `confirm_puts` is the part worth reusing.
+- **Looks of cameras not in the clip's camera list are not read**, so a dropped camera's stored looks cannot leak
+  into the camera-drop stress.
+- **The scorer was not changed**, though 15 wrong-slot picks are a pairing effect (round 3). That is the benchmark
+  agent's file, and changing the ruler in an improvement round would blur the before and after.
+- **No checkpoint seeds were rendered or looked at. No TRAIN data was rendered. Nothing was trained.**
+- Study scripts of this round: `scripts/bench/study/r7_handgate.py`, `r7_heldsku.py`, `r7_only.py` (they read
+  truth, for scoring only).

@@ -1,6 +1,6 @@
 # BREE vision: report
 
-Newest first. **Improvement rounds on DEV2** (benchmark version 2, from 2026-10-06) come first, then **Concealment cue from the item cameras**. Then **Wrap-up (2026-10-05)**: baseline, the DEV rounds, the held-out TEST result, stress results and what still fails. Then **One pipeline path** with improvement rounds 5 to 1 and the streams behind them, then **Audit fixes (2026-10-05)**. Then, from the integration of four parallel work streams: **Integration summary (2026-10-05)**, **End to end on simulated data**, **SKU detector trained on simulated frames**, **Calibration, 3D slots and store-wide identity**, **Camera node first pass**, **Human review feedback loop**. Then, unchanged: **Closed-world identity (2026-10-04)**, **Re-ID without the face (2026-10-03)**, **Overnight (2026-10-01)**, **Phase 2 (2026-09-30, real data)** and the **Phase 1 report**. Every number names the file it came from; real-data results and simulated or synthetic results are kept apart and labelled.
+Newest first. **Improvement rounds on DEV2** (benchmark version 2, from 2026-10-06, round 7 newest) come first, then **Concealment cue from the item cameras**. Then **Wrap-up (2026-10-05)**: baseline, the DEV rounds, the held-out TEST result, stress results and what still fails. Then **One pipeline path** with improvement rounds 5 to 1 and the streams behind them, then **Audit fixes (2026-10-05)**. Then, from the integration of four parallel work streams: **Integration summary (2026-10-05)**, **End to end on simulated data**, **SKU detector trained on simulated frames**, **Calibration, 3D slots and store-wide identity**, **Camera node first pass**, **Human review feedback loop**. Then, unchanged: **Closed-world identity (2026-10-04)**, **Re-ID without the face (2026-10-03)**, **Overnight (2026-10-01)**, **Phase 2 (2026-09-30, real data)** and the **Phase 1 report**. Every number names the file it came from; real-data results and simulated or synthetic results are kept apart and labelled.
 
 # Improvement rounds on DEV2 (benchmark version 2), newest first
 
@@ -11,6 +11,121 @@ intervals. The goal on DEV2: thefts flagged at least 0.90, at alert tier at leas
 0.90, honest shoppers reviewed at most 1 in 20, pick recall 0.95, right slot 0.92, right SKU 0.90, put-back recall
 0.80 with precision 0.75, identities per shopper at most 1.2, and no more than 10 points of thefts flagged lost with
 20 percent of the item cameras removed.
+
+## 2026-10-07: round 7 on DEV2 (SIMULATED): takes no camera reads. Kept: a product seen coming out of its slot in a hand is a take, when a hand was in the slot and two cameras saw it
+
+**Result.** The goal is not met. One change is kept. Thefts flagged 36 to 38 of 55, at alert tier 8 to 10 (7 of 7
+alerts on thieves), picks found 203 to 209 of 230, and with 20 percent of the item cameras removed thefts flagged
+30 to 34 of 55, so that line is met again (7.3 points against 10). The cost: honest shoppers reviewed 8 to 11 of
+76, pick precision 0.803 to 0.790, right slot 0.655 to 0.636. Every move is inside the round 6 intervals.
+
+### Gap chosen
+
+Takes no camera reads: 45 of 230 picks lost at "hand or item detected", the largest loss in the funnel that no
+round had worked on, and the step round 6 handed over. It sits under thefts flagged and the alert tier (9 of 55
+stolen items are lost there).
+
+### Root cause
+
+One sentence: where the next unit fills the place of the taken one (a cooler row, a box in front of the same
+box), the shelf looks the same before and after, so the pixel comparison has nothing to read, and the only sign
+of the take, the product in the hand, was thrown away unless a pixel change stood next to it.
+
+Counted from the stored detector looks (`scripts/bench/study/r7_handgate.py`, truth for scoring only): 482
+held-item tracks start at a slot of their product and move away, 97 at a true take. In 69 of the 97 the pixel
+comparison read that take as well. The other 28 are the prize, among 354 that are not: 19 of the 28 are in the
+cooler. Round 6 put the prize at 51 picks; most of those already had a pixel event at another slot.
+
+### The gate (`bree.shelf.events.hand_only_takes`, on through `bree.shelf.store.HAND_ONLY`)
+
+A held-item track that starts at a slot of its product and moves away is a take when all of these hold:
+
+- a hand was seen inside that slot's box in the 1.5 s before the item first showed (it came out of the shelf, it
+  was not carried past);
+- one camera saw the item at least 6 times, and at least two cameras saw it;
+- the pixel comparison read no take of that product within 3 s and 1 m.
+
+It runs at the join, on the looks the shelf pass already stores, so no video is read again. A hand-only take
+merges into a pixel take of the same reach by the same person as any second reading does. Without the first two
+conditions the tracks are 28 true to 354 false; with "hand in the slot" and 6 sightings 13 to 23. Of those 23, 11
+are a true take read under a sibling product (arcwave berry for arcwave original) or at the next cooler door, 3
+are staff restocking, 3 a second track of a true take, 1 a put-back, 5 nothing.
+
+What the hand-only takes that reach the join are (`scripts/bench/study/r7_only.py r7take`, one camera allowed):
+19 acts. 9 a true take of that product, 3 a true cooler take under a sibling product, 2 put-backs read as takes,
+2 staff, 1 a product carried past, 2 that nobody stood near (dropped). With one camera only, 4 of 6 acts given to
+a person were false (old DEV included); with two or more, 2 of 13. Hence the two-camera condition.
+
+### DEV2 scorecard (`results/bench_dev2.md`, `results/bench_dev2_drop.md`, joined again from the stored runs with `--keep`)
+
+| SIMULATED, 20 clips | round 6 | one camera allowed | round 7 (two cameras, kept) | goal |
+|---|---|---|---|---|
+| Thefts flagged, alert or review | 36 of 55 (0.655) | 38 | 38 of 55 (0.691) [0.54 to 0.82] | 0.90 |
+| Thefts at alert tier | 8 of 55 (0.145) | 10 | 10 of 55 (0.182) [0.07 to 0.31] | 0.50 |
+| Alert precision | 6 of 6 | 7 of 7 | 7 of 7 | 0.90 |
+| Honest shoppers reviewed | 8 of 76 (0.105) | 12 | 11 of 76 (0.145) [0.08 to 0.22] | 0.05 |
+| Stolen items listed as unpaid on a record | 30 of 55 | | 34 of 55 | |
+| Picks found | 203 of 230 (0.883) | 0.913 | 209 of 230 (0.909) [0.87 to 0.94] | 0.95 |
+| Pick precision | 0.803 of 259 | 0.782 of 275 | 0.790 of 271 [0.75 to 0.83] | |
+| Right slot, right SKU, right shopper | 0.655, 0.744, 0.773 | 0.638, 0.762, 0.805 | 0.636, 0.756, 0.799 | 0.92, 0.90 |
+| Put-back recall, precision | 0.647, 0.508 of 59 | same | 0.647, 0.508 of 59 | 0.80, 0.75 |
+| Identities per person; on two people | 1.417; 77 of 175 | same | 1.417; 77 of 175 | 1.2; 5 percent |
+| 20 percent of item cameras removed: thefts flagged; honest reviewed | 30 of 55 (10.9 points); 8 of 76 | | 34 of 55 (7.3 points); 12 of 76; 8 at alert tier, 5 of 5 alerts on thieves | at most 10 points |
+| Four-way stress: thefts flagged, at alert tier, honest reviewed | 17 of 55, 0, 12 of 76 | | 23 of 55 [0.26 to 0.56], 0, 15 of 76 [0.10 to 0.29] | |
+| Four-way stress: picks found, pick precision | 0.696, 0.801 of 206 | | 0.757, 0.792 of 226 | |
+
+The round 6 column is reproduced exactly by the same join with the switch off (`whatif.py r7off --hand_only
+false`: 36 of 55, 8 of 76, picks 0.883), so the differences are this change alone.
+
+Newly flagged: both items of 11016 P003 (a counter take and a cooler take nobody read before), both at alert
+tier. Newly reviewed honest shoppers: 11008 P001 and P002, 11011 P003, 11019 P005; no longer reviewed: 11019
+P004. Read in the ledger logs: in 11011 and 11019 a cooler put-back is read as a second take or not read at all,
+so a shopper who put the bottle back holds it unpaid; in 11008 two shoppers took the same product from one door
+1 s apart and one put it back. The cooler put-back is the open end of this change.
+
+Right slot falls because a hand-only take names the product and not the facing: its slot is the nearest facing
+of that product in one camera's picture, right about 1 time in 10. Right SKU and right shopper rise.
+
+### Regression set
+
+Old DEV (shelf events of `out/bench/r6b/dev`, joined again): 16 of 20 thefts flagged, 4 at alert tier, 2 of 22
+honest shoppers reviewed, picks found 0.971, pick precision 0.958 of 71: unchanged, no hand-only take passes the
+gate there. With one camera allowed it was worse: two false picks and a third honest shopper reviewed (7005
+P004), which is the other reason for the two-camera condition.
+
+### Measured and not kept
+
+- **One camera allowed** (middle column): one more honest shopper on DEV2 and one more on old DEV for four more
+  picks found. Left as `min_cams=1`.
+- **Hand-only puts** (the mirror: the item ends at a slot of its product and a hand is in the slot afterwards;
+  counted in the join only if that person holds that product). DEV2: 2 more PUT_BACK events, put-backs found
+  unchanged at 22 of 34, honest shoppers reviewed 12 to 11 with one camera allowed, right SKU 0.762 to 0.757. No
+  goal line moved, so it is in the code switched off (`hand_only_takes(puts=True)`, with the basket rule in
+  `bree.events.shelf.confirm_puts`).
+- **The product seen in the hand names the product where the slot is wrong** (`scripts/bench/study/r7_heldsku.py`,
+  counted only): among 52 picks whose event names another product the true product leads clearly in 6; among 151
+  right ones a third product leads clearly in 9. Not built.
+
+### What is left, in order
+
+1. **Cooler put-backs.** 3 of the 4 newly reviewed honest shoppers come from a cooler put-back read as a take or
+   not read. The pixel comparison cannot see them for the same reason it cannot see the takes. The mirror gate
+   alone did not find them (above); the track of a bottle going back often starts at a slot of its product too,
+   so it reads as a take. Next: decide take or put by the direction of the item across the door plane from two
+   cameras (triangulate), which would also give the right door and facing.
+2. **Thefts the ledger holds and drops** (17 unflagged; 7 at the counter display or with the right product, slot
+   and shopper, closed at 0.15 to 0.30 after "crowded pick" or "no receipt").
+3. **SIMULATOR LIMIT, unchanged, fifth round:** 77 of 175 identities cover two people; generator 2 needs personal
+   space and a queue, then DEV2 rendered again. Items 1 and 2 are partly hidden behind it (11015 P001 is
+   reviewed because finding their true pick removed a discount that had covered two picks from a swapped identity).
+4. **The scorer pairs by time before slot:** 15 wrong-slot picks have a PICK at the true slot paired with
+   another pick (round 3). Right slot, SKU and shopper read lower than they are. Not touched this round.
+5. Alert tier (0.182 against 0.50), right slot (0.636), put-backs (0.647 and 0.508).
+
+Tests: `tests/test_shelf_store.py` has one new test (the gate on synthetic looks); full suite 451 passed, 1 skipped,
+0 failed (counted from the progress lines of `out/bench/r7/tests_full.log`); `scripts/bench/test_bench.py` exits 0.
+Logs and the round 6 scorecards for comparison: `out/bench/r7/`. No shelf pass was run, no clip rendered, no
+checkpoint seed looked at, scorer and simulator untouched.
 
 ## 2026-10-07: round 6 on DEV2 (SIMULATED): false shelf events at the source. Kept: a clean shelf picture under the pixel comparison, and a paid item explains an unpaid pick only where that product is stocked
 

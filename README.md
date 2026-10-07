@@ -748,6 +748,10 @@ make bench-smoke     # one clip, 60 frames per camera, writes nothing to results
   After round 6 (a clean shelf picture under the pixel comparison, `DiffConfig.restore`, and the ledger's "under
   another name" discount only where the paid product is stocked, `bree.shelf.store.MISREAD_WHERE_STOCKED`): 36 of
   55 flagged, 8 of 76 honest shoppers reviewed, pick precision 0.803 (was 0.776), put-backs found 22 of 34.
+  After round 7 (a product seen coming out of its slot in a hand is a take where the pixel comparison reads
+  nothing, `bree.shelf.events.hand_only_takes`, on through `bree.shelf.store.HAND_ONLY`): 38 of 55 flagged, 10 at
+  alert tier, 7 of 7 alerts on thieves, picks found 209 of 230 (was 203), 11 of 76 honest shoppers reviewed (was
+  8), and with 20 percent of item cameras removed 34 of 55 (7.3 points, was 10.9).
 - A put event names the take it undoes (`undoes` against the take's `eids`) and says whether the item was seen going
   into the slot (`item_in`); `bree.events.shelf.confirm_puts` returns takes on that basis.
 

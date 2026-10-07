@@ -2,7 +2,7 @@
 
 SIMULATED (browser store simulator copy, scripts/bench/render_clip.mjs). Not real footage.
 
-20 clips (11001, 11002, 11003, 11004, 11005, 11006, 11007, 11008, 11009, 11010, 11011, 11012, 11013, 11014, 11015, 11016, 11017, 11018, 11019, 11020), 1278 s of sim time, 120 shoppers (44 thieves, 76 honest), 7 staff, 230 picks, 55 stolen items. Runner `bree.shelf.store:run`, options {"backend": "sim_sku", "edge": true, "max_frames": null}. Scored 2026-10-07 09:40, commit 30d1cef.
+20 clips (11001, 11002, 11003, 11004, 11005, 11006, 11007, 11008, 11009, 11010, 11011, 11012, 11013, 11014, 11015, 11016, 11017, 11018, 11019, 11020), 1278 s of sim time, 120 shoppers (44 thieves, 76 honest), 7 staff, 230 picks, 55 stolen items. Runner `bree.shelf.store:run`, options {"backend": "sim_sku", "edge": true, "max_frames": null}. Scored 2026-10-07 19:02, commit 1ee8e9c plus uncommitted changes in src.
 
 ## Scorecard
 
@@ -12,22 +12,22 @@ Stressed: the same clips and pipeline with worse inputs, {"drop_item_cameras": 0
 
 | Metric | Value | Stressed (20 clips) |
 |---|---|---|
-| Thefts flagged, alert tier | 8 of 55 (14.5%) [0.04 to 0.26] | 6 of 55 (10.9%) [0.02 to 0.22] |
-| Thefts flagged, review tier only | 28 of 55 (50.9%) | 24 of 55 (43.6%) |
-| Thefts flagged, alert or review | 36 of 55 (65.5%) [0.50 to 0.80] | 30 of 55 (54.5%) [0.39 to 0.70] |
-| Stolen items listed as unpaid on a record | 30 of 55 (54.5%) | 24 of 55 (43.6%) |
-| Alert precision | 100.0% (6/6) | 100.0% (4/4) |
-| Honest shoppers flagged, alert or review | 8 of 76 (10.5%) [0.04 to 0.18] | 8 of 76 (10.5%) [0.04 to 0.17] |
+| Thefts flagged, alert tier | 10 of 55 (18.2%) [0.07 to 0.31] | 8 of 55 (14.5%) [0.04 to 0.28] |
+| Thefts flagged, review tier only | 28 of 55 (50.9%) | 26 of 55 (47.3%) |
+| Thefts flagged, alert or review | 38 of 55 (69.1%) [0.54 to 0.82] | 34 of 55 (61.8%) [0.46 to 0.76] |
+| Stolen items listed as unpaid on a record | 34 of 55 (61.8%) | 28 of 55 (50.9%) |
+| Alert precision | 100.0% (7/7) | 100.0% (5/5) |
+| Honest shoppers flagged, alert or review | 11 of 76 (14.5%) [0.08 to 0.22] | 12 of 76 (15.8%) [0.08 to 0.24] |
 | Honest shoppers flagged, alert tier | 0 of 76 (0.0%) [0.00 to 0.00] | 0 of 76 (0.0%) [0.00 to 0.00] |
-| Honest shoppers flagged, review tier only | 8 of 76 (10.5%) | 8 of 76 (10.5%) |
+| Honest shoppers flagged, review tier only | 11 of 76 (14.5%) | 12 of 76 (15.8%) |
 | Staff members flagged, alert or review (of them alert tier) | 3 of 7 (0) | 3 of 7 (0) |
 | Staff takes listed as unpaid on a record | 3 of 6 (a PICK event on 5) | 3 of 6 (a PICK event on 5) |
-| Shifted items counted as a pick (of them listed as unpaid) | 7 of 16 (5) | 4 of 16 (3) |
-| Picks found | 203 of 230 (88.3%) [0.84 to 0.92] | 178 of 230 (77.4%) [0.72 to 0.83] |
-| Pick precision (staff takes count as true) | 80.3% of 259 PICK events [0.76 to 0.85] | 84.3% of 217 PICK events [0.81 to 0.88] |
-| Right slot, of paired picks | 65.5% [0.59 to 0.72] | 68.0% [0.61 to 0.75] |
-| Right SKU, of paired picks (nominal planogram given) | 74.4% [0.69 to 0.80]; of all true picks 65.7% | 74.2% [0.68 to 0.80]; of all true picks 57.4% |
-| Right shopper, of paired picks | 77.3% [0.72 to 0.83] | 75.8% [0.69 to 0.82] |
+| Shifted items counted as a pick (of them listed as unpaid) | 8 of 16 (4) | 4 of 16 (3) |
+| Picks found | 209 of 230 (90.9%) [0.87 to 0.94] | 185 of 230 (80.4%) [0.75 to 0.85] |
+| Pick precision (staff takes count as true) | 79.0% of 271 PICK events [0.75 to 0.83] | 83.0% of 229 PICK events [0.79 to 0.86] |
+| Right slot, of paired picks | 63.6% [0.57 to 0.70] | 65.4% [0.58 to 0.72] |
+| Right SKU, of paired picks (nominal planogram given) | 75.6% [0.70 to 0.81]; of all true picks 68.7% | 74.6% [0.68 to 0.81]; of all true picks 60.0% |
+| Right shopper, of paired picks | 79.9% [0.74 to 0.85] | 77.8% [0.71 to 0.84] |
 | Put-backs found (recall) | 22 of 34 (64.7%) [0.48 to 0.81] | 20 of 34 (58.8%) [0.42 to 0.76] |
 | Put-back precision (staff puts count as true) | 50.8% of 59 PUT_BACK events [0.40 to 0.64] | 52.1% of 48 PUT_BACK events [0.42 to 0.64] |
 | Put-backs into another slot found | 9 of 15 | 8 of 15 |
@@ -35,43 +35,43 @@ Stressed: the same clips and pipeline with worse inputs, {"drop_item_cameras": 0
 | Identities that cover two people | 77 of 175 (44.0%) [0.33 to 0.54] | 77 of 175 (44.0%) [0.33 to 0.54] |
 | People never tracked | 3 | 3 |
 | False alerts per hour | 0.0 | 0.0 |
-| Time to alert after concealment | 23.47 s median, 59.42 s max | 37.16 s median, 59.42 s max |
+| Time to alert after concealment | 23.34 s median, 59.42 s max | 29.89 s median, 59.42 s max |
 
 ## Funnel: where each true pick is lost
 
 Each true pick walks the stages in order and is counted at the first one it fails. "Passed on its own" counts the stage for every pick, whatever happened before it.
 
-### All picks: 230 picks, 60 through every stage
+### All picks: 230 picks, 57 through every stage
 
 | stage | reached this stage | lost here | passed on its own |
 |---|---|---|---|
 | in view | 230 | 1 | 229 |
 | frame reached pipeline | 229 | 0 | 229 |
-| hand or item detected | 229 | 45 | 184 |
-| shelf event emitted | 184 | 11 | 203 |
-| right slot | 173 | 50 | 133 |
-| right sku | 123 | 6 | 151 |
-| associated to a shopper | 117 | 0 | 203 |
-| right shopper | 117 | 8 | 157 |
-| conceal or pay classified | 109 | 37 | 153 |
-| ledger basket | 72 | 3 | 184 |
-| alert | 69 | 9 | 147 |
+| hand or item detected | 229 | 31 | 198 |
+| shelf event emitted | 198 | 12 | 209 |
+| right slot | 186 | 63 | 133 |
+| right sku | 123 | 6 | 158 |
+| associated to a shopper | 117 | 0 | 209 |
+| right shopper | 117 | 8 | 167 |
+| conceal or pay classified | 109 | 37 | 154 |
+| ledger basket | 72 | 5 | 186 |
+| alert | 67 | 10 | 140 |
 
-### All picks, stressed: 230 picks, 52 through every stage
+### All picks, stressed: 230 picks, 49 through every stage
 
 | stage | reached this stage | lost here | passed on its own |
 |---|---|---|---|
 | in view | 230 | 1 | 229 |
 | frame reached pipeline | 229 | 1 | 228 |
-| hand or item detected | 228 | 76 | 152 |
-| shelf event emitted | 152 | 11 | 178 |
-| right slot | 141 | 32 | 121 |
-| right sku | 109 | 6 | 132 |
-| associated to a shopper | 103 | 0 | 178 |
-| right shopper | 103 | 9 | 135 |
-| conceal or pay classified | 94 | 30 | 153 |
-| ledger basket | 64 | 4 | 183 |
-| alert | 60 | 8 | 149 |
+| hand or item detected | 228 | 61 | 167 |
+| shelf event emitted | 167 | 13 | 185 |
+| right slot | 154 | 45 | 121 |
+| right sku | 109 | 6 | 138 |
+| associated to a shopper | 103 | 0 | 185 |
+| right shopper | 103 | 9 | 144 |
+| conceal or pay classified | 94 | 30 | 154 |
+| ledger basket | 64 | 6 | 184 |
+| alert | 58 | 9 | 139 |
 
 ### Outcome concealed: 55 picks, 2 through every stage
 
@@ -79,31 +79,31 @@ Each true pick walks the stages in order and is counted at the first one it fail
 |---|---|---|---|
 | in view | 55 | 0 | 55 |
 | frame reached pipeline | 55 | 0 | 55 |
-| hand or item detected | 55 | 9 | 46 |
-| shelf event emitted | 46 | 0 | 52 |
-| right slot | 46 | 15 | 33 |
-| right sku | 31 | 3 | 38 |
-| associated to a shopper | 28 | 0 | 52 |
-| right shopper | 28 | 0 | 42 |
-| conceal or pay classified | 28 | 25 | 4 |
-| ledger basket | 3 | 0 | 30 |
-| alert | 3 | 1 | 8 |
+| hand or item detected | 55 | 5 | 50 |
+| shelf event emitted | 50 | 1 | 53 |
+| right slot | 49 | 18 | 33 |
+| right sku | 31 | 3 | 39 |
+| associated to a shopper | 28 | 0 | 53 |
+| right shopper | 28 | 0 | 45 |
+| conceal or pay classified | 28 | 25 | 5 |
+| ledger basket | 3 | 0 | 34 |
+| alert | 3 | 1 | 10 |
 
-### Outcome paid: 141 picks, 55 through every stage
+### Outcome paid: 141 picks, 52 through every stage
 
 | stage | reached this stage | lost here | passed on its own |
 |---|---|---|---|
 | in view | 141 | 1 | 140 |
 | frame reached pipeline | 140 | 0 | 140 |
-| hand or item detected | 140 | 27 | 113 |
-| shelf event emitted | 113 | 7 | 122 |
-| right slot | 106 | 25 | 86 |
-| right sku | 81 | 2 | 95 |
-| associated to a shopper | 79 | 0 | 122 |
-| right shopper | 79 | 8 | 92 |
+| hand or item detected | 140 | 21 | 119 |
+| shelf event emitted | 119 | 7 | 126 |
+| right slot | 112 | 31 | 86 |
+| right sku | 81 | 2 | 99 |
+| associated to a shopper | 79 | 0 | 126 |
+| right shopper | 79 | 8 | 97 |
 | conceal or pay classified | 71 | 5 | 133 |
-| ledger basket | 66 | 3 | 126 |
-| alert | 63 | 8 | 113 |
+| ledger basket | 66 | 5 | 123 |
+| alert | 61 | 9 | 108 |
 
 ### Outcome put_back: 34 picks, 3 through every stage
 
@@ -111,15 +111,15 @@ Each true pick walks the stages in order and is counted at the first one it fail
 |---|---|---|---|
 | in view | 34 | 0 | 34 |
 | frame reached pipeline | 34 | 0 | 34 |
-| hand or item detected | 34 | 9 | 25 |
-| shelf event emitted | 25 | 4 | 29 |
-| right slot | 21 | 10 | 14 |
-| right sku | 11 | 1 | 18 |
-| associated to a shopper | 10 | 0 | 29 |
-| right shopper | 10 | 0 | 23 |
+| hand or item detected | 34 | 5 | 29 |
+| shelf event emitted | 29 | 4 | 30 |
+| right slot | 25 | 14 | 14 |
+| right sku | 11 | 1 | 20 |
+| associated to a shopper | 10 | 0 | 30 |
+| right shopper | 10 | 0 | 25 |
 | conceal or pay classified | 10 | 7 | 16 |
-| ledger basket | 3 | 0 | 28 |
-| alert | 3 | 0 | 26 |
+| ledger basket | 3 | 0 | 29 |
+| alert | 3 | 0 | 22 |
 
 ### Zone checkout: 43 picks, 13 through every stage
 
@@ -134,8 +134,8 @@ Each true pick walks the stages in order and is counted at the first one it fail
 | associated to a shopper | 29 | 0 | 38 |
 | right shopper | 29 | 2 | 33 |
 | conceal or pay classified | 27 | 10 | 30 |
-| ledger basket | 17 | 1 | 35 |
-| alert | 16 | 3 | 26 |
+| ledger basket | 17 | 1 | 36 |
+| alert | 16 | 3 | 25 |
 
 ### Zone cooler: 41 picks, 2 through every stage
 
@@ -143,17 +143,17 @@ Each true pick walks the stages in order and is counted at the first one it fail
 |---|---|---|---|
 | in view | 41 | 0 | 41 |
 | frame reached pipeline | 41 | 0 | 41 |
-| hand or item detected | 41 | 26 | 15 |
-| shelf event emitted | 15 | 2 | 30 |
-| right slot | 13 | 5 | 12 |
-| right sku | 8 | 1 | 17 |
-| associated to a shopper | 7 | 0 | 30 |
-| right shopper | 7 | 2 | 19 |
-| conceal or pay classified | 5 | 2 | 27 |
-| ledger basket | 3 | 1 | 28 |
-| alert | 2 | 0 | 24 |
+| hand or item detected | 41 | 12 | 29 |
+| shelf event emitted | 29 | 3 | 36 |
+| right slot | 26 | 18 | 12 |
+| right sku | 8 | 1 | 24 |
+| associated to a shopper | 7 | 0 | 36 |
+| right shopper | 7 | 2 | 29 |
+| conceal or pay classified | 5 | 2 | 28 |
+| ledger basket | 3 | 1 | 32 |
+| alert | 2 | 0 | 21 |
 
-### Zone gondola: 146 picks, 45 through every stage
+### Zone gondola: 146 picks, 42 through every stage
 
 | stage | reached this stage | lost here | passed on its own |
 |---|---|---|---|
@@ -166,8 +166,8 @@ Each true pick walks the stages in order and is counted at the first one it fail
 | associated to a shopper | 81 | 0 | 135 |
 | right shopper | 81 | 4 | 105 |
 | conceal or pay classified | 77 | 25 | 96 |
-| ledger basket | 52 | 1 | 121 |
-| alert | 51 | 6 | 97 |
+| ledger basket | 52 | 3 | 118 |
+| alert | 49 | 7 | 94 |
 
 What a stage means:
 
@@ -190,55 +190,55 @@ A pick, a theft or a shopper can carry several tags; "none" has none of them (ni
 | picks | n | found | right slot | right SKU | right shopper | through every stage |
 |---|---|---|---|---|---|---|
 | best camera knocked | 1 | 1 | 0 | 1 | 1 | 0 |
-| group | 44 | 34 | 19 | 25 | 22 | 9 |
-| night | 127 | 112 | 68 | 79 | 85 | 24 |
-| scan dropped | 6 | 5 | 4 | 5 | 3 | 2 |
+| group | 44 | 38 | 19 | 29 | 26 | 8 |
+| night | 127 | 113 | 68 | 82 | 89 | 23 |
+| scan dropped | 6 | 5 | 4 | 5 | 3 | 1 |
 | slot holds another product | 13 | 11 | 7 | 0 | 9 | 0 |
-| none | 171 | 157 | 106 | 124 | 125 | 50 |
+| none | 171 | 159 | 106 | 127 | 131 | 48 |
 
 | stolen items | n | alert tier | alert or review |
 |---|---|---|---|
 | group | 5 | 0 | 2 |
 | night | 31 | 5 | 22 |
 | slot holds another product | 4 | 1 | 2 |
-| none | 46 | 7 | 32 |
+| none | 46 | 9 | 34 |
 
 | honest shoppers | n | flagged, alert tier | flagged, alert or review |
 |---|---|---|---|
-| group carries not pays | 8 | 0 | 2 |
+| group carries not pays | 8 | 0 | 3 |
 | group pays for another | 13 | 0 | 1 |
-| night | 38 | 0 | 4 |
-| put back | 29 | 0 | 6 |
-| put back other slot | 13 | 0 | 3 |
-| scan dropped | 8 | 0 | 1 |
-| touched a shelf | 7 | 0 | 2 |
+| night | 38 | 0 | 5 |
+| put back | 29 | 0 | 9 |
+| put back other slot | 13 | 0 | 5 |
+| scan dropped | 8 | 0 | 4 |
+| touched a shelf | 7 | 0 | 3 |
 | none | 25 | 0 | 0 |
 
 Clips with a scenario option against clips without it (whole clips, so other options are mixed in: a hint, not a measurement):
 
 | option | clips with, without | thefts flagged | honest shoppers flagged | picks found | identities per person |
 |---|---|---|---|---|---|
-| block | 6, 14 | 13/15, 23/40 | 4/21, 4/55 | 59/64, 144/166 | 1.385, 1.432 |
-| bump | 4, 16 | 7/9, 29/46 | 1/15, 7/61 | 42/46, 161/184 | 1.56, 1.382 |
-| dropScan | 6, 14 | 11/13, 25/42 | 2/22, 6/54 | 43/52, 160/178 | 1.371, 1.435 |
-| group | 13, 7 | 26/38, 10/17 | 6/51, 2/25 | 131/150, 72/80 | 1.442, 1.366 |
-| night | 11, 9 | 22/31, 14/24 | 4/38, 4/38 | 112/127, 91/103 | 1.42, 1.414 |
-| shift | 11, 9 | 22/28, 14/27 | 8/44, 0/32 | 109/122, 94/108 | 1.366, 1.482 |
-| staff | 7, 13 | 14/17, 22/38 | 5/26, 3/50 | 78/82, 125/148 | 1.34, 1.462 |
-| wrongSlot | 10, 10 | 19/25, 17/30 | 6/39, 2/37 | 102/116, 101/114 | 1.492, 1.348 |
+| block | 6, 14 | 13/15, 25/40 | 4/21, 7/55 | 60/64, 149/166 | 1.385, 1.432 |
+| bump | 4, 16 | 7/9, 31/46 | 1/15, 10/61 | 42/46, 167/184 | 1.56, 1.382 |
+| dropScan | 6, 14 | 11/13, 27/42 | 4/22, 7/54 | 47/52, 162/178 | 1.371, 1.435 |
+| group | 13, 7 | 26/38, 12/17 | 9/51, 2/25 | 136/150, 73/80 | 1.442, 1.366 |
+| night | 11, 9 | 22/31, 16/24 | 5/38, 6/38 | 113/127, 96/103 | 1.42, 1.414 |
+| shift | 11, 9 | 24/28, 14/27 | 10/44, 1/32 | 114/122, 95/108 | 1.366, 1.482 |
+| staff | 7, 13 | 14/17, 24/38 | 5/26, 6/50 | 78/82, 131/148 | 1.34, 1.462 |
+| wrongSlot | 10, 10 | 19/25, 19/30 | 8/39, 3/37 | 106/116, 103/114 | 1.492, 1.348 |
 
 ## By camera kind (the mount of the item camera with the best view of the pick)
 
 | mount | picks | found | right slot | right SKU | right shopper | false PICK events from this mount |
 |---|---|---|---|---|---|---|
-| ceiling | 39 | 29 | 12 | 17 | 18 | 9 |
-| counter-front | 8 | 7 | 3 | 3 | 3 | 1 |
+| ceiling | 39 | 33 | 12 | 22 | 25 | 12 |
+| counter-front | 8 | 8 | 3 | 4 | 4 | 1 |
 | drop-rod | 34 | 33 | 24 | 28 | 29 | 7 |
-| endcap | 6 | 6 | 3 | 4 | 5 | 2 |
-| none | 21 | 16 | 6 | 7 | 7 | 0 |
+| endcap | 6 | 6 | 3 | 4 | 6 | 2 |
+| none | 21 | 17 | 6 | 8 | 8 | 0 |
 | pole-on-gondola | 10 | 10 | 7 | 9 | 7 | 4 |
-| price-rail | 102 | 92 | 69 | 77 | 79 | 28 |
-| wall | 10 | 10 | 9 | 6 | 9 | 0 |
+| price-rail | 102 | 92 | 69 | 77 | 79 | 30 |
+| wall | 10 | 10 | 9 | 6 | 9 | 1 |
 
 ## Detection detail (independent counts over all true picks)
 
@@ -247,8 +247,8 @@ Clips with a scenario option against clips without it (whole clips, so other opt
 | item detected | 0 |
 | right sku detected | 0 |
 | person detected | 0 |
-| hand detected | 184 |
-| right fixture | 183 |
+| hand detected | 198 |
+| right fixture | 191 |
 | picks with item frames | 229 |
 | picks with item frames reached | 229 |
 
@@ -256,26 +256,26 @@ Clips with a scenario option against clips without it (whole clips, so other opt
 
 | clip | options | cameras | shoppers | thieves | picks | PICK events | stolen | flagged | alerts | false | honest flagged | ids | wall s |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 11001 | group wrongSlot shift bump night | 18 | 6 | 1 | 9 | 10 | 1 | 1 | 1 | 0 | 0 of 5 | 9 | 4.6 |
-| 11002 | group staff block dropScan night | 28 | 5 | 2 | 7 | 9 | 2 | 2 | 2 | 0 | 0 of 3 | 8 | 5.5 |
-| 11003 | wrongSlot | 27 | 5 | 1 | 14 | 16 | 2 | 0 | 0 | 0 | 0 of 4 | 8 | 7.2 |
-| 11004 | group wrongSlot dropScan | 26 | 5 | 1 | 8 | 10 | 2 | 2 | 0 | 0 | 0 of 4 | 7 | 5.8 |
-| 11005 | group wrongSlot shift night | 28 | 6 | 3 | 12 | 16 | 4 | 4 | 0 | 0 | 2 of 3 | 8 | 6.9 |
-| 11006 | group shift dropScan | 19 | 8 | 2 | 10 | 11 | 2 | 2 | 1 | 0 | 0 of 6 | 10 | 4.8 |
-| 11007 | group block night | 26 | 7 | 3 | 12 | 10 | 3 | 2 | 0 | 0 | 0 of 4 | 10 | 6.6 |
-| 11008 | group wrongSlot shift dropScan | 27 | 6 | 3 | 11 | 10 | 4 | 3 | 0 | 0 | 0 of 3 | 9 | 6.7 |
-| 11009 | group staff wrongSlot shift block | 25 | 6 | 3 | 15 | 18 | 4 | 3 | 1 | 0 | 1 of 3 | 9 | 7.0 |
-| 11010 | group staff wrongSlot shift block | 23 | 7 | 1 | 12 | 18 | 1 | 1 | 0 | 0 | 2 of 6 | 12 | 7.0 |
-| 11011 | group night | 22 | 7 | 5 | 17 | 15 | 7 | 3 | 0 | 0 | 0 of 2 | 9 | 6.4 |
-| 11012 | staff wrongSlot shift block night | 22 | 5 | 2 | 11 | 12 | 3 | 3 | 1 | 0 | 0 of 3 | 8 | 5.8 |
-| 11013 | group | 18 | 8 | 4 | 13 | 12 | 4 | 1 | 0 | 0 | 0 of 4 | 12 | 6.0 |
-| 11014 | staff shift bump block dropScan night | 32 | 4 | 2 | 7 | 12 | 2 | 2 | 0 | 0 | 1 of 2 | 7 | 10.6 |
-| 11015 | staff bump night | 23 | 6 | 2 | 15 | 19 | 3 | 2 | 0 | 0 | 0 of 4 | 9 | 14.3 |
-| 11016 | shift | 28 | 6 | 2 | 11 | 11 | 4 | 2 | 0 | 0 | 0 of 4 | 8 | 8.4 |
-| 11017 | group wrongSlot bump night | 31 | 7 | 3 | 15 | 17 | 3 | 2 | 0 | 0 | 0 of 4 | 14 | 10.7 |
-| 11018 | night | 24 | 4 | 1 | 7 | 6 | 1 | 0 | 0 | 0 | 0 of 3 | 6 | 5.8 |
-| 11019 | group wrongSlot shift dropScan | 34 | 5 | 1 | 9 | 7 | 1 | 0 | 0 | 0 | 1 of 4 | 7 | 9.5 |
-| 11020 | staff shift night | 23 | 7 | 2 | 15 | 20 | 2 | 1 | 0 | 0 | 1 of 5 | 10 | 8.8 |
+| 11001 | group wrongSlot shift bump night | 18 | 6 | 1 | 9 | 10 | 1 | 1 | 1 | 0 | 0 of 5 | 9 | 12.7 |
+| 11002 | group staff block dropScan night | 28 | 5 | 2 | 7 | 9 | 2 | 2 | 2 | 0 | 0 of 3 | 8 | 18.2 |
+| 11003 | wrongSlot | 27 | 5 | 1 | 14 | 16 | 2 | 0 | 0 | 0 | 0 of 4 | 8 | 19.5 |
+| 11004 | group wrongSlot dropScan | 26 | 5 | 1 | 8 | 11 | 2 | 2 | 0 | 0 | 0 of 4 | 7 | 23.0 |
+| 11005 | group wrongSlot shift night | 28 | 6 | 3 | 12 | 17 | 4 | 4 | 0 | 0 | 2 of 3 | 8 | 48.3 |
+| 11006 | group shift dropScan | 19 | 8 | 2 | 10 | 11 | 2 | 2 | 1 | 0 | 0 of 6 | 10 | 3.2 |
+| 11007 | group block night | 26 | 7 | 3 | 12 | 11 | 3 | 2 | 0 | 0 | 0 of 4 | 10 | 12.7 |
+| 11008 | group wrongSlot shift dropScan | 27 | 6 | 3 | 11 | 13 | 4 | 3 | 0 | 0 | 2 of 3 | 9 | 15.9 |
+| 11009 | group staff wrongSlot shift block | 25 | 6 | 3 | 15 | 18 | 4 | 3 | 1 | 0 | 1 of 3 | 9 | 15.6 |
+| 11010 | group staff wrongSlot shift block | 23 | 7 | 1 | 12 | 18 | 1 | 1 | 0 | 0 | 2 of 6 | 12 | 14.7 |
+| 11011 | group night | 22 | 7 | 5 | 17 | 17 | 7 | 3 | 0 | 0 | 1 of 2 | 9 | 129.5 |
+| 11012 | staff wrongSlot shift block night | 22 | 5 | 2 | 11 | 12 | 3 | 3 | 1 | 0 | 0 of 3 | 8 | 125.8 |
+| 11013 | group | 18 | 8 | 4 | 13 | 12 | 4 | 1 | 0 | 0 | 0 of 4 | 12 | 2.9 |
+| 11014 | staff shift bump block dropScan night | 32 | 4 | 2 | 7 | 12 | 2 | 2 | 0 | 0 | 1 of 2 | 7 | 8.9 |
+| 11015 | staff bump night | 23 | 6 | 2 | 15 | 19 | 3 | 2 | 0 | 0 | 0 of 4 | 9 | 10.7 |
+| 11016 | shift | 28 | 6 | 2 | 11 | 13 | 4 | 4 | 1 | 0 | 0 of 4 | 8 | 8.5 |
+| 11017 | group wrongSlot bump night | 31 | 7 | 3 | 15 | 17 | 3 | 2 | 0 | 0 | 0 of 4 | 14 | 10.6 |
+| 11018 | night | 24 | 4 | 1 | 7 | 6 | 1 | 0 | 0 | 0 | 0 of 3 | 6 | 6.2 |
+| 11019 | group wrongSlot shift dropScan | 34 | 5 | 1 | 9 | 9 | 1 | 0 | 0 | 0 | 1 of 4 | 7 | 11.1 |
+| 11020 | staff shift night | 23 | 7 | 2 | 15 | 20 | 2 | 1 | 0 | 0 | 1 of 5 | 10 | 8.4 |
 
 ## Every true pick
 
@@ -313,7 +313,7 @@ Clips with a scenario option against clips without it (whole clips, so other opt
 | 11003 | 45.8 | P005 | gondola | G4R-S2-29 | morning_hoops | paid |  | none | 58 (58) |  |  |  | morning_hoops | P005 |
 | 11004 | 12.23 | P001 | gondola | G4R-S3-26 | voltlink_micro | concealed |  | right slot | 55 (55) |  |  |  | caramel_crest | P002 |
 | 11004 | 12.87 | P002 | gondola | G4R-S2-18 | caramel_crest | put_back | group | shelf event emitted | 56 (56) |  |  |  |  |  |
-| 11004 | 21.13 | P004 | cooler | D2-S1-7 | clearwell_water | paid |  | hand or item detected | 30 (30) |  |  |  | morning_hoops | P005 |
+| 11004 | 21.13 | P004 | cooler | D2-S1-7 | clearwell_water | paid |  | right slot | 30 (30) |  |  |  | morning_hoops | P005 |
 | 11004 | 23.5 | P002 | gondola | G4R-S2-43 | cocoa_crest | paid | group | none | 42 (42) |  |  |  | cocoa_crest | P002 |
 | 11004 | 23.67 | P005 | gondola | G4R-S3-9 | torqueline_10w30 | paid |  | none | 59 (59) |  |  |  | torqueline_10w30 | P005 |
 | 11004 | 30.27 | P002 | gondola | G3R-S3-30 | morning_hoops | paid | group scan_dropped | right shopper | 88 (88) |  |  |  | morning_hoops | P001 |
@@ -325,8 +325,8 @@ Clips with a scenario option against clips without it (whole clips, so other opt
 | 11005 | 19.93 | P004 | gondola | G1R-S2-7 | torqueline_10w30 | concealed | night | right slot | 72 (72) |  |  |  | torqueline_10w30 | P004 |
 | 11005 | 21.53 | P005 | gondola | G1R-S4-16 | sierra_nacho | put_back | night | conceal or pay classified | 102 (102) |  |  |  | sierra_nacho | P005 |
 | 11005 | 25.27 | P006 | cooler | D3-S4-1 | pacer_glacier | paid | night | hand or item detected | 49 (49) |  |  |  | pacer_glacier | P006 |
-| 11005 | 27.03 | P001 | cooler | D12-S2-8 | arcwave_berry | put_back | night group | hand or item detected | 48 (48) |  |  |  | crunchly_bbq | P005 |
-| 11005 | 27.8 | P003 | cooler | D10-S4-8 | arcwave_original | concealed | night | hand or item detected | 25 (25) |  |  |  | voltlink_usbc | P005 |
+| 11005 | 27.03 | P001 | cooler | D12-S2-8 | arcwave_berry | put_back | night group | right slot | 48 (48) |  |  |  | voltlink_usbc | P005 |
+| 11005 | 27.8 | P003 | cooler | D10-S4-8 | arcwave_original | concealed | night | right slot | 25 (25) |  |  |  | arcwave_original | P003 |
 | 11005 | 28.9 | P005 | gondola | G2L-S3-22 | voltlink_usbc | paid | night | right slot | 125 (125) |  |  |  | voltlink_usbc | P005 |
 | 11005 | 33.57 | P006 | gondola | G1L-S3-25 | voltlink_micro | concealed | night slot_holds_another_product | right sku | 54 (54) |  |  |  | voltlink_usbc | P006 |
 | 11005 | 44.1 | P001 | gondola | G1L-S2-19 | peanut_pilot | paid | night group | alert | 67 (67) |  |  |  | peanut_pilot | P001 |
@@ -344,8 +344,8 @@ Clips with a scenario option against clips without it (whole clips, so other opt
 | 11007 | 8.63 | P001 | gondola | G2R-S2-40 | peanut_pilot | paid | night | hand or item detected | 37 (37) |  |  |  |  |  |
 | 11007 | 14.38 | P004 | gondola | G3L-S2-32 | relieva_aceta | concealed | night | conceal or pay classified | 61 (61) |  |  |  | relieva_aceta | P004 |
 | 11007 | 14.98 | P005 | gondola | G3L-S4-31 | morning_hoops | put_back | night | conceal or pay classified | 30 (30) |  |  |  | morning_hoops | P005 |
-| 11007 | 15.08 | P002 | cooler | D5-S5-3 | fizzo_zero | paid | night group | hand or item detected | 52 (52) |  |  |  |  |  |
-| 11007 | 15.83 | P003 | cooler | D6-S5-4 | fizzo_cola | paid | night group | right slot | 35 (35) |  |  |  | fizzo_zero | P002 |
+| 11007 | 15.08 | P002 | cooler | D5-S5-3 | fizzo_zero | paid | night group | right slot | 52 (52) |  |  |  | fizzo_zero | P002 |
+| 11007 | 15.83 | P003 | cooler | D6-S5-4 | fizzo_cola | paid | night group | right slot | 35 (35) |  |  |  | fizzo_zero | P003 |
 | 11007 | 16.63 | P006 | checkout | CK-7 | peanut_pilot | paid | night | none | 37 (37) |  |  |  | peanut_pilot | P006 |
 | 11007 | 23.3 | P007 | gondola | G1L-S3-36 | torqueline_5w30 | concealed | night | conceal or pay classified | 23 (23) |  |  |  | torqueline_5w30 | P007 |
 | 11007 | 23.43 | P002 | gondola | G3L-S4-38 | caramel_crest | concealed | night group | right slot | 14 (14) |  |  |  | caramel_crest | P002 |
@@ -353,17 +353,17 @@ Clips with a scenario option against clips without it (whole clips, so other opt
 | 11007 | 31.97 | P006 | gondola | G1L-S1-14 | crunchly_bbq | paid | night | none | 46 (46) |  |  |  | crunchly_bbq | P006 |
 | 11007 | 34.33 | P007 | cooler | D3-S5-3 | orchard_peach | paid | night | hand or item detected | 78 (78) |  |  |  |  |  |
 | 11007 | 35.53 | P006 | gondola | G1L-S1-19 | sierra_nacho | paid | night slot_holds_another_product | right sku | 19 (19) |  |  |  | crunchly_bbq | P006 |
-| 11008 | 13.53 | P001 | cooler | D9-S5-1 | fizzo_cherry | put_back | group | hand or item detected | 33 (33) |  |  |  |  |  |
-| 11008 | 14.2 | P002 | cooler | D9-S2-8 | fizzo_cherry | paid | group | hand or item detected | 34 (34) |  |  |  |  |  |
+| 11008 | 13.53 | P001 | cooler | D9-S5-1 | fizzo_cherry | put_back | group | right slot | 33 (33) |  |  |  | fizzo_cherry | P001 |
+| 11008 | 14.2 | P002 | cooler | D9-S2-8 | fizzo_cherry | paid | group | right slot | 34 (34) |  |  |  | fizzo_cherry | P001 |
 | 11008 | 14.37 | P004 | gondola | G3R-S4-41 | ridgeline_original | concealed |  | conceal or pay classified | 72 (72) |  |  |  | ridgeline_original | P004 |
 | 11008 | 17.5 | P005 | gondola | G4R-S2-45 | caramel_crest | paid |  | alert | 23 (23) |  |  |  | caramel_crest | P005 |
-| 11008 | 19.33 | P003 | gondola | G3R-S2-3 | crunchly_bbq | paid |  | none | 71 (71) |  |  |  | crunchly_bbq | P003 |
+| 11008 | 19.33 | P003 | gondola | G3R-S2-3 | crunchly_bbq | paid |  | ledger basket | 71 (71) |  |  |  | crunchly_bbq | P003 |
 | 11008 | 19.83 | P006 | gondola | G4R-S3-41 | ridgeline_original | paid | slot_holds_another_product | right slot | 55 (55) |  |  |  | caramel_crest | P002 |
 | 11008 | 21.47 | P005 | checkout | CK-5 | peanut_pilot | concealed |  | conceal or pay classified | 38 (38) |  |  |  | peanut_pilot | P005 |
-| 11008 | 22.53 | P001 | gondola | G4L-S4-10 | relieva_ibu | paid | group scan_dropped | none | 52 (52) |  |  |  | relieva_ibu | P001 |
+| 11008 | 22.53 | P001 | gondola | G4L-S4-10 | relieva_ibu | paid | group scan_dropped | ledger basket | 52 (52) |  |  |  | relieva_ibu | P001 |
 | 11008 | 23.13 | P006 | gondola | G4R-S4-41 | caramel_crest | concealed |  | right slot | 67 (67) |  |  |  | lumen_citrus | P004 |
 | 11008 | 31.73 | P003 | checkout | CK-1 | peanut_pilot | paid |  | none | 22 (22) |  |  |  | peanut_pilot | P003 |
-| 11008 | 35.23 | P005 | cooler | D10-S2-2 | arcwave_berry | concealed |  | hand or item detected | 82 (82) |  |  |  |  |  |
+| 11008 | 35.23 | P005 | cooler | D10-S2-2 | arcwave_berry | concealed |  | right slot | 82 (82) |  |  |  | arcwave_original | P005 |
 | 11009 | 12.57 | P002 | checkout | CK-10 | cocoa_crest | concealed |  | conceal or pay classified | 45 (45) |  |  |  | cocoa_crest | P002 |
 | 11009 | 13.43 | P001 | gondola | G1L-S4-38 | caramel_crest | concealed |  | conceal or pay classified | 39 (39) |  |  |  | caramel_crest | P001 |
 | 11009 | 18.27 | P004 | gondola | G2R-S2-18 | voltlink_usbc | paid | group | right slot | 31 (31) |  |  |  | torqueline_10w30 | P006 |
@@ -395,12 +395,12 @@ Clips with a scenario option against clips without it (whole clips, so other opt
 | 11011 | 13.27 | P002 | gondola | G1L-S4-49 | peanut_pilot | paid | night group | shelf event emitted | 12 (12) |  |  |  |  |  |
 | 11011 | 14.4 | P001 | gondola | G1L-S1-16 | crunchly_bbq | paid | night group | right shopper | 35 (35) |  |  |  | crunchly_bbq | P002 |
 | 11011 | 14.43 | P005 | gondola | G4R-S2-35 | cocoa_crest | concealed | night | right slot | 40 (40) |  |  |  | cocoa_crest | P005 |
-| 11011 | 17.67 | P003 | cooler | D11-S2-8 | arcwave_tropical | put_back | night | hand or item detected | 50 (50) |  |  |  | peanut_pilot | P001 |
+| 11011 | 17.67 | P003 | cooler | D11-S2-8 | arcwave_tropical | put_back | night | right slot | 50 (50) |  |  |  | arcwave_tropical | P003 |
 | 11011 | 17.67 | P006 | gondola | G4R-S2-44 | cocoa_crest | paid | night | alert | 27 (27) |  |  |  | cocoa_crest | P006 |
 | 11011 | 19.03 | P001 | gondola | G1L-S2-8 | cocoa_crest | put_back | night group | none | 39 (39) |  |  |  | cocoa_crest | P001 |
 | 11011 | 22.48 | P007 | gondola | G1L-S4-27 | relieva_ibu | paid | night slot_holds_another_product | right sku | 47 (47) |  |  |  | relieva_aceta | P007 |
 | 11011 | 28.1 | P006 | cooler | D11-S5-8 | arcwave_original | concealed | night | conceal or pay classified | 43 (43) |  |  |  | arcwave_original | P006 |
-| 11011 | 30.8 | P003 | gondola | G4R-S4-37 | peanut_pilot | paid | night | none | 42 (42) |  |  |  | peanut_pilot | P003 |
+| 11011 | 30.8 | P003 | gondola | G4R-S4-37 | peanut_pilot | paid | night | alert | 42 (42) |  |  |  | peanut_pilot | P003 |
 | 11011 | 35.6 | P001 | cooler | D11-S4-6 | arcwave_original | paid | night group | none | 44 (44) |  |  |  | arcwave_original | P001 |
 | 11011 | 38.43 | P003 | checkout | CK-14 | peanut_pilot | put_back | night | conceal or pay classified | 50 (50) |  |  |  | peanut_pilot | P003 |
 | 11011 | 40.03 | P007 | gondola | G4R-S3-33 | torqueline_10w30 | concealed | night | hand or item detected | 44 (44) |  |  |  | cocoa_crest | P001 |
@@ -455,13 +455,13 @@ Clips with a scenario option against clips without it (whole clips, so other opt
 | 11015 | 46.68 | P007 | gondola | G3L-S1-24 | voltlink_usbc | concealed | night | conceal or pay classified | 53 (53) |  |  |  | voltlink_usbc | P007 |
 | 11015 | 46.77 | P002 | gondola | G2L-S3-14 | peanut_pilot | paid | night | none | 53 (53) |  |  |  | peanut_pilot | P002 |
 | 11016 | 12.1 | P003 | checkout | CK-10 | cocoa_crest | concealed |  | conceal or pay classified | 46 (46) |  |  |  | cocoa_crest | P003 |
-| 11016 | 13.7 | P001 | cooler | D9-S3-1 | fizzo_cherry | put_back |  | hand or item detected | 46 (46) |  |  |  | arcwave_berry | P001 |
+| 11016 | 13.7 | P001 | cooler | D9-S3-1 | fizzo_cherry | put_back |  | right slot | 46 (46) |  |  |  | arcwave_berry | P001 |
 | 11016 | 16.53 | P004 | gondola | G3R-S3-8 | caramel_crest | paid |  | none | 81 (81) |  |  |  | caramel_crest | P004 |
-| 11016 | 17.63 | P002 | cooler | D8-S4-2 | fizzo_cola | paid |  | hand or item detected | 25 (25) |  |  |  | peanut_pilot | P005 |
+| 11016 | 17.63 | P002 | cooler | D8-S4-2 | fizzo_cola | paid |  | right slot | 25 (25) |  |  |  | fizzo_zero | P002 |
 | 11016 | 19.3 | P005 | gondola | G3R-S1-39 | peanut_pilot | put_back |  | right slot | 108 (108) |  |  |  | ridgeline_original | P004 |
 | 11016 | 22.48 | P001 | cooler | D6-S5-8 | fizzo_cola | paid |  | none | 49 (49) |  |  |  | fizzo_cola | P001 |
-| 11016 | 25.93 | P003 | cooler | D10-S3-2 | arcwave_berry | concealed |  | hand or item detected | 57 (57) |  |  |  | orchard_peach | P006 |
-| 11016 | 26.53 | P006 | cooler | D14-S3-3 | orchard_peach | paid |  | hand or item detected | 27 (27) |  |  |  |  |  |
+| 11016 | 25.93 | P003 | cooler | D10-S3-2 | arcwave_berry | concealed |  | right slot | 57 (57) |  |  |  | arcwave_original | P003 |
+| 11016 | 26.53 | P006 | cooler | D14-S3-3 | orchard_peach | paid |  | hand or item detected | 27 (27) |  |  |  | orchard_peach | P006 |
 | 11016 | 33.3 | P006 | gondola | G4L-S4-3 | torqueline_5w30 | concealed |  | conceal or pay classified | 45 (45) |  |  |  | torqueline_5w30 | P006 |
 | 11016 | 33.57 | P005 | cooler | D4-S2-3 | pacer_punch | paid |  | hand or item detected | 69 (69) |  |  |  | pacer_punch | P005 |
 | 11016 | 40.23 | P006 | gondola | G3R-S4-17 | relieva_aceta | concealed |  | conceal or pay classified | 73 (73) |  |  |  | relieva_aceta | P006 |
@@ -471,7 +471,7 @@ Clips with a scenario option against clips without it (whole clips, so other opt
 | 11017 | 18.67 | P004 | gondola | G1L-S2-34 | caramel_crest | concealed | night | conceal or pay classified | 9 (9) |  |  |  | caramel_crest | P004 |
 | 11017 | 19.6 | P006 | gondola | G3R-S1-54 | oatfield_cookies | put_back | night group | hand or item detected | 80 (80) |  |  |  | oatfield_cookies | P006 |
 | 11017 | 20.68 | P002 | cooler | D12-S5-3 | arcwave_berry | paid | night | right slot | 49 (49) |  |  |  | arcwave_berry | P002 |
-| 11017 | 23.83 | P005 | cooler | D10-S5-6 | arcwave_tropical | concealed | night | hand or item detected | 31 (31) |  |  |  |  |  |
+| 11017 | 23.83 | P005 | cooler | D10-S5-6 | arcwave_tropical | concealed | night | shelf event emitted | 31 (31) |  |  |  |  |  |
 | 11017 | 25.67 | P001 | cooler | D11-S5-1 | arcwave_original | paid | night | right shopper | 53 (53) |  |  |  | arcwave_original | P005 |
 | 11017 | 26.33 | P006 | gondola | G4L-S1-42 | peanut_pilot | put_back | night group best_camera_knocked | right slot | 50 (50) |  |  |  | peanut_pilot | P006 |
 | 11017 | 32.63 | P003 | cooler | D4-S2-4 | pacer_glacier | paid | night | hand or item detected | 70 (70) |  |  |  | pacer_glacier | P003 |
@@ -489,8 +489,8 @@ Clips with a scenario option against clips without it (whole clips, so other opt
 | 11018 | 39.4 | P004 | gondola | G3R-S1-54 | oatfield_cookies | paid | night | conceal or pay classified | 78 (78) |  |  |  | oatfield_cookies | P004 |
 | 11019 | 15.7 | P001 | gondola | G1L-S3-20 | relieva_ibu | concealed |  | conceal or pay classified | 53 (53) |  |  |  | relieva_ibu | P001 |
 | 11019 | 15.93 | P002 | gondola | G1L-S4-16 | voltlink_usbc | paid |  | none | 42 (42) |  |  |  | voltlink_usbc | P002 |
-| 11019 | 17.37 | P004 | cooler | D3-S2-2 | pacer_glacier | paid | group | hand or item detected | 81 (81) |  |  |  | pacer_glacier | P004 |
-| 11019 | 17.57 | P003 | cooler | D2-S4-4 | clearwell_water | paid | group | hand or item detected | 58 (58) |  |  |  |  |  |
+| 11019 | 17.37 | P004 | cooler | D3-S2-2 | pacer_glacier | paid | group | right slot | 81 (81) |  |  |  | pacer_glacier | P004 |
+| 11019 | 17.57 | P003 | cooler | D2-S4-4 | clearwell_water | paid | group | right slot | 58 (58) |  |  |  | clearwell_water | P003 |
 | 11019 | 20.37 | P005 | cooler | D3-S4-4 | pacer_orange | put_back |  | shelf event emitted | 54 (54) |  |  |  |  |  |
 | 11019 | 28.93 | P001 | gondola | G4L-S1-7 | caramel_crest | paid |  | none | 44 (44) |  |  |  | caramel_crest | P001 |
 | 11019 | 31.4 | P002 | gondola | G3R-S3-32 | morning_hoops | paid |  | none | 51 (51) |  |  |  | morning_hoops | P002 |

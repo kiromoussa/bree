@@ -883,3 +883,85 @@ SIMULATED data only. No pipeline file was changed.
   belongs in that stream's commit, with a measured before and after.
 - **`/usr/bin/git` stopped working mid run** ("You have not agreed to the Xcode license agreements"). The licence was
   not accepted on the founder's behalf; git was run with `DEVELOPER_DIR=/Library/Developer/CommandLineTools`.
+
+## Concealment cue from the item cameras (2026-10-06, concealment agent)
+
+SIMULATED data only.
+
+- Concealment cue (SIMULATED, off by default): the cue is "the item was seen in this person's hand after the take and
+  then hands of theirs were seen again and again with no item", scored as a change point, not a gesture classifier.
+  Reason: the detector sees a truly carried item in about half of the moments it sees the hand and a false one in
+  0.01, so absence over many moments is the reliable signal and one frame is not.
+- A take whose item was never seen in the hand is not scored, even with many "hand, no item" moments. Reason: a
+  false take looks the same and is already "unpaid" in the ledger, so scoring it would alert on honest shoppers.
+  Cost: half of the held-out concealments.
+- A moment with both hands in one camera's view counts 2.2 moments. Reason: measured sighting rates (0.60 against
+  0.35), from 1,054 carrying moments on the tuning clips, not from the 28 scored takes.
+- A put act settles a take only when it comes after the item was last seen in the hand. Reason: put-back precision
+  is about 0.39, and an item seen in the hand after the put was not put back by it. One tuning-clip thief gained,
+  no honest shopper lost.
+- The cue never raises a tier by itself. It marks an item the ledger already holds. The tier is the ledger's, or
+  `bree.concealment.tier.retier` when switched on (unpaid AND concealed with a shopper score at or above 0.5 AND
+  identity not uncertain). `retier` never lowers a tier and never makes a record.
+- The per-take model uses one feature (the CUSUM score). With 28 scored takes and 10 positives on the tuning clips
+  more features would be fitted to noise; the others are computed and logged in each cue's `why` for later.
+- The operating point (p at or above 0.6) was chosen on the tuning clips for zero false cues there. It is not
+  retuned on the held-out clips.
+- The crop classifier ("where the hand went") was trained and measured and left out of the model: 0.652 accuracy
+  on held-out scenes after a complete 4-epoch schedule, and a training loss that never left 1.0 to 1.3. A 16-epoch
+  run was stopped twice (the shared laptop took 1,647 s per epoch).
+- Staff are dropped before scoring (the floor tracker's `staff` flag); a staff identity never gets a cue.
+- A scan that lost detections to the detector's NMS time limit is not kept (it raises): results must not depend on
+  what else the laptop was doing.
+- Held-out clips for this work are TRAIN-range seeds that no fit used: 4906, 4950, 4951 (already rendered for
+  `make bench-train`, not among the six tuning clips) and 4960, 4961 and 4962 (rendered for this, in
+  `data/synth/conceal/heldout/`, with the simulator copy that includes the lens and noise pass).
+  Seeds 4963 to 4965 were queued and dropped: a clip took about 40 minutes to render and 20 to stage on the shared
+  laptop, and three more would not have narrowed the intervals enough to change any conclusion here.
+- The cue was frozen before any held-out take was looked at. The reasons listed per held-out concealment are for the
+  record and for the next round; none was used to change the cue.
+
+## Improvement round 1 on DEV2 (2026-10-06)
+
+SIMULATED data only. Numbers are in REPORT.md, round 1 on DEV2.
+
+- **Gap chosen: the pipeline read every picture as a pinhole image while the clips are rendered through a lens.**
+  The lens of each camera is in `calibration.json`, so using it is not ground truth. It was chosen first because it
+  sits under identity, association and slots at once, and because a half-finished lens term was already in the
+  working tree (`calib/camera.py`, `load_calibration`) with no measurement. Checked against the true feet points of
+  one dev2 clip before the run (scoring use of truth only), then measured on all of DEV2. Kept.
+- **The lens term goes into `Camera.project` and `Camera.ray` and nowhere else.** Everything that places a slot, a
+  floor point or a line of sight goes through those two. `floor_homography` and `calibrate` stay pinhole (no caller
+  in the store path); a real wide lens needs its marks undistorted first.
+- **The person boxes of the baseline run were reused** (linked into `out/bench/dev2` and `dev2_stress`). The person
+  detector does not read the calibration, so its boxes are the same; only the shelf pass and the join ran again.
+- **The shelf workers now wait for the detector's NMS** (`patient_nms`, taken over from the concealment stream).
+  ultralytics drops boxes after 2 s on a busy machine; the baseline logs show 9 such cuts on two clips. A result
+  must not depend on the load. This rides in the same run as the lens term, so the shelf events of the two runs
+  differ by both. The tracker half of the lens term was measured apart on the baseline's shelf events.
+- **The looks of the held-item detector are always written** (`pipeline/conceal/looks_<camera>.jsonl`), cue on or
+  off. They cost no second pass and let the cue be switched at the join.
+- **Concealment cue: wired, default off.** On DEV2 it raises 5 of 55 stolen items to alert tier under the ledger's
+  own rule with 5 alerts, 4 on thieves and 1 on a staff member (clip 11012); under `retier` 10 of 55 with 9 alerts,
+  7 on thieves and 2 on staff. No honest shopper is alerted and no review count changes. Alert precision 0.80 and
+  0.78 is under the 0.90 bar and an alert on someone who stole nothing is the worst error, so both switches stay
+  off until staff who walk the floor are recognised (the tracker only knows the clerk behind the counter). Of the
+  two rules the ledger's own is the default candidate: the tier rule doubles the alerts and doubles the staff alerts.
+- **`two_slots` of `one_act_per_reach` (left in the tree by the cut-off attempt) was measured and stays off.** At
+  2.0 s on DEV2 it finds 5 more picks (210 of 230) and one more theft, with 22 more PICK events (precision 0.758 to
+  0.719) and 14 honest shoppers reviewed for 12. The option is kept in the code, off.
+- **`no_receipt_factor` was measured and left at 0.6.** At 1.0 thefts flagged go from 34 to 39 of 55 and honest
+  shoppers reviewed from 12 to 18 of 76. The discount hides thieves who walk past the register or take from the
+  counter, but as a single factor it cannot tell them from honest shoppers with a false pick. Next round.
+- **Floor tracker crash fixed at its cause**: `Track` is compared by identity (`@dataclass(eq=False)`), so
+  `tracks.remove` no longer compares numpy fields. The stressed column now covers all 20 clips.
+- **A stress that only removes cameras or delays receipts reuses the plain run** (`bree.sim.bench.reuse_plain`):
+  each item camera is read by itself, so its events do not depend on which other cameras exist. Checked on clip
+  11018: a real pass over the remaining cameras gives the same 14 shelf events. The four-way stress (pose noise,
+  wrong planogram) still reads the video again.
+- **Camera drop is reported alone as well as inside the four-way stress**, because the goal names it alone
+  (`results/bench_dev2_drop.md`).
+- **`/usr/bin/git` is still blocked by the Xcode licence prompt**; git was run from
+  `/Library/Developer/CommandLineTools/usr/bin`, which also has to be first on PATH for the bench to stamp the commit.
+- **Old DEV and TRAIN-seed clips as regression**: scored from their stored events (their clips have no lens term, so
+  their shelf pass is unchanged): 17 of 20 and 2 of 22, 15 of 19 and 2 of 36, as before.

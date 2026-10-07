@@ -1,6 +1,449 @@
 # BREE vision: report
 
-Newest first. **Wrap-up (2026-10-05)** comes first: baseline, the DEV rounds, the held-out TEST result, stress results and what still fails. Then **One pipeline path** with improvement rounds 5 to 1 and the streams behind them, then **Audit fixes (2026-10-05)**. Then, from the integration of four parallel work streams: **Integration summary (2026-10-05)**, **End to end on simulated data**, **SKU detector trained on simulated frames**, **Calibration, 3D slots and store-wide identity**, **Camera node first pass**, **Human review feedback loop**. Then, unchanged: **Closed-world identity (2026-10-04)**, **Re-ID without the face (2026-10-03)**, **Overnight (2026-10-01)**, **Phase 2 (2026-09-30, real data)** and the **Phase 1 report**. Every number names the file it came from; real-data results and simulated or synthetic results are kept apart and labelled.
+Newest first. **Improvement rounds on DEV2** (benchmark version 2, from 2026-10-06) come first, then **Concealment cue from the item cameras**. Then **Wrap-up (2026-10-05)**: baseline, the DEV rounds, the held-out TEST result, stress results and what still fails. Then **One pipeline path** with improvement rounds 5 to 1 and the streams behind them, then **Audit fixes (2026-10-05)**. Then, from the integration of four parallel work streams: **Integration summary (2026-10-05)**, **End to end on simulated data**, **SKU detector trained on simulated frames**, **Calibration, 3D slots and store-wide identity**, **Camera node first pass**, **Human review feedback loop**. Then, unchanged: **Closed-world identity (2026-10-04)**, **Re-ID without the face (2026-10-03)**, **Overnight (2026-10-01)**, **Phase 2 (2026-09-30, real data)** and the **Phase 1 report**. Every number names the file it came from; real-data results and simulated or synthetic results are kept apart and labelled.
+
+# Improvement rounds on DEV2 (benchmark version 2), newest first
+
+Everything in this section is SIMULATED: clips from the browser store simulator on the `recommended-3d-45` layout,
+rendered by generator 2 (`scripts/bench/README.md`). Nothing here is real store footage. DEV2 is 20 clips, 120
+shoppers (44 thieves, 76 honest), 7 staff, 230 picks, 55 stolen items. Square brackets are 95 percent bootstrap
+intervals. The goal on DEV2: thefts flagged at least 0.90, at alert tier at least 0.50 with alert precision at least
+0.90, honest shoppers reviewed at most 1 in 20, pick recall 0.95, right slot 0.92, right SKU 0.90, put-back recall
+0.80 with precision 0.75, identities per shopper at most 1.2, and no more than 10 points of thefts flagged lost with
+20 percent of the item cameras removed.
+
+## 2026-10-06: round 1 on DEV2 (SIMULATED): the lens term, the concealment cue wired in, a tracker crash
+
+**Result.** The goal is not met. Kept: the camera model now has the lens term that is in every clip's calibration.
+Identities per person 1.551 to 1.417, honest shoppers reviewed 16 to 12 of 76, thefts flagged 33 to 34 of 55. Right
+slot, right SKU, pick recall and put-backs did not move beyond their intervals. The concealment cue is wired into
+the shared runner and stays off: on DEV2 one of its five alerts lands on a staff member.
+
+### Root cause looked at
+
+The pipeline read every picture as a pinhole image. Generator 2 renders through a lens and writes its coefficient
+(`k_div`) into `calibration.json`, which the pipeline is allowed to read and did not use. Checked on dev2 clip 11001
+against the true feet points of every person in every frame (truth read for this check only): the projected floor
+point misses the true image point by a median of 3.9 px and 22 px at the 90th percentile on the overhead cameras
+with the pinhole model, and by 0.1 px with the lens term (item cameras: medians of 1 to 11 px, 73 and 75 px at the
+90th percentile on the G4L and G3R cameras, against 0.1 to 0.3 px and under 1 px). At 3 m under a 520 px focal length 22 px is about
+13 cm on the floor, and the tracker tells two people apart at 0.2 m.
+
+### What changed (commits e6cee4d and eacf7ad)
+
+- `bree.calib.camera.Camera` has `k_div`; `project` applies it and `ray` undoes it, so slot boxes, floor points and
+  lines of sight see the lens. `load_calibration` reads it. Clips without the term (old DEV, TEST, TRAIN) are unchanged.
+- The shelf workers wait for the detector's NMS instead of losing boxes on a busy machine (`patient_nms`).
+- The shelf pass keeps the looks of the held-item detector; `rejoin` takes the concealment cue and its tier rule
+  behind `bree.shelf.store.CONCEAL` and `CONCEAL_TIER` (both off).
+- Floor tracker: a track is compared by identity. The stressed inputs of 11004 and 11007 no longer crash.
+- Bench: a stress that only removes cameras or delays receipts reuses the plain run's per-camera outputs (checked
+  equal to a real pass on clip 11018). What-if takes `--conceal`, `--conceal-tier`, `--src`.
+
+### DEV2 scorecard (`results/bench_dev2.md`, `results/bench_dev2_drop.md`, baseline `results/bench_dev2_baseline.md`)
+
+| SIMULATED, 20 clips | baseline (b551623) | round 1 | goal |
+|---|---|---|---|
+| Thefts flagged, alert or review | 33 of 55 (0.600) [0.44 to 0.74] | 34 of 55 (0.618) [0.45 to 0.76] | 0.90 |
+| Thefts at alert tier | 0 of 55 | 0 of 55 (cue off) | 0.50 |
+| Alert precision | no alerts | no alerts | 0.90 |
+| Honest shoppers reviewed | 16 of 76 (0.211) [0.13 to 0.30] | 12 of 76 (0.158) [0.08 to 0.24] | 0.05 |
+| Staff members flagged | 4 of 7 | 4 of 7 | |
+| Picks found | 204 of 230 (0.887) | 205 of 230 (0.891) [0.85 to 0.93] | 0.95 |
+| Pick precision | 0.752 of 278 | 0.758 of 277 [0.70 to 0.82] | |
+| Right slot, of paired picks | 0.667 [0.60 to 0.73] | 0.644 [0.58 to 0.71] | 0.92 |
+| Right SKU, nominal planogram | 0.755 [0.69 to 0.81] | 0.741 [0.68 to 0.80] | 0.90 |
+| Right shopper, of paired picks | 0.770 | 0.776 [0.72 to 0.83] | |
+| Put-back recall | 17 of 34 (0.500) | 16 of 34 (0.471) [0.30 to 0.65] | 0.80 |
+| Put-back precision | 0.418 of 55 | 0.468 of 47 [0.33 to 0.63] | 0.75 |
+| Identities per person | 1.551 [1.46 to 1.65] | 1.417 [1.35 to 1.50] | 1.2 |
+| Identities that cover two people | 84 of 191 (0.440) | 77 of 175 (0.440) [0.33 to 0.54] | 0.05 of visits |
+| Thefts flagged with 20 percent of item cameras removed | not run | 29 of 55 (0.527) [0.36 to 0.68], 9.1 points under plain | at most 10 points under plain |
+| Thefts flagged, four-way stress (cameras, 0.5 degrees of pose noise, receipts 5 s late, 5 percent of the planogram wrong) | 15 of 50 on 18 clips (2 crashed) | 17 of 55 (0.309) [0.17 to 0.45] on 20 clips | |
+
+Under the four-way stress round 1 also has: picks found 170 of 230, right slot 0.494, right SKU 0.706, honest
+shoppers reviewed 11 of 76, identities per person 1.819. With cameras removed alone: picks found 182 of 230, honest
+shoppers reviewed 10 of 76, identities unchanged. So removing cameras costs 5 of the 17 thefts lost under stress;
+the rest is pose noise, late receipts and the wrong planogram entries together.
+
+What the lens term did, part by part:
+- **Tracker and association alone** (the baseline's shelf events joined again with the lens term, what-if
+  `lens_track`): thefts 34 of 55, honest shoppers reviewed 11 of 76, identities 1.417, right shopper 0.792, right
+  slot 0.643. This is where the gain is.
+- **Shelf pass with the lens term and the patient NMS** (the round 1 run): 277 PICK events for 278, right slot 0.644,
+  honest shoppers reviewed 12. No gain and no loss beyond one shopper. The item cameras have long lenses (focal
+  length 2,500 to 5,000 px), so the lens moves a slot by a few pixels there; right slot is not a lens problem.
+- Right slot 0.667 to 0.644 comes with the tracker change (0.643 in the tracker-only run), inside the interval. It
+  is a rate over paired picks and the pairing changed with it.
+
+Regression sets, scored from their stored shelf events (their clips have no lens term): old DEV 17 of 20 thefts
+flagged and 2 of 22 honest shoppers reviewed, TRAIN-seed clips 15 of 19 and 2 of 36. Unchanged.
+
+Tests: `tests/test_association.py`, `test_shelf_store.py`, `test_shelf_events.py`, `test_concealment.py` pass; full
+suite 433 passed, 0 failed (counted from the progress lines of `out/bench/r1_tests_full.log`);
+`scripts/bench/test_bench.py` 3 passed.
+
+### The concealment cue on DEV2 (measured on the round 1 run by joining again, `scripts/bench/whatif.py --conceal`)
+
+| SIMULATED, DEV2, 44 thieves, 55 stolen items, 76 honest shoppers, 7 staff | cue off | cue on, the ledger's tier rule | cue on, `retier` |
+|---|---|---|---|
+| Stolen items at alert tier | 0 of 55 | 5 of 55 | 10 of 55 |
+| Thieves at alert tier | 0 of 44 | 4 of 44 | 7 of 44 |
+| Alerts, of them on a thief | 0 | 5, 4 (0.80) | 9, 7 (0.78) |
+| Alerts on honest shoppers | 0 of 76 | 0 of 76 | 0 of 76 |
+| Alerts on staff | 0 of 7 | 1 of 7 (11012) | 2 of 7 (11002, 11012) |
+| Thefts flagged, alert or review | 34 of 55 | 35 of 55 | 35 of 55 |
+| Honest shoppers reviewed | 12 of 76 | 12 of 76 | 12 of 76 |
+
+Decision: **off by default.** The cue does what it did on the TRAIN-range clips: no honest shopper alerted, and few
+thieves reached (4 of 44; the bar is half). What DEV2 adds is staff. A vendor or an employee takes an item, carries
+it and puts it somewhere else or walks out with it, which is exactly "seen in the hand, then hands seen without it,
+never paid". The cue drops staff first, but the floor tracker only marks the clerk behind the counter as staff, so
+staff on the floor are scored as shoppers. One staff alert in five is under the 0.90 precision bar, and an alert on
+someone who stole nothing is the worst error. Both switches stay off until staff on the floor are recognised.
+
+### Measured and not kept
+
+- `one_act_per_reach(two_slots=2.0)` (left in the tree by a cut-off attempt): picks found 210 of 230 for 205 and
+  thefts 35 for 34, with 299 PICK events for 277 (precision 0.719) and 14 honest shoppers reviewed for 12. Old DEV:
+  one more pick and three more PICK events; TRAIN-seed clips: 3 honest shoppers reviewed for 2. Left in the code, off.
+- `no_receipt_factor` 1.0 for 0.6: thefts flagged 39 of 55 for 34, honest shoppers reviewed 18 of 76 for 12. Old
+  DEV 18 of 20 and 2 of 22. Not kept: the honest side pays for it. See below for why it matters.
+
+### What is left, in order of thefts lost (DEV2, round 1 run, 21 stolen items not flagged)
+
+The 21 by the first stage their pick fails at: found and on the right shopper with the right slot and SKU, then
+not flagged 9; right slot 6; hand or item detected 5; right SKU 1.
+
+1. **The ledger drops thefts it has in hand (9 of 21).** The pick was found, on the thief, with the right product,
+   and the record ends "1 unpaid, confidence 0.30" or lower, under the 0.40 review bar. Three discounts do it:
+   "went to the register but no receipt matched" (x 0.6: 11007 P007 passed the pay point for 1.2 s, 11016 P003
+   took the item from the counter display, which is at the pay point; 11003 P002 has this and the next one), "a pick that also fits another
+   person" while that person is still in the store when the clip ends (x 0.5: 11011 P007, 11020 P004), and "a paid
+   item did not match the basket" (x 0.5: 11019 P001, whose receipt lists products nobody saw them take). The other
+   three: one take read under three identities (11010 P008), receipts of others covering it (11013 P006), and one
+   identity that picks on after a possible swap and is never seen to leave, so it is never reconciled (11015 P005). The
+   first one is the largest and has a clean test nobody runs yet: was the person at the pay point long enough to
+   pay, and did any receipt close while they stood there.
+2. **Right slot (0.644), the largest loss in the funnel: 54 of 230 picks stop there.** Not the lens (above). Next
+   look: which neighbour was chosen instead and by which cue.
+3. **Honest shoppers reviewed (12 of 76 against 1 in 20)** and **staff (4 of 7 flagged)**: put-back precision 0.47,
+   wrong-slot put-backs 4 of 15 found, and no staff recognition on the floor.
+4. **Alert tier (0, cue off)**: needs staff recognition first, then the cue's recall and the identity cap that the
+   concealment section measures.
+5. **Identity (1.417 against 1.2; 44 percent of identities cover two people).**
+6. **Stress:** the four-way stress halves thefts flagged (34 to 17) and only 5 of those are the missing cameras.
+
+# Concealment cue from the item cameras (2026-10-06, concealment agent; merged by round 1)
+
+Everything here is SIMULATED: clips from the browser store simulator, `recommended-3d-45` layout, 16 to 21 of its
+45 cameras per clip, TRAIN-range seeds only. Nothing is real footage. The DEV2 numbers of the cue, and the decision on
+its default, are in the round 1 entry above this section.
+
+## Bottom line (TRAIN-range clips)
+
+**The acceptance bar is not met.** On the held-out clips (6 TRAIN-range clips the cue was never tuned on)
+1 of 9 (0.02 to 0.43) thieves reach alert tier, with 0 of 27 honest shoppers at alert tier. The bar was at least half
+of thieves. With the cue off it is 0 of 9.
+
+It is not because the simulator hides the concealment. Every concealment on these clips is in view: in all 12
+held-out concealments (and all 15 on the tuning clips) an item camera shows the item in the thief's hand in at
+least 5 frames between the take and the hide. What stops alerts, each measured:
+
+1. **The cue's recall on clips it was not tuned on.** It marks 9 of 13 thieves on the tuning clips and 1 of 9 on
+   the held-out clips (0.02 to 0.43), with no honest shopper marked on either (0 of 19 and 0 of 27). Of the 12
+   held-out concealments: the item was not seen in the hand twice after the take 5, the thief ran under two
+   identities or swapped with another shopper 2, the take's window closed at the hide 2, too few "hand, no item"
+   moments after the hide 2, cued 1. One line each in the results below.
+2. **Identity caps the alert tier even with a perfect cue.** The brief's rule says no alert when identity is
+   uncertain, and the floor tracker marks 31 of 46 tracked people as uncertain on the held-out clips (15 of 36 on
+   the tuning clips). Fed the TRUE concealment times (a bound that reads truth), the pipeline puts 2 of 9 thieves
+   at alert under the tier rule and 5 of 9 when the identity condition is dropped (tuning clips: 4 of 13 and 11 of
+   13). So no concealment cue, however good, reaches half of thieves at alert until identity is surer
+   (weakness 5 of the brief).
+3. **No unpaid record under the thief** (the take was not seen or went to another identity): 3 of 9 held-out
+   thieves, 2 of 13 on the tuning clips. No cue can raise a record that does not exist.
+
+What holds: zero honest shoppers at alert tier with the real cue everywhere it was measured (0 of 19 tuning, 0 of
+27 held-out, upper 95% bound 0.12 on the held-out clips), and no cue on an honest shopper at all. One caution from
+the bound: fed the true concealment times, one honest shopper of 27 is alerted, through a broken track (results).
+
+## What it does
+
+Count reconciliation stays the theft signal (picks, less put-backs, less receipt lines: the ledger). The cue adds
+one fact to an item the ledger already holds: "this item was hidden". No ledger code was changed.
+
+1. **Held items and hands, per item camera** (`bree.concealment.scan`). The same `ShelfCamera` as the shelf stage
+   runs on every item camera and keeps each look of the hand and held-item detector (`HandItemCue.log`, new, off
+   unless set). A detection is a held item when it is not shelf stock, at least half of its box differs from the
+   shelf picture, and it does not lie on a slot of its own product (stock seen past a person or through an open
+   cooler door). One pass gives the shelf events and the looks.
+2. **Whose hand** (`bree.concealment.cue.sightings`). The line of sight through a held item or a hand box passes a
+   tracked person's body axis within 0.6 m at hand height (0.35 to 1.75 m), with nobody else within 0.2 m of that:
+   that person holds it. Floor tracks come from `bree.track.floor`, calibration from the clip.
+3. **After a take, is the item still seen on them?** (`takes_of`). Each take of a person opens a window. It ends
+   1.5 s before their next take, when they come within 1.3 m of the pay point, or when their track ends. Inside the
+   window, every moment in which a camera saw a hand of theirs or an item on them is one observation: item seen, or
+   hand seen with no item. Measured with truth (`scripts/conceal/rates.py`): a shopper who truly carries an item
+   shows an item sighting in 0.49 of such moments on the tuning clips (527 of 1084), an empty-handed one in 0.01
+   (8 of 980). On held-out clips it is 0.60 and 0.01 (seeds 4906, 4950, 4951) and 0.59 and 0.01 (4960, 4961, 4962,
+   the clips rendered with the simulator's lens and noise pass). So a run of "hand, no item" moments is strong
+   evidence and one stray sighting should not erase it. The score is a change point (CUSUM): the best split of the
+   window after which "hand, no item" moments, less 6 for each item sighting, add up the most. A moment in which
+   one camera sees both hands of the person counts 2.2 (new): a carrying shopper shows the item in 0.60 of those
+   moments against 0.35 when one hand is seen (tuning clips), so its absence says more.
+4. **Rules that settle a take without scoring it.** A put act of that person after the item was last seen (or a put
+   of the same product at least 2 s after the take): the item went back to the shelf. The item last seen on the
+   line of sight of its own slot: the same. No item ever seen in the hand after the take (fewer than 2 moments):
+   not scored. This last rule is deliberate. A false take (pick precision is about 0.9) leaves "unpaid" in the
+   ledger and empty hands on camera, which would otherwise look exactly like a concealment and alert on an honest
+   shopper. Its price is every thief whose item the detector never sees in the hand.
+5. **Per-take probability** (`score_take`, `src/bree/concealment/model.json`): a logistic regression on the CUSUM
+   score, fitted on the six tuning clips (`scripts/conceal/fit.py`). Operating point: p at or above 0.6, a CUSUM
+   score of about 14.7. Without the model file a fixed rule is used (score at or above 8).
+6. **Per-shopper score** (`conceal_cues`, written to `pipeline/conceal_scores.json`): one minus the product of
+   (1 - what each take adds), raised by a shelf sweep (3 takes within 8 s and 1.5 m) and by leaving without
+   entering the register zone. What a take adds is its probability over that of a take with no evidence, so many
+   plain takes do not add up to a score (before this change an honest shopper with two plain scored takes had 0.32). Staff
+   identities are dropped first. The ledger is given one CONCEAL event per take at or above the operating point,
+   and one for the strongest take of a shopper whose score is at or above `shopper_bar` (0.5).
+7. **Tiers.** Two ways, both measured below:
+   - the ledger's own rule (nothing to switch): alert when its score passes 0.7 with an unpaid concealed item,
+     capped at review by "identity uncertain", "a paid item did not match the basket" and "a pick that also fits
+     another person";
+   - `bree.concealment.tier.retier` (new, off unless called): the brief's rule and nothing else. A review record
+     becomes an alert when it lists an unpaid item marked concealed, the shopper score is at or above
+     `shopper_bar`, and the ledger's log of the record has no "identity uncertain" line. It never lowers a tier and
+     never makes a record.
+8. **"Where the hand went" crop classifier** (`bree.concealment.where`, `scripts/conceal/train_where.py`): a small
+   CNN on a 64 px crop around a hand box, four classes from two questions (at a shelf or counter, or at the body;
+   item in the hand or not), trained on 13,918 rendered hand crops (seeds 2000 to 2043) with random shift, scale,
+   colour, blur, noise, mirror and pasted coloured patches. Built, measured, and NOT used by the cue: on 3,458
+   crops of held-out scenes it is right in 0.652 of cases, "at a shelf" precision 0.59 and recall 0.67, "item in
+   hand" precision 0.57 and recall 0.74 (`results/conceal_where.json`). The training loss stayed between 1.0 and
+   1.3 (chance is 1.39), so the net is not fitting the crops and a longer schedule alone is not the fix. Its
+   answers still ride along in the looks when the weights file exists; the model ignores them.
+
+What the simulator does not have, so none of this was built or tested for it: baskets, carts, bags, jackets (the
+only hiding place is the front of the waistband, `agents.js`), a second free hand that ever holds anything, handing
+an item to someone else, and shelf sweeps (no scripted shopper makes one: the sweep term never fired).
+
+## How to switch it on
+
+The shelf pass of `bree.shelf.store` keeps every look of the held-item detector in `<out>/pipeline/conceal/looks_<camera>.jsonl`
+(one pass, no second read of the video), so the cue can be switched at the join:
+
+```
+bree.shelf.store.CONCEAL, CONCEAL_TIER                 # the defaults (see round 1 for their values and why)
+rejoin(clip, out, conceal=True, conceal_tier=True)     # per call
+.venv/bin/python scripts/bench/whatif.py conceal --splits dev2 --conceal                    # cue on, the ledger's own tier rule
+.venv/bin/python scripts/bench/whatif.py conceal_tier --splits dev2 --conceal --conceal-tier  # cue on, bree.concealment.tier.retier
+```
+
+With the cue on, `rejoin` writes `pipeline/conceal_cues.jsonl` and `pipeline/conceal_scores.json`; with the tier rule
+on, the ledger's own records are kept in `pipeline/alerts_ledger.jsonl`. The runners `bree.concealment.run:run` and
+`run_tier` remain for the study scripts (`scripts/conceal/eval.py` feeds them the true concealment times as a bound).
+
+The interfaces:
+
+- `conceal_cues(looks, cams, people, acts, who, layout, fps, cfg=None, model="default")` returns `(cues, scores)`.
+  A cue is `{"t", "person_id", "sku_id", "conf", "source": "item_camera", "at": [x, z], "why": {...}}`, the dict
+  `store_events` accepts. `scores` is `{person_id: {"score", "takes", "concealed", "sweep_t", "bypassed_register"}}`.
+  Thresholds live in `ConcealConfig`.
+- `retier(alerts, scores=None, bar=0.5, ignore_identity=False)` takes and returns `Alert.to_dict()` rows.
+
+## Commands
+
+```
+# tests (14)
+.venv/bin/python -m pytest tests/test_concealment.py -q
+
+# looks of one clip (also writes that camera's shelf events)
+.venv/bin/python -m bree.concealment.scan data/synth/bench/train/clip_4900 out/conceal/train/clip_4900
+
+# per-take rows with truth, fit, summary (tuning clips only)
+.venv/bin/python scripts/conceal/rows.py data/synth/bench/train 4900 4901 4902 4903 4904 4905 --runs out/bench/train --looks out/conceal/train --out out/conceal/train/rows_tune2.jsonl --no-model
+.venv/bin/python scripts/conceal/fit.py out/conceal/train/rows_tune2.jsonl --features cusum --write
+.venv/bin/python scripts/conceal/sweep.py data/synth/bench/train out/bench/train out/conceal/train 4900 4901 4902 4903 4904 4905 [--no-model] [-- two_hand_w=1 put_before_s=1]
+.venv/bin/python scripts/conceal/table.py --rows out/conceal/train/rows_tune.jsonl
+
+# shopper level through the ledger: cue off, on, with the true concealment times, and each under the tier rule
+.venv/bin/python scripts/conceal/eval.py data/synth/bench/train 4900 4901 4902 4903 4904 4905 --out out/conceal/runs/tune --stage out/bench/train --looks out/conceal/train --json results/conceal_cue_tune.json
+.venv/bin/python scripts/conceal/eval.py data/synth/bench/train 4906 4950 4951 --out out/conceal/runs/heldout --stage out/bench/train --looks out/conceal/train --json out/conceal/heldout_existing.json
+.venv/bin/python scripts/conceal/eval.py data/synth/conceal/heldout 4960 --out out/conceal/runs/heldout --json out/conceal/heldout_4960.json      # and 4961, 4962
+.venv/bin/python scripts/conceal/merge.py out/conceal/heldout_existing.json out/conceal/heldout_4961.json out/conceal/heldout_4960.json out/conceal/heldout_4962.json --json results/conceal_cue_heldout.json
+.venv/bin/python scripts/conceal/rows.py data/synth/conceal/heldout 4960 --runs out/conceal/runs/heldout/on --out out/conceal/rows_heldout_4960.jsonl      # and the others; out/conceal/rows_heldout.jsonl is all of them
+.venv/bin/python scripts/conceal/table.py results/conceal_cue_heldout.json --rows out/conceal/rows_heldout.jsonl
+
+# held-out clips rendered for this (TRAIN-range seeds, into data/synth/conceal, not into the benchmark folders), then staged
+BREE_PLAYWRIGHT=... scripts/conceal/heldout_queue.sh 4960 4961 4962
+
+# the crop classifier, the sighting rates, where visible held items are lost, and whether each concealment is in view
+.venv/bin/python scripts/conceal/train_where.py --epochs 4
+.venv/bin/python scripts/conceal/rates.py data/synth/bench/train out/bench/train out/conceal/train 4900 4901 4902 4903 4904 4905
+.venv/bin/python scripts/conceal/why_missed.py data/synth/bench/train out/bench/train out/conceal/train 4906 4950 4951
+.venv/bin/python scripts/conceal/visible.py data/synth/bench/train 4900 4901 4902 4903 4904 4905
+```
+
+## Results on the TRAIN-range clips
+
+All SIMULATED. Intervals are Wilson 95%. "Tuning clips" are the six TRAIN-range clips the model and the settings
+were fitted on (seeds 4900 to 4905), so their numbers flatter the cue. "Held-out clips" are TRAIN-range seeds no
+fit or setting ever used: 4906, 4950 and 4951 (rendered for `make bench-train` with the simulator copy from before the lens and noise pass) and 4960, 4961 and 4962 (rendered for this with the copy that has that pass). Together: 6 clips, 9 thieves, 27 honest shoppers, 12 concealments.
+
+### Per take (operating point p at or above 0.6)
+
+| clips | takes | followed by a concealment | cue true | cue false | precision | recall |
+|---|---|---|---|---|---|---|
+| tuning (6) | 64 | 12 | 9 | 0 | 9 of 9 (0.70 to 1.00) | 9 of 12 (0.47 to 0.91) |
+| tuning, each clip scored by a model that never saw it, p at or above 0.5 | 64 | 12 | 9 | 1 | 9 of 10 | 9 of 12 |
+| held-out (6) | 83 | 14 | 1 | 0 | 1 of 1 (0.21 to 1.00) | 1 of 14 (0.01 to 0.32) |
+
+False cues per take not followed by a concealment: 0 of 52 on the tuning clips (0 to 0.07), 0 of 69 (0.00 to 0.05) on the
+held-out clips. The highest probability of such a take is 0.49 on the tuning clips and 0.42 on the held-out
+clips, against the bar of 0.6. The 14 held-out takes followed by a concealment are 12 concealments: two of them fall in the window of two takes each, because the thief ran under two identities.
+
+### Per shopper
+
+| | tuning clips: thieves at alert | honest at alert | held-out clips: thieves at alert | honest at alert |
+|---|---|---|---|---|
+| cue off | 0 of 13 (0 to 0.23) | 0 of 19 (0 to 0.17) | 0 of 9 (0.00 to 0.30) | 0 of 27 (0.00 to 0.12) |
+| cue on, ledger's own rule | 3 of 13 (0.08 to 0.50) | 0 of 19 | 1 of 9 (0.02 to 0.43) | 0 of 27 |
+| cue on, tier rule (`retier`) | 4 of 13 (0.13 to 0.58) | 0 of 19 | 1 of 9 (0.02 to 0.43) | 0 of 27 |
+| cue on, tier rule without the identity condition (measurement only) | 9 of 13 (0.42 to 0.87) | 0 of 19 | 1 of 9 (0.02 to 0.43) | 0 of 27 |
+| TRUE concealment times, ledger's own rule (bound, reads truth) | 3 of 13 | 0 of 19 | 2 of 9 (0.06 to 0.55) | 1 of 27 (see below) |
+| TRUE concealment times, tier rule (bound) | 4 of 13 | 0 of 19 | 2 of 9 (0.06 to 0.55) | 1 of 27 |
+| TRUE concealment times, tier rule without the identity condition (bound) | 11 of 13 (0.58 to 0.96) | 0 of 19 | 5 of 9 (0.27 to 0.81) | 1 of 27 |
+
+Shoppers with a cue before the ledger: thieves 9 of 13 (0.42 to 0.87) and honest 0 of 19 on the tuning clips;
+thieves 1 of 9 (0.02 to 0.43) and honest 0 of 27 (0.00 to 0.12) on the held-out clips. Honest shoppers at alert or review are
+unchanged by the cue: 2 of 19 on the tuning clips and 1 of 27 on the held-out clips, with it off or on.
+
+Why thieves did not reach alert, cue on, tier rule:
+
+- tuning clips (9 of 13): identity uncertain 5, no record with an unpaid item under the shopper 2, unpaid but
+  nothing marked concealed 2;
+- held-out clips: of the 8 not at alert: no record with an unpaid item under the shopper 3, unpaid but nothing marked concealed 5 (identity uncertain 0, because only one thief was cued at all).
+
+Under the ledger's own rule on the tuning clips the 10 are: identity uncertain 3, a paid item did not match the
+basket 2, a pick that also fits another person 1, no record 2, nothing marked concealed 2.
+
+### Where each held-out concealment went
+
+| clip, thief, product | what the cue saw | result |
+|---|---|---|
+| 4906 P001 arcwave_original | item seen 7 moments, then 17 "hand, no item" moments, score 27.8 | cue, alert |
+| 4950 P007 arcwave_tropical | the thief runs under two identities: one has the item sightings to the end of its window, the other has none | no cue |
+| 4951 P003 arcwave_berry | item never seen in the hand after the take; a false put-back read 1.9 s after the take | not scored |
+| 4951 P005 voltlink_micro | hidden 0.3 s after the window closed (it ends 1.5 s before the next take) | score 1.0 |
+| 4961 P001 torqueline_10w30 | item seen in the hand once (two needed), on the line of sight of its own slot | not scored |
+| 4960 P003 torqueline_5w30 | item never seen in the hand; 22 "hand, no item" moments | not scored |
+| 4960 P003 cocoa_crest | item never seen in the hand; the take read under two identities | not scored |
+| 4960 P006 peanut_pilot | item seen 4 moments, then 9 "hand, no item" moments, score 9.0 (p 0.41) | under the bar |
+| 4962 P003 relieva_ibu | hidden 0.7 s before the window closed for the next take | score 2.0 |
+| 4962 P003 caramel_crest | item sightings on the track go on to the end of the window; the track swaps with another shopper at 34.4 s | score 0 |
+| 4962 P005 relieva_aceta | the track ends 0.7 s after the hide; item never seen in the hand | not scored |
+| 4962 P005 arcwave_tropical | one "hand, no item" moment between the hide (60.0 s) and the register zone (70.5 s); no item camera saw the hide | score 1.0 |
+
+Fed the TRUE concealment times, one honest shopper is alerted (4962:P004, 1 of 27, under every rule). The true hide
+by P003 was given to the nearest floor track, which was the honest shopper standing at the same shelf; that track
+then broke inside the store, which the ledger counts as leaving without paying. The real cue did not do this on any
+clip (its ownership test is stricter than "nearest track"), but it shows what a cue on the wrong one of two close
+shoppers costs when a track breaks.
+
+### Is the concealment in view at all? (`scripts/conceal/visible.py`, with truth)
+
+| clips | concealments | item in the hand on an item camera in at least 5 frames (400 px or more) | the hide itself seen by an item camera |
+|---|---|---|---|
+| tuning | 15 | 15 | 11 |
+| held-out | 12 | 12 | 9 |
+
+So the simulator shows every concealment. Where truly visible held items are lost on the way to a sighting
+(`scripts/conceal/why_missed.py`, frames with the item in a hand at 400 px or more): 
+
+| clips | frames | sighting for the right person | no detection | called stock | not different from the shelf picture | on a slot of its own product | no person fits | other |
+|---|---|---|---|---|---|---|---|---|
+| tuning | 2,610 | 827 (32%) | 407 (16%) | 330 (13%) | 309 (12%) | 346 (13%) | 237 (9%) | 154 (6%) |
+| held-out | 4,446 | 1,541 (35%) | 636 (14%) | 534 (12%) | 433 (10%) | 605 (14%) | 493 (11%) | 204 (5%) |
+
+The held-item detector with its three "is this shelf stock" tests is the stage that loses most, on both sets alike.
+
+## What changed in the concealment agent's last pass, each measured on the tuning clips only
+
+| change | tuning clips before | after |
+|---|---|---|
+| a put act only settles a take when it comes after the item was last seen (`put_before_s` 1.0 to 0.0) | cue true 7, false 0 of 12 | true 8, false 0 |
+| a moment with both hands seen by one camera counts 2.2 (`two_hand_w`), model refitted | lowest thief score 11 against highest honest score 9 (true 8) | lowest thief 15.4 against highest honest 11.4 (true 9, false 0) |
+| shopper score from what each take adds over a take with no evidence | an honest shopper with two plain scored takes scored 0.32 | honest shoppers score 0.15 or less, one scores 0.39; the nine cued thieves score 0.55 to 1.00 (bar 0.5) |
+| tier rule `retier` (off by default) | 3 of 13 thieves at alert | 4 of 13, 0 of 19 honest |
+
+The held-out clips 4906, 4950, 4951 and 4961 had been scored once with the earlier cue (1 of 5 thieves cued, 0 of
+20 honest); with the changes they score the same. Clips 4960 and 4962 were first scored after the cue was frozen:
+0 of 4 thieves cued, 0 of 7 honest shoppers cued. The changes above were chosen before looking at any held-out
+take, and nothing was changed after.
+
+## What was handed to the rounds
+
+Items 1 and 2 are done in round 1 (the shared runner keeps the looks, the cue and the tier rule sit behind
+`CONCEAL` and `CONCEAL_TIER`, the shelf workers wait for the detector's NMS). The list as handed over:
+
+1. **Keep it off by default.** Nothing in the default path changed: `HandItemCue.log` is `None` unless set, and
+   `bree.shelf.store:run` makes no cues. `tests/test_concealment.py` (14 tests) passes, and so do
+   `tests/test_shelf_events.py`, `tests/test_hand_detector.py` and `tests/test_conceal.py` (40 in all).
+2. **To switch it on in the shared runner**, make the edit shown above in `bree/shelf/events.py` (keep the looks in
+   the shelf pass) and `bree/shelf/store.py`. Until then use `--runner bree.concealment.run:run` or `run_tier`. The
+   runner reads the item cameras once, so it costs no second pass. It refuses to keep a camera whose detector hit
+   ultralytics' NMS time limit (it raises; `scripts/conceal/heldout_queue.sh` tries again). The shared shelf stage
+   does not check this: on a busy machine it silently loses detections. Worth taking over.
+3. **Decide the tier rule.** `retier` is the brief's rule; the ledger's rule has two more caps. On the tuning clips
+   the difference is one thief (4904:P002, capped by "a pick that also fits another person") and no honest shopper;
+   on the held-out clips there is no difference. That is too little data to say the two extra caps are safe to
+   drop. Recommendation: keep the ledger's rule as the default and score `run_tier` beside it on the next fresh
+   checkpoint.
+4. **Identity is the cap on the alert tier.** With a perfect cue the tier rule reaches 4 of 13 and 2 of 9; without
+   the identity condition 11 of 13 and 5 of 9 (and that perfect cue alerts 1 honest shopper of 27 through a broken
+   track, under every rule). The flag is set on 15 of 36
+   tracked people on the tuning clips and 31 of 46 on the held-out clips. The ledger's logs give the reason:
+   "ids a and b were within 0.2 m of each other and may have been swapped" 11 times on the tuning clips and
+   14 on the held-out clips, "first seen inside the store (entry not seen)" 2 and 9, "ids were
+   all lost and could be the person who reappeared" 2 and 4. Two things for whoever owns identity and the ledger:
+   - clear the flag when the swap cannot matter. A concealment is one short stretch of one track (take, item in the
+     hand, item gone). If the possible swap comes after it, and neither of the two people paid for that product,
+     the item is unpaid whichever of them is which. An alert that names the pair ("one of these two") accuses
+     nobody on a guess. Not built here: it is a ledger and identity decision, and it is not measured on honest
+     shoppers.
+   - fewer flags at the register queue (weakness 5) raise the alert tier directly; re-run
+     `scripts/conceal/eval.py` after any identity change.
+5. **Do not move the operating point on these clips.** p at or above 0.6 was set on the six tuning clips. The
+   highest honest take there is 0.49 and the lowest cued thief 0.62: a thin margin on 19 honest shoppers.
+6. **The cue's own misses, in order of what they cost on the held-out clips**: 
+   - the item is never seen in the hand twice after the take (5 of 12 concealments). A truly visible held item becomes a
+     sighting for the right person in about a third of frames (table above); the three "is this shelf stock" tests
+     take the largest share. A held-item detector that fires less on shelf stock would let those tests relax.
+   - the window closes at the hide (2 of 12): the thief hides while walking up to the next take, or the track ends.
+     Carrying "how many items are on this person" across takes would cover the first.
+   - the thief under two identities, or swapped with another shopper (2 of 12): identity again.
+   - too few "hand, no item" moments between the hide and the register zone (2 of 12): no item camera on the way.
+7. **The crop classifier is not in the operating model** and should stay out until it fits its own training crops.
+8. **Simulator requests** (for whoever owns the scenario generator): a second hiding place than the front of the
+   waistband, a bag or basket, a shopper who sweeps a shelf, a shopper who carries an item in the hand past the
+   register (the cue cannot tell that from a hide once the hand leaves every item camera), and more thieves per
+   clip (1 to 4 per clip makes every interval here wide).
+
+## Files
+
+- `src/bree/concealment/__init__.py`, `scan.py` (looks per item camera, `patient_nms`), `cue.py` (the cue and its
+  config), `tier.py` (the tier rule), `run.py` (benchmark runners `run` and `run_tier`), `where.py` (hand crop
+  classifier), `model.json` (the fitted per-take model, 6 TRAIN-seed clips).
+- `src/bree/shelf/hand.py`: `HandItemCue.log` (new, `None` by default, no change in behaviour unless set).
+- `scripts/conceal/`: `rows.py`, `fit.py`, `sweep.py` (settings on the tuning clips), `show.py`, `eval.py`,
+  `table.py` (one table from eval results and rows), `merge.py` (adds up eval results of clip sets in different
+  folders), `rates.py`, `why_missed.py`, `peek.py`, `visible.py`, `train_where.py`, `render_clips.sh`,
+  `scan_all.sh`, `heldout_queue.sh`.
+- `tests/test_concealment.py` (14 tests).
+- Results: `results/conceal_cue_tune.json`, `results/conceal_cue_heldout.json`, `results/conceal_where.json`.
+- Not in git: `data/synth/conceal/` (held-out clips, crop caches), `out/conceal/` (looks, runs, rows, logs),
+  `models/conceal_where.pt`.
 
 # Wrap-up (2026-10-05): baseline, DEV rounds, held-out TEST, stress results, what still fails
 

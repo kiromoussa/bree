@@ -676,7 +676,18 @@ BREE_SKU_WEIGHTS=sim_sku make bench-dev BENCH_ARGS="--name old_weights"    # the
 The two slow steps keep their output in `<out>/pipeline` (`shelf_events.jsonl`, `people_<camera>.jsonl`). Nothing in
 this path reads ground truth: the bench hands the runner a folder of links without `truth/`.
 
-Limits. No concealment cue is built yet, so every flag is review tier and none is alert tier. The runner replays a
+The camera model has one radial lens term (`k_div` in `calibration.json`, `bree.calib.camera.Camera`): slots, floor
+points and lines of sight are placed through the lens the camera was calibrated with.
+
+Concealment cue (SIMULATED, off by default). The shelf pass keeps every look of the held-item detector in
+`<out>/pipeline/conceal`; `bree.concealment.cue` turns them into "this item was seen in this shopper's hand and then
+their hands were seen without it", and the ledger raises an unpaid item with that mark to alert tier. Switches:
+`bree.shelf.store.CONCEAL` and `CONCEAL_TIER`, or `rejoin(..., conceal=True, conceal_tier=True)`, or
+`scripts/bench/whatif.py <name> --splits dev2 --conceal [--conceal-tier]`. On DEV2 it puts 5 of 55 stolen items at
+alert tier with 4 of 5 alerts on thieves and 1 on a staff member, which is why it is off. REPORT.md: round 1 on DEV2
+and the concealment section.
+
+Limits. With the concealment cue off, every flag is review tier and none is alert tier. The runner replays a
 whole clip (tracks first, then association); a live version has to hold events for a few seconds. The stored person
 boxes carry clothing colour histograms: fine for simulated clips, not to be written to disk in a real store (see
 DECISIONS.md).
@@ -720,6 +731,13 @@ make bench-smoke     # one clip, 60 frames per camera, writes nothing to results
   (with a nominal planogram right SKU is 0.838 on DEV and 0.859 on TEST, bar 0.85; `scripts/bench/nominal_sku.py`);
   each clip holds 16 to 20 of the 45 cameras, chosen so every pick is in view, so false picks from cameras with no
   shopper are undercounted (`scripts/bench/idle_cameras.py`); and the sets are small (14 to 20 stolen items).
+- Benchmark version 2 (SIMULATED, `scripts/bench/README.md`): dev2 is 20 harder clips (groups, staff, wrong-slot
+  put-backs, shifted items, knocked and covered cameras, a dropped scan, night, lens and noise, cameras by aisle,
+  a nominal planogram) and is the tuning set now; a checkpoint pool of 30 unused seeds is rendered 6 at a time.
+  `.venv/bin/python -m bree.sim.bench dev2 --stress` writes `results/bench_dev2.md`;
+  `--drop-item-cameras 0.2 --stress-only --name drop` (with `out/bench/dev2_drop` linked to `out/bench/dev2`) writes
+  `results/bench_dev2_drop.md`. Baseline of the committed pipeline: 33 of 55 thefts flagged, 16 of 76 honest
+  shoppers reviewed, 1.551 identities per person. After round 1 (lens term): 34 of 55, 12 of 76, 1.417.
 - A put event names the take it undoes (`undoes` against the take's `eids`) and says whether the item was seen going
   into the slot (`item_in`); `bree.events.shelf.confirm_puts` returns takes on that basis.
 

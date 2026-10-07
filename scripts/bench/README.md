@@ -125,7 +125,7 @@ percent bootstrap interval. The full scorecard, funnel and per clip table are in
 | Identities per person | 1.551 [1.46 to 1.65] | 1.539 | 1.878 [1.75 to 2.02] |
 | Identities that cover two people | 84 of 191 (44.0%) [0.36 to 0.51] | 76 of 173 (43.9%) | 128 of 212 (60.4%) |
 
-The stressed column has 18 clips because **the committed pipeline crashed on the stressed inputs of 11004 and 11007**
+(Fixed in round 1 on DEV2, 2026-10-06: a track is compared by identity; the stressed run of that round covers all 20 clips.) The stressed column has 18 clips because **the committed pipeline crashed on the stressed inputs of 11004 and 11007**
 (`src/bree/track/floor.py` line 478, `self.tracks.remove(q)`: the track dataclass compares numpy arrays with `==`,
 `ValueError: The truth value of an array with more than one element is ambiguous`). The logs are
 `out/bench/dev2_baseline_stress/clip_11004.log` and `clip_11007.log`. A crash is worse than a miss: read the stressed

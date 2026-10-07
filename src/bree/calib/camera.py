@@ -4,9 +4,10 @@ Frame: the layout file's own (software/sim-prototype/LAYOUT_FORMAT.md): metres, 
 y = 0. A floor-plan point (x_m, y_m) of a store YAML is the layout point (x, 0, z) = (x_m, 0, y_m), as in
 bree/sim/isaac_adapter.floor_points. A mark with a height is (x_m, h_m, y_m).
 
-Model: pinhole, square pixels, principal point at the image centre, no lens distortion.
-ponytail: no distortion term. The planned lenses are about 25 degrees wide, where it is small; add k1 (and
-cv2.calibrateCamera on a checkerboard) if the reprojection error of real marks grows toward the frame edge.
+Model: pinhole, square pixels, principal point at the image centre, one radial lens term `k_div` (0: none).
+A pinhole point (x, y) is imaged at (x, y) / (1 + k_div (x^2 + y^2)): project() applies it and ray() undoes it, so
+everything that goes through those two sees the lens. floor_homography() and calibrate() are pinhole only
+(ponytail: undistort the marks first when a real wide lens is calibrated; cv2.calibrateCamera gives the term).
 
   from_layout()  the design pose of a camera in the layout JSON (yaw, pitch, hfov)
   calibrate()    from marks clicked in the image: floor homography (4+ floor marks) and, with a known focal
@@ -32,17 +33,26 @@ class Camera:
     R: np.ndarray                  # 3x3: layout frame -> camera frame (x right, y down, z forward)
     C: np.ndarray                  # optical centre in the layout frame (x, up, z), metres
     resolution: tuple[int, int] = (0, 0)
+    k_div: float = 0.0             # radial lens term (see the module text); 0 is a pinhole
 
     def project(self, X) -> tuple[np.ndarray, np.ndarray]:
         """Layout points (N, 3) -> (pixels (N, 2), depth along the optical axis (N,)). Depth <= 0: behind."""
         xc = (np.asarray(X, float).reshape(-1, 3) - self.C) @ self.R.T
         z = xc[:, 2]
         zs = np.where(np.abs(z) < 1e-9, 1e-9, z)
-        return np.c_[self.f * xc[:, 0] / zs + self.cx, self.f * xc[:, 1] / zs + self.cy], z
+        x, y = xc[:, 0] / zs, xc[:, 1] / zs
+        if self.k_div:      # past r = 1 / sqrt(k_div) the formula folds back into the frame: hold the scale there, so far points stay outside
+            s = 1.0 + np.minimum(self.k_div * (x * x + y * y), 1.0)
+            x, y = x / s, y / s
+        return np.c_[self.f * x + self.cx, self.f * y + self.cy], z
 
     def ray(self, u: float, v: float) -> np.ndarray:
         """Unit direction (layout frame) of the line of sight through pixel (u, v)."""
-        d = self.R.T @ np.array([(u - self.cx) / self.f, (v - self.cy) / self.f, 1.0])
+        x, y = (u - self.cx) / self.f, (v - self.cy) / self.f
+        if self.k_div:
+            s = 2.0 / (1.0 + math.sqrt(max(1.0 - 4.0 * self.k_div * (x * x + y * y), 0.0)))
+            x, y = x * s, y * s
+        d = self.R.T @ np.array([x, y, 1.0])
         return d / np.linalg.norm(d)
 
     def in_frame(self, px, depth, margin: float = 0.0) -> np.ndarray:
@@ -66,12 +76,12 @@ class Camera:
         return {"f_px": round(float(self.f), 3), "cx": round(float(self.cx), 3), "cy": round(float(self.cy), 3),
                 "R": [[round(float(v), 8) for v in row] for row in self.R],
                 "position": [round(float(v), 4) for v in self.C],
-                "resolution": [int(v) for v in self.resolution]}
+                "resolution": [int(v) for v in self.resolution], **({"k_div": float(self.k_div)} if self.k_div else {})}
 
     @staticmethod
     def from_dict(d: dict) -> "Camera":
         return Camera(float(d["f_px"]), float(d["cx"]), float(d["cy"]), np.asarray(d["R"], float),
-                      np.asarray(d["position"], float), tuple(d["resolution"]))
+                      np.asarray(d["position"], float), tuple(d["resolution"]), float(d.get("k_div", 0.0)))
 
 
 def from_layout(cam: dict) -> Camera:

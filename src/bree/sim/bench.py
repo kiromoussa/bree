@@ -86,10 +86,10 @@ def clip_dirs(split: str, only: list[int] | None = None, batch: int | None = Non
 
 
 def load_calibration(clip: Path) -> dict:
-    """{camera id: bree.calib.camera.Camera} from a clip's calibration.json (true pose, roll included)."""
+    """{camera id: bree.calib.camera.Camera} from a clip's calibration.json (pose as installed, roll and lens term included)."""
     import numpy as np
     from bree.calib.camera import Camera
-    return {c["id"]: Camera(c["fx"], c["cx"], c["cy"], np.asarray(c["R"], float), np.asarray(c["position"], float), tuple(c["resolution"]))
+    return {c["id"]: Camera(c["fx"], c["cx"], c["cy"], np.asarray(c["R"], float), np.asarray(c["position"], float), tuple(c["resolution"]), float(c.get("k_div") or 0.0))
             for c in json.loads((Path(clip) / "calibration.json").read_text())["cameras"]}
 
 
@@ -761,7 +761,23 @@ def _one(args) -> None:
         kw |= {"backend": args.backend, "edge": not args.no_edge, "verbose": args.verbose}
     elif args.runner == "bree.shelf.store:run":
         kw |= {"verbose": args.verbose}
-    getattr(importlib.import_module(mod), fn)(public_view(clip, out, json.loads(args.stress_json) if args.stress_json else None), out, **kw)
+    pub = public_view(clip, out, json.loads(args.stress_json) if args.stress_json else None)
+    if args.reuse and (Path(args.reuse) / "pipeline" / "shelf_events.jsonl").exists():
+        reuse_plain(Path(args.reuse) / "pipeline", out / "pipeline", set(json.loads((pub / "clip.json").read_text())["cameras"]))
+    getattr(importlib.import_module(mod), fn)(pub, out, **kw)
+
+
+def reuse_plain(plain: Path, pipe: Path, cameras: set) -> None:
+    """A stress that leaves the pictures, the poses and the planogram alone (cameras missing, late receipts) changes
+    nothing a remaining camera reports: each camera is read by itself. So the stored person boxes and the shelf events
+    and looks of the remaining cameras of the plain run are that stressed run's own, and only the join runs again."""
+    (pipe / "conceal").mkdir(parents=True, exist_ok=True)
+    for f in [*plain.glob("people_*.jsonl"), *(plain / "conceal").glob("looks_*.jsonl")]:
+        if f.stem.split("_", 1)[1] in cameras and not (pipe / f.relative_to(plain)).exists():
+            (pipe / f.relative_to(plain)).symlink_to(f.resolve())
+    for name in ("shelf_events.jsonl", "shelf_status.jsonl"):
+        if (plain / name).exists():
+            (pipe / name).write_text("".join(json.dumps(r) + "\n" for r in _jsonl(plain / name) if r["camera_id"] in cameras))
 
 
 def main(argv=None) -> None:
@@ -791,6 +807,7 @@ def main(argv=None) -> None:
     ap.add_argument("--verbose", action="store_true")
     ap.add_argument("--run-one", nargs=2, metavar=("CLIP", "OUT"), help=argparse.SUPPRESS)
     ap.add_argument("--stress-json", help=argparse.SUPPRESS)
+    ap.add_argument("--reuse", help=argparse.SUPPRESS)
     a = ap.parse_args(argv)
     if a.run_one:
         return _one(a)
@@ -819,6 +836,8 @@ def main(argv=None) -> None:
             cmd = [sys.executable, "-m", "bree.sim.bench", "--run-one", str(clip), str(run), "--runner", a.runner, "--backend", a.backend]
             cmd += (["--no-edge"] if a.no_edge else []) + (["--max-frames", str(a.max_frames)] if a.max_frames else []) + (["--verbose"] if a.verbose else []) + (["--keep"] if a.keep else [])
             cmd += ["--stress-json", json.dumps(st)] if st else []
+            if st and not st.get("calib_noise_deg") and not st.get("wrong_planogram") and a.runner == "bree.shelf.store:run" and not a.max_frames:
+                cmd += ["--reuse", str(out / clip.name)]
             run.parent.mkdir(parents=True, exist_ok=True)
             with (folder / f"{clip.name}.log").open("w") as log:
                 code = subprocess.run(cmd, stdout=log, stderr=log).returncode

@@ -185,7 +185,7 @@ def _box_break(k, cam: str, det, t: float) -> float:
     return 1.0 - w * h / ((a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - w * h)
 
 
-@dataclass
+@dataclass(eq=False)        # a track is itself, not its numbers: `tracks.remove(q)` compared numpy fields with == and crashed (stressed dev2 11004, 11007)
 class Track:
     id: int
     x: np.ndarray                      # x, z, vx, vz on the floor (constant velocity Kalman filter)

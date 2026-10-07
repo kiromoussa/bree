@@ -283,3 +283,11 @@ def test_pixels_changing_at_the_pay_point_with_no_item_seen_are_not_a_pick():
     assert not [e for e in events if e.type == EventType.PICK] and "where the payer stands" in assocs[0].why
     for evs, where in (([shelf(SLOT, 6.0, source="both")], lay), ([shelf(SLOT, 6.0)], LAY)):      # the item seen in a hand, or no pay point here
         assert [e.type for e in store_events(evs, [visit(1, pay=False)], where)[0] if e.type == EventType.PICK] == [EventType.PICK]
+
+
+def test_a_track_can_be_taken_out_of_a_list_that_holds_another_with_the_same_numbers():
+    from bree.track.floor import Track
+    a, b = Track(1, np.zeros(4), 0.0, 0.0), Track(2, np.zeros(4), 0.0, 0.0)      # a dataclass == on numpy fields raised here
+    tracks = [a, b]
+    tracks.remove(b)
+    assert tracks == [a] and a != b

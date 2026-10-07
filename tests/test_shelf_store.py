@@ -220,3 +220,29 @@ def test_an_act_can_be_timed_by_the_readings_no_put_took_back():
     acts = [ev(22.4, eids=["a"]), ev(25.9, eids=["b"]), ev(26.6, eids=["c"]), ev(27.6, "put", undoes=["a"])]
     assert [g["t"] for g in one_act_per_reach(acts, [1, 1, 1, 1], standing=False) if g["kind"] == "take"] == [22.4, 26.6]       # 4.2 s after the first reading: a second take
     assert [g["t"] for g in one_act_per_reach(acts, [1, 1, 1, 1]) if g["kind"] == "take"] == [25.9]
+
+
+def test_a_lens_term_bends_the_picture_and_the_line_of_sight_undoes_it():
+    import dataclasses
+    cam = look_at([0.0, 2.9, 0.0], [3.0, 0.0, 3.0], f=520.0, res=(1920, 1080))
+    lens = dataclasses.replace(cam, k_div=0.035)
+    X = np.array([[9.0, 0.0, -1.0], [1.0, 0.9, 4.0], [3.0, 0.0, 3.0]])
+    px, z = lens.project(X)
+    assert np.linalg.norm(px[0] - cam.project(X)[0][0]) > 15 and np.allclose(px[2], cam.project(X)[0][2], atol=1e-6)      # bent off the axis, not on it
+    for p, x in zip(px, X):                              # the ray through the bent pixel passes through the point
+        d = lens.ray(*p)
+        assert np.linalg.norm(np.cross(d, x - lens.C)) < 1e-6
+    far, zf = lens.project(np.array([[-40.0, 0.0, 30.0]]))      # far off the axis, where the lens formula folds back: stays out of the frame
+    assert not lens.in_frame(far, zf)[0]
+    assert Camera.from_dict(lens.to_dict()).k_div == 0.035 and "k_div" not in cam.to_dict()
+
+
+def test_two_standing_readings_of_one_camera_at_two_slots_are_two_takes():
+    ev = lambda t, x, sku, eid: {"kind": "take", "t": t, "t_start": t, "point_3d": [x, 1.0, 0.0], "sku_id": sku, "source": "shelf_diff", "cameras": ["a"], "eids": [eid]}  # noqa: E731
+    acts = [ev(17.2, 0.2, "sku1", "a:188:S1"), ev(20.5, 0.6, "sku3", "a:245:S3")]
+    assert len(one_act_per_reach(acts, [1, 1])) == 1                                             # as before: one reach
+    assert [g["sku_id"] for g in one_act_per_reach(acts, [1, 1], two_slots=2.0)] == ["sku1", "sku3"]
+    assert len(one_act_per_reach([acts[0], ev(18.0, 0.6, "sku3", "a:190:S3")], [1, 1], two_slots=2.0)) == 1       # the same moment: one reach read at two slots
+    assert len(one_act_per_reach([acts[0], ev(20.5, 0.6, "sku3", "b:245:S3")], [1, 1], two_slots=2.0)) == 1       # another camera: its slot may be off
+    put = {"kind": "put", "t": 21.0, "t_start": 21.0, "point_3d": [0.2, 1.0, 0.0], "sku_id": "sku1", "source": "shelf_diff", "cameras": ["a"], "undoes": ["a:188:S1"]}
+    assert len([g for g in one_act_per_reach([*acts, put], [1, 1, 1], two_slots=2.0) if g["kind"] == "take"]) == 1      # the first was an arm over the slot

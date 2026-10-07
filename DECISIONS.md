@@ -1007,3 +1007,25 @@ SIMULATED data only. Numbers are in REPORT.md, round 2 on DEV2.
   of this change: their events have no after-picture reading. A fresh shelf pass on them would be the real
   regression check (about 35 minutes); not done this round.
 - **Not looked at: checkpoint seeds.** None rendered, none used.
+
+## Improvement round 3 on DEV2 (2026-10-06)
+
+SIMULATED data only. Numbers are in REPORT.md, round 3 on DEV2.
+
+- **Gap chosen: right slot first, then identity.** Right slot is the largest funnel loss, but its 74 wrong pairs
+  split over five causes and no rule for the slot of a merged act beats the current one (38 to 43 of 55 against 42).
+  No slot change was made. Round 2's pointer (receipts credited to the wrong person) led to identity.
+- **The identity gap is mostly a simulator limit, and it is reported as one.** 94 of 159 identity changes follow a
+  moment where two simulated people were within 0.3 m centre to centre (63 at the pay point). The generator was not
+  changed this round: it would mean rendering DEV2 again and a new baseline, which is the benchmark's job, and the
+  checkpoint pool is not rendered yet so nothing is lost by changing the generator before it is.
+- **`FloorConfig.one_side` is left off.** It lowers identities on two people from 77 to 65 of 175, and reviews 12
+  honest shoppers for 10. Inside the interval, but the wrong way on a headline goal and its decisions could not be
+  checked against truth (4 of 36 clear). To overrule: `scripts/bench/whatif.py x --splits dev2 --floor '{"one_side": true}'`.
+- **The margin of a one-sided decision is half `app_margin`**, because one colour comparison stands in for two. Set
+  before the run, not tuned.
+- **The scorer was not changed.** Pairing a true pick with a PICK at its true slot first would raise right slot by
+  up to 15 pairs. It changes the meaning of a goal line, so it is left for the benchmark agent with the count.
+- **No checkpoint seeds were rendered or looked at. No TRAIN data was rendered.**
+- The study scripts of this round are in `scripts/bench/study/` (`r3_slots.py`, `r3_ident.py`, `r3_idfast.py`); they
+  read truth and are for scoring only. The merge and slot-rule counts came from two throwaway scripts that were not kept.

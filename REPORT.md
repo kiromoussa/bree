@@ -12,6 +12,85 @@ intervals. The goal on DEV2: thefts flagged at least 0.90, at alert tier at leas
 0.80 with precision 0.75, identities per shopper at most 1.2, and no more than 10 points of thefts flagged lost with
 20 percent of the item cameras removed.
 
+## 2026-10-06: round 3 on DEV2 (SIMULATED): identity. Nothing kept; most identity switches follow two simulated people standing in the same place
+
+**Result.** The goal is not met and the DEV2 scorecard is unchanged from round 2 (34 of 55 thefts flagged, 10 of 76
+honest shoppers reviewed, identities per person 1.417, 77 of 175 identities cover two people). One tracker change was
+built, measured and left in the code switched off (`FloorConfig.one_side`). The main finding is about the simulator.
+
+### Gaps looked at
+
+- **Right slot (0.641) first.** Of the 74 paired picks with the wrong slot (`scripts/bench/study/r3_slots.py`, truth for scoring
+  only): 15 have a PICK at the true slot that the scorer paired with another true pick, 18 had a camera reading at the
+  true slot that the fused act did not keep, 16 had the true slot as a second candidate only (11 of them the
+  neighbouring facing of the same product), 8 had readings near and none naming it, 17 had no reading near at all. 21
+  of the 74 are paired with a PICK at another fixture, so "picks found" (0.896) counts them as found.
+- `one_act_per_reach` is not the cause: of the 170 pairs of takes it would merge, 9 are two true takes and 161 are
+  one reach read twice. Choosing the slot inside a merged act by another rule (votes of readings no put took back,
+  with or without the detector's weight) names the true slot in 38 to 43 of the 55 acts that hold it, against 42 as
+  the code stands. No rule change was made; right slot is spread over five causes with no single fix.
+- **Identity then**, because it sits under the register mix-ups round 2 pointed at.
+
+### Root cause (identity)
+
+The simulator has no personal space and no queue: shoppers walk through each other and stand on the same floor point
+at the pay point, and the tracker cannot tell two people apart who are in one place. Measured on the true floor
+positions of DEV2 (`scripts/bench/study/r3_ident.py`; the tracker alone with its meetings: `r3_idfast.py`):
+
+- Of 353 pairs of people in the store at the same time, 135 come within 0.3 m of each other centre to centre (91
+  within 0.1 m); 58 of the 135 at the pay point.
+- 94 of 178 identities change person at least once, 159 changes in all. In the 4 s before the change the two people
+  were within 0.3 m in 94 cases (63 at the pay point, 31 elsewhere), 0.3 to 0.5 m in 12, 0.5 to 1 m in 22, over 1 m
+  in 19, and 12 are hand-backs to a person who was not there before (the clerk, staff).
+- So about 59 percent of the identity errors start from a moment that cannot happen in a store. The goal lines
+  "identities per person at most 1.2" and "no identity on two people in more than 5 percent of visits" cannot be
+  reached on these clips by the pipeline alone.
+
+### What was tried (tracker, `src/bree/track/floor.py`)
+
+After two people meet, the tracker compares clothing colour once both were seen apart five times. On DEV2 it opened
+363 such meetings and left 136 undecided: 86 because one of the two left the store or the track was handed to a new
+track (the meeting kept pointing at the dead one), 50 after waiting 20 s. In 94 of the 136 one of the two had five
+clear looks. Where it does decide with both sides, it is right: 120 right and 3 wrong for "not swapped", 12 and 2
+for "swapped" (cases where the truth is clear).
+
+`one_side` (new, off): a hand-back keeps the open meetings, and when one of the two has left or the wait is over,
+the one who was seen is compared with both remembered colours at half the margin. Nothing fitted; the margin is the
+existing one divided by two.
+
+| SIMULATED, DEV2, 20 clips, rejoined from stored events (`scripts/bench/whatif.py`) | off (round 2) | `one_side` on |
+|---|---|---|
+| Identities that cover two people | 77 of 175 | 65 of 175 |
+| Identities per person | 1.417 | 1.417 |
+| Thefts flagged | 34 of 55 | 35 of 55 |
+| Honest shoppers reviewed | 10 of 76 | 12 of 76 |
+| Right slot, right SKU, right shopper | 0.641, 0.733, 0.772 | 0.626, 0.723, 0.772 |
+| Put-back recall, precision | 0.588, 0.519 of 54 | 0.588, 0.509 of 55 |
+
+**Not kept (left off).** The targeted number improves and honest reviews stay inside the interval (0.07 to 0.21), but
+two more honest shoppers are reviewed, which is the wrong direction on a headline goal, and the new decisions could
+not be checked: of the 36 one-sided decisions the truth is clear for 4 (2 right, 2 neither). The new reviews (11001
+P006, 11013 P003, 11019 P005) are false or repeated picks that now stay on one identity instead of being discounted
+as "identity uncertain". This is the pattern of round 4 on old DEV: with identity right more often, the ledger's
+doubt discounts stop hiding false picks.
+
+Kept in the code: `FloorTracker.settled` (a record of every meeting and what was decided, read by nothing in the
+pipeline), the `one_side` option (off), one test. With the option off DEV2 and old DEV rejoin to the round 2 numbers
+exactly (`out/bench/r3/whatif_off.log`, `whatif_default.log`): DEV2 34 of 55 and 10 of 76, old DEV 17 of 20 and 2 of 22.
+No scorecard in `results/` was rewritten, since nothing the pipeline does by default changed.
+
+Tests: `tests/test_association.py` 29 passed (with the new test); full suite 434 passed, 1 skipped, 0 failed (counted from
+the progress lines of `out/bench/r3/tests_full.log`, started before the new test was added); `scripts/bench/test_bench.py` passes.
+
+### What is left, in order
+
+1. **SIMULATOR LIMIT first: give generator 2 personal space and a queue at the pay point**, then render DEV2 again
+   and take a new baseline. Until then identity, the register mix-ups behind 7 of the 24 unpaid items on reviewed
+   honest shoppers, and the identity cap on the alert tier are measured against scenes a store does not have.
+2. Pipeline, not the simulator: false and repeated picks on honest shoppers (pick precision 0.776), which is what the
+   identity fix exposed; cooler picks never read (25 of 41 cooler picks lost at "hand or item detected"); the scorer's
+   pairing (15 picks) should prefer a PICK at the true slot; staff on the floor; the 10 thefts the ledger holds and drops.
+
 ## 2026-10-06: round 2 on DEV2 (SIMULATED): a product that arrives in a slot is a put, not a take
 
 **Result.** The goal is not met. Kept: the shelf pass now reads the picture after each change with the SKU detector,

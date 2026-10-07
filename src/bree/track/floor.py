@@ -78,6 +78,7 @@ class FloorConfig:
     other_m: float = float("inf")
     other_app: float = 0.25
     app_wait_s: float = 20.0          # no clear look at both for this long after they met: left undecided
+    one_side: bool = False            # ... unless one of them was seen clear: then that one is compared with both colours, and a hand-back keeps the open meetings. Off: round 3 on DEV2, REPORT.md
     staff_share: float = 0.7          # an identity that spends this share of its time behind the counter is staff
 
 
@@ -273,6 +274,7 @@ class FloorTracker:
         self.log: list[str] = []
         self.meetings: list[dict] = []      # two people who came close and have not been looked at apart yet
         self.swaps: list[tuple[float, float, int, int]] = []     # (from, to, id, id): ids given out in that span were crossed
+        self.settled: list[dict] = []       # every meeting that ended: when, who, the two colour matches, what was decided
 
     def _count(self, what: str) -> None:
         self.counts[what] = self.counts.get(what, 0) + 1
@@ -411,13 +413,24 @@ class FloorTracker:
             if not any(q is m for q in self.meetings):
                 continue                              # dropped a moment ago: one of its two was just swapped by another meeting
             a, b = m["a"], m["b"]
-            if len(m["fa"]) >= c.app_frames and len(m["fb"]) >= c.app_frames:
-                fa, fb = np.sum(m["fa"], axis=0), np.sum(m["fb"], axis=0)
-                straight, crossed = app_dist(a.app, fa) + app_dist(b.app, fb), app_dist(a.app, fb) + app_dist(b.app, fa)
-                if abs(straight - crossed) >= c.app_margin:
+            here = [k.state in ("live", "lost") for k in (a, b)]
+            over = t - m["t0"] > c.app_wait_s or not any(here)
+            na, nb = len(m["fa"]), len(m["fb"])
+            # one_side: one of the two has left the store (or the wait is over) and only the other was seen clear. Their
+            # clothes are still compared with both remembered colours: half the evidence, so half the margin.
+            one = c.one_side and max(na, nb) >= c.app_frames and min(na, nb) < c.app_frames and (over or not all(here))
+            if (na >= c.app_frames and nb >= c.app_frames) or one:
+                fa, fb = (np.sum(f, axis=0) if len(f) >= c.app_frames else None for f in (m["fa"], m["fb"]))
+                pairs = [(x, f) for x, f in ((a, fa), (b, fb)) if f is not None]
+                other = {id(a): b, id(b): a}
+                straight, crossed = sum(app_dist(x.app, f) for x, f in pairs), sum(app_dist(other[id(x)].app, f) for x, f in pairs)
+                margin = c.app_margin * len(pairs) / 2
+                self.settled.append({"t0": m["t0"], "t": t, "ids": (a.id, b.id), "straight": straight, "crossed": crossed, "sides": len(pairs),
+                                     "said": "cannot tell" if abs(straight - crossed) < margin else "swapped" if crossed < straight else "not swapped"})
+                if abs(straight - crossed) >= margin:
                     if crossed < straight:
                         self.log.append(f"{t:7.1f}s ids {a.id} and {b.id} had been swapped when they met at {m['t0']:.1f}s: put right by clothing colour "
-                                        f"(crossed {crossed:.2f}, straight {straight:.2f})")
+                                        f"(crossed {crossed:.2f}, straight {straight:.2f}{', one of them seen' if one else ''})")
                         self.swaps.append((m["t0"], t, a.id, b.id))
                         _swap_identity(a, b, m["t0"])
                         self._count("swaps_put_right")
@@ -433,9 +446,11 @@ class FloorTracker:
                     for k in (a, b):
                         if k.uncertain is None:
                             k.uncertain, k.t_uncertain = why, m["t0"]
-                a.app, b.app = a.app + np.sum(m["fa"], axis=0), b.app + np.sum(m["fb"], axis=0)
+                for x, f in pairs:
+                    x.app = x.app + f
                 self.meetings.remove(m)
-            elif t - m["t0"] > c.app_wait_s or a.state not in ("live", "lost") or b.state not in ("live", "lost"):
+            elif over or (not c.one_side and not all(here)):
+                self.settled.append({"t0": m["t0"], "t": t, "ids": (a.id, b.id), "said": "never seen apart", "looks": (na, nb)})
                 self.meetings.remove(m)               # never seen apart: any doubt mark stays
 
     def _through_door(self, xz: np.ndarray) -> bool:
@@ -479,6 +494,11 @@ class FloorTracker:
             k.id, k.path, k.kpts, k.born, k.staff = q.id, q.path, q.kpts, q.born, q.staff
             k.uncertain, k.t_uncertain, k.t_first = q.uncertain, q.t_uncertain, q.t_first
             k.app, k.app_n = q.app, q.app_n
+            if c.one_side:                                 # the meetings the lost track was in go on with the track that carries the person now
+                for m in self.meetings:
+                    for side in ("a", "b"):
+                        if m[side] is q:
+                            m[side] = k
             rivals = [r for s, r in cand[1:] if s >= c.rival_ratio * cand[0][0]]
             if rivals:
                 why = f"ids {', '.join(str(r.id) for r in [q] + rivals)} were all lost and could be the person who reappeared at {t:.1f}s"

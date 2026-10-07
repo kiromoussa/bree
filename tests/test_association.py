@@ -302,3 +302,21 @@ def test_a_track_can_be_taken_out_of_a_list_that_holds_another_with_the_same_num
     tracks = [a, b]
     tracks.remove(b)
     assert tracks == [a] and a != b
+
+
+def test_a_meeting_is_settled_from_the_one_who_stayed_only_when_one_side_is_on():
+    """Two people met, one walked out before both were seen apart. Off (default): never decided. On: the one who
+    stayed is compared with both remembered colours and, wearing the other's colours, takes the other's identity."""
+    from bree.track.floor import Track
+    red, blue = np.zeros((2, 52)), np.zeros((2, 52))
+    red[:, 0], blue[:, 30] = 1.0, 1.0
+    for on, want in ((False, (1, 2)), (True, (2, 1))):
+        cams = {c: from_layout(next(x for x in LAY["cameras"] if x["id"] == c)) for c in [x["id"] for x in LAY["cameras"]][:1]}
+        tr = FloorTracker(cams, layout=LAY, cfg=FloorConfig(one_side=on))
+        a = Track(1, np.array([0.0, 0.0, 0.0, 0.0]), 0.0, 10.0, state="live", app=red.copy(), app_n=5, path=[(0.0, 0.0, 0.0), (10.0, 0.0, 0.0)])
+        b = Track(2, np.array([3.0, 3.0, 0.0, 0.0]), 0.0, 8.0, state="exited", app=blue.copy(), app_n=5, path=[(0.0, 3.0, 3.0), (8.0, 3.0, 3.0)])
+        tr.tracks = [a, b]
+        tr.meetings = [{"t0": 5.0, "a": a, "b": b, "fa": [blue.copy()] * 5, "fb": [], "marks": []}]
+        tr._colours(10.0, {})
+        assert (a.id, b.id) == want and not tr.meetings
+        assert tr.settled[-1]["said"] == ("swapped" if on else "never seen apart")

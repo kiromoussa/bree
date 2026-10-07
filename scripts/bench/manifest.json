@@ -63,8 +63,24 @@
   "checkpoint": {
    "seeds": "13001:13031",
    "gen": 2,
-   "used": [],
-   "batches": [],
+   "used": [
+    13001,
+    13002,
+    13003,
+    13004,
+    13005,
+    13006
+   ],
+   "batches": [
+    [
+     13001,
+     13002,
+     13003,
+     13004,
+     13005,
+     13006
+    ]
+   ],
    "use": "held-out pool of 30 seeds, rendered 6 at a time: `.venv/bin/python scripts/bench/render_split.py checkpoint --next 6` renders the next 6 unused seeds and marks them used. A batch is scored once (`python -m bree.sim.bench checkpoint --stress`), by a pipeline that was not tuned on it. Nobody looks at the frames or the truth of an unused seed."
   }
  }

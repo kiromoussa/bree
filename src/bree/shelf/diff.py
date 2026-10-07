@@ -45,6 +45,12 @@ class DiffConfig:
     max_shift_px: float = 12.0  # working scale; a larger one cannot be undone: camera unreliable
     big_change: float = 0.5     # this share of the picture unlike the reference: unreliable, nothing is read
     reset_still_s: float = 1.0  # unreliable and nothing moved this long: take a new reference picture
+    # restore: keep a second picture, the shelf as the last event left it (`base`). The reference takes in every small
+    # still patch, event or not, and so collects pieces of arms and sleeves that paused in front of the shelf; when
+    # they leave, the place differs from the reference again and used to read as a take of the slot under it. With
+    # restore, a patch that looks like `base` again is nothing; the picture "before" a take is cut from `base`; and a
+    # second reading of a slot no longer overwrites the picture from before its first take (a put-back after it was a take too).
+    restore: bool = True
     evidence_dir: str | None = None   # write before/after crops of every event here (evidence.before / .after)
 
 
@@ -150,7 +156,8 @@ class ShelfDiff:
         self.readable = self.area >= c.min_slot_px
         self.max_area = c.max_slot_areas * float(self.area.max()) if len(self.area) else 0.0
         self.ref = self.prev = self.still = self.last_same = self.changed = self.moved = None
-        self.taken: dict[int, tuple[tuple[int, int, int, int], np.ndarray, dict]] = {}     # slot index -> (box, picture before, take event)
+        self.taken: dict[int, list[tuple[tuple[int, int, int, int], np.ndarray, dict]]] = {}     # slot index -> [(box, picture before, take event)], oldest first
+        self.base = None           # the shelf as the last event left it (cfg.restore)
         self.f = -1
         # camera health: records {"camera_id", "t", "kind": "status", "status": ..., ...} for the association step.
         # "unreliable" opens a window in which this camera reports nothing; "reference_reset" or "reliable" closes it.
@@ -218,6 +225,7 @@ class ShelfDiff:
             if calm:        # the view has settled on a new picture: that is the shelf now. Earlier takes cannot be matched by a put any more
                 self._set_ref(raw)
                 self.taken.clear()
+                self.base = raw.copy()
                 self.last_same[:] = self.f
                 self.unreliable, self.quiet = False, 0
                 # how far the new picture sits from the one the calibration was made for
@@ -243,6 +251,7 @@ class ShelfDiff:
         img = cv2.resize(image, (self.ids.shape[1], self.ids.shape[0]), interpolation=cv2.INTER_AREA) if c.scale != 1 else image
         if self.ref is None:
             self._set_ref(img)
+            self.base = img.copy()
             self.still = np.zeros(img.shape[:2], np.int32)
             self.last_same = np.zeros(img.shape[:2], np.int32)
             self.changed = np.zeros(img.shape[:2], np.uint8)
@@ -280,6 +289,8 @@ class ShelfDiff:
                 continue
             core = m & (changed[y:y + h, x:x + w] > 0)
             ev = self._read(img, (x, y, w, h), m, core, cent[k])
+            if ev and c.restore:
+                self.base[y:y + h, x:x + w][m] = img[y:y + h, x:x + w][m]
             if ev:
                 if c.evidence_dir:
                     self._evidence(ev, img, (x, y, w, h))
@@ -299,17 +310,23 @@ class ShelfDiff:
         t0 = float(np.median(self.last_same[y:y + h, x:x + w][core])) / self.fps
         # back to the picture before an earlier take of a slot under this patch: a put (checked first: the returned
         # item sits where the camera saw it leave, whatever the overlap says)
-        for j in [int(j) for j in order if iou[j] > 0.05 and int(j) in self.taken]:
-            (bx, by, bw, bh), before, take = self.taken[j]
+        def same(bbox, before) -> bool:
+            bx, by, bw, bh = bbox
             ax, ay, ex, ey = max(x, bx), max(y, by), min(x + w, bx + bw), min(y + h, by + bh)
             if ex <= ax or ey <= ay:
-                continue
+                return False
             d = img[ay:ey, ax:ex].astype(np.int16) - before[ay - by:ey - by, ax - bx:ex - bx].astype(np.int16)
-            if np.abs(d).max(axis=2).mean() < c.put_match:
-                del self.taken[j]
-                # the put names the take it undoes: this camera saw this place go back to the picture from before that
-                # take, whether an item was returned or an arm that had covered the slot went away
-                return {**self._event("put", j, take["sku_conf"], take["slots"], t0, cent, int(m.sum())), "undoes": list(take["eids"])}
+            return bool(np.abs(d).max(axis=2).mean() < c.put_match)
+        for j in [int(j) for j in order if iou[j] > 0.05 and self.taken.get(int(j))]:
+            for n in reversed(range(len(self.taken[j]))):       # newest first; a match with an older picture undoes every reading since
+                if same(*self.taken[j][n][:2]):
+                    gone, self.taken[j] = self.taken[j][n:], self.taken[j][:n]
+                    take = gone[0][2]
+                    # the put names the takes it undoes: this camera saw this place go back to the picture from before
+                    # them, whether an item was returned or an arm that had covered the slot went away
+                    return {**self._event("put", j, take["sku_conf"], take["slots"], t0, cent, int(m.sum())), "undoes": [x for g in gone for x in g[2]["eids"]]}
+        if c.restore and core.any() and np.abs(img[y:y + h, x:x + w].astype(np.int16) - self.base[y:y + h, x:x + w].astype(np.int16)).max(axis=2)[core].mean() < c.put_match:
+            return None        # the changed pixels look as the last event left them: something that had been taken into the reference went away
         if iou[best] < c.min_slot_iou:
             return None
         second = float(iou[order[1]]) if len(order) > 1 else 0.0
@@ -319,7 +336,7 @@ class ShelfDiff:
         # single-facing slot always; a depth-aware count (how far back the new front item sits) is the upgrade.
         ev["count"] = int(np.clip(round(float(core.sum()) / max(int(self.area[best]), 1)), 1, max(int(self.slots[best].get("facings", 1)), 1)))
         ev["eids"] = [f"{self.id}:{self.f}:{ev['slot_id']}"]      # a name for this reading, see "undoes" above
-        self.taken[best] = (box, self.ref[y:y + h, x:x + w].copy(), ev)
+        self.taken[best] = [*(self.taken.get(best, []) if c.restore else []), (box, (self.base if c.restore else self.ref)[y:y + h, x:x + w].copy(), ev)]
         return ev
 
     def _evidence(self, ev: dict, img: np.ndarray, box, margin: int = 40) -> None:

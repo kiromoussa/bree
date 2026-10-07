@@ -2,7 +2,7 @@
 does not change when only the item cameras' code does. Writes out/bench/<name>/<split>/clip_<seed>, which
 `whatif.py --src out/bench/<name>/<split>` then joins and scores.
 
-    nohup .venv/bin/python scripts/bench/shelf_again.py r2 dev2 > out/bench/r2/shelf.log 2>&1 &
+    nohup .venv/bin/python scripts/bench/shelf_again.py r2 dev2 [0/2] > out/bench/r2/shelf.log 2>&1 &
 """
 import sys
 import time
@@ -16,7 +16,8 @@ from bree.sim.bench import clip_dirs, public_view  # noqa: E402
 
 if __name__ == "__main__":
     name, split = sys.argv[1], sys.argv[2]
-    for clip in clip_dirs(split):
+    k, n = (int(v) for v in sys.argv[3].split("/")) if len(sys.argv) > 3 else (0, 1)      # "0/2" and "1/2": two processes share the split
+    for clip in clip_dirs(split)[k::n]:
         out, old = ROOT / "out" / "bench" / name / split / clip.name, ROOT / "out" / "bench" / split / clip.name / "pipeline"
         if (out / "run.json").exists() or not old.exists():
             continue

@@ -67,6 +67,44 @@ def test_a_person_standing_still_is_not_a_shelf_event():
     assert play(sd, person, 30) == [] and play(sd, full, 10) == []
 
 
+def test_pieces_of_an_arm_taken_into_the_reference_do_not_read_as_a_take_when_they_leave():
+    """A sleeve that pauses in front of a slot is taken into the reference piece by piece, each piece too small to be
+    an event. When it leaves, the slot differs from the reference again: a take without DiffConfig.restore, nothing with it."""
+    from bree.shelf.diff import DiffConfig
+    full = shelf_picture(CAM, [True] * 5)
+    boxes, keep = slot_boxes(CAM, SLOTS, 1.0, 9.0)
+    x0, y0, x1, y1 = (int(v) for v in boxes[keep.index(2)])
+    got = {}
+    for restore in (False, True):
+        sd = ShelfDiff("cam", CAM, SLOTS, 10.0, DiffConfig(restore=restore))
+        play(sd, full, 10)
+        img, evs = full.copy(), []
+        for k in range(16):
+            xa, ya = x0 + (x1 - x0) * (k % 4) // 4, y0 + (y1 - y0) * (k // 4) // 4
+            cv2.rectangle(img, (xa, ya), (xa + (x1 - x0) // 4, ya + (y1 - y0) // 4), (10, 10, 10), -1)
+            evs += play(sd, img, 8)
+        assert evs == []
+        got[restore] = [(e["kind"], e["slot_id"]) for e in play(sd, full, 10)]
+    assert got == {False: [("take", "S2")], True: []}
+
+
+def test_a_second_reading_of_a_slot_keeps_the_picture_from_before_the_first_take():
+    """Take, then an arm over the same slot (a second take reading), the arm leaves, the item comes back: two puts, the
+    second one undoes the real take. Without DiffConfig.restore the item coming back read as a take."""
+    from bree.shelf.diff import DiffConfig
+    full, missing = shelf_picture(CAM, [True] * 5), shelf_picture(CAM, [True, True, False, True, True])
+    boxes, keep = slot_boxes(CAM, SLOTS, 1.0, 9.0)
+    x0, y0, x1, y1 = (int(v) for v in boxes[keep.index(2)])
+    arm = missing.copy()
+    cv2.rectangle(arm, (x0, y0), (x1, y1), (10, 10, 10), -1)
+    got = {}
+    for restore in (False, True):
+        sd = ShelfDiff("cam", CAM, SLOTS, 10.0, DiffConfig(restore=restore))
+        play(sd, full, 10)
+        got[restore] = [e["kind"] for pic in (missing, arm, missing, full) for e in play(sd, pic, 10)]
+    assert got == {False: ["take", "take", "put", "take"], True: ["take", "take", "put", "put"]}
+
+
 OVER = {"o1": look_at([0.0, 3.0, 6.0], [2.0, 0.0, 1.0], f=500.0), "o2": look_at([6.0, 3.0, 0.0], [2.0, 0.0, 2.0], f=500.0)}
 
 

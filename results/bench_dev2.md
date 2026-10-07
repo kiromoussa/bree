@@ -2,38 +2,40 @@
 
 SIMULATED (browser store simulator copy, scripts/bench/render_clip.mjs). Not real footage.
 
-20 clips (11001, 11002, 11003, 11004, 11005, 11006, 11007, 11008, 11009, 11010, 11011, 11012, 11013, 11014, 11015, 11016, 11017, 11018, 11019, 11020), 1278 s of sim time, 120 shoppers (44 thieves, 76 honest), 7 staff, 230 picks, 55 stolen items. Runner `bree.shelf.store:run`, options {"backend": "sim_sku", "edge": true, "max_frames": null}. Scored 2026-10-07 07:42, commit .
+20 clips (11001, 11002, 11003, 11004, 11005, 11006, 11007, 11008, 11009, 11010, 11011, 11012, 11013, 11014, 11015, 11016, 11017, 11018, 11019, 11020), 1278 s of sim time, 120 shoppers (44 thieves, 76 honest), 7 staff, 230 picks, 55 stolen items. Runner `bree.shelf.store:run`, options {"backend": "sim_sku", "edge": true, "max_frames": null}. Scored 2026-10-07 09:39, commit 30d1cef.
 
 ## Scorecard
 
 Square brackets: 95 percent bootstrap interval (shoppers drawn again 2000 times; clips for precision and identities). The sample is small, so read the interval before the point value.
 
-| Metric | Value |
-|---|---|
-| Thefts flagged, alert tier | 8 of 55 (14.5%) [0.04 to 0.26] |
-| Thefts flagged, review tier only | 28 of 55 (50.9%) |
-| Thefts flagged, alert or review | 36 of 55 (65.5%) [0.50 to 0.80] |
-| Stolen items listed as unpaid on a record | 30 of 55 (54.5%) |
-| Alert precision | 100.0% (6/6) |
-| Honest shoppers flagged, alert or review | 8 of 76 (10.5%) [0.04 to 0.18] |
-| Honest shoppers flagged, alert tier | 0 of 76 (0.0%) [0.00 to 0.00] |
-| Honest shoppers flagged, review tier only | 8 of 76 (10.5%) |
-| Staff members flagged, alert or review (of them alert tier) | 3 of 7 (0) |
-| Staff takes listed as unpaid on a record | 3 of 6 (a PICK event on 5) |
-| Shifted items counted as a pick (of them listed as unpaid) | 7 of 16 (5) |
-| Picks found | 203 of 230 (88.3%) [0.84 to 0.92] |
-| Pick precision (staff takes count as true) | 80.3% of 259 PICK events [0.76 to 0.85] |
-| Right slot, of paired picks | 65.5% [0.59 to 0.72] |
-| Right SKU, of paired picks (nominal planogram given) | 74.4% [0.69 to 0.80]; of all true picks 65.7% |
-| Right shopper, of paired picks | 77.3% [0.72 to 0.83] |
-| Put-backs found (recall) | 22 of 34 (64.7%) [0.48 to 0.81] |
-| Put-back precision (staff puts count as true) | 50.8% of 59 PUT_BACK events [0.40 to 0.64] |
-| Put-backs into another slot found | 9 of 15 |
-| Identities per person | 1.417 (180 for 127) [1.35 to 1.50] |
-| Identities that cover two people | 77 of 175 (44.0%) [0.33 to 0.54] |
-| People never tracked | 3 |
-| False alerts per hour | 0.0 |
-| Time to alert after concealment | 23.47 s median, 59.42 s max |
+Stressed: the same clips and pipeline with worse inputs, {"drop_item_cameras": 0.2, "calib_noise_deg": 0.5, "register_delay_s": 5.0, "wrong_planogram": 0.05, "seed": 1} (`python -m bree.sim.bench --help`). No ground truth is used to make them worse.
+
+| Metric | Value | Stressed (20 clips) |
+|---|---|---|
+| Thefts flagged, alert tier | 8 of 55 (14.5%) [0.04 to 0.26] | 0 of 55 (0.0%) [0.00 to 0.00] |
+| Thefts flagged, review tier only | 28 of 55 (50.9%) | 17 of 55 (30.9%) |
+| Thefts flagged, alert or review | 36 of 55 (65.5%) [0.50 to 0.80] | 17 of 55 (30.9%) [0.17 to 0.46] |
+| Stolen items listed as unpaid on a record | 30 of 55 (54.5%) | 10 of 55 (18.2%) |
+| Alert precision | 100.0% (6/6) | n/a (0/0) |
+| Honest shoppers flagged, alert or review | 8 of 76 (10.5%) [0.04 to 0.18] | 12 of 76 (15.8%) [0.08 to 0.25] |
+| Honest shoppers flagged, alert tier | 0 of 76 (0.0%) [0.00 to 0.00] | 0 of 76 (0.0%) [0.00 to 0.00] |
+| Honest shoppers flagged, review tier only | 8 of 76 (10.5%) | 12 of 76 (15.8%) |
+| Staff members flagged, alert or review (of them alert tier) | 3 of 7 (0) | 3 of 7 (0) |
+| Staff takes listed as unpaid on a record | 3 of 6 (a PICK event on 5) | 2 of 6 (a PICK event on 5) |
+| Shifted items counted as a pick (of them listed as unpaid) | 7 of 16 (5) | 5 of 16 (1) |
+| Picks found | 203 of 230 (88.3%) [0.84 to 0.92] | 160 of 230 (69.6%) [0.64 to 0.75] |
+| Pick precision (staff takes count as true) | 80.3% of 259 PICK events [0.76 to 0.85] | 80.1% of 206 PICK events [0.74 to 0.85] |
+| Right slot, of paired picks | 65.5% [0.59 to 0.72] | 52.5% [0.44 to 0.60] |
+| Right SKU, of paired picks (nominal planogram given) | 74.4% [0.69 to 0.80]; of all true picks 65.7% | 72.5% [0.65 to 0.80]; of all true picks 50.4% |
+| Right shopper, of paired picks | 77.3% [0.72 to 0.83] | 76.2% [0.70 to 0.83] |
+| Put-backs found (recall) | 22 of 34 (64.7%) [0.48 to 0.81] | 20 of 34 (58.8%) [0.43 to 0.74] |
+| Put-back precision (staff puts count as true) | 50.8% of 59 PUT_BACK events [0.40 to 0.64] | 48.4% of 62 PUT_BACK events [0.37 to 0.62] |
+| Put-backs into another slot found | 9 of 15 | 7 of 15 |
+| Identities per person | 1.417 (180 for 127) [1.35 to 1.50] | 1.819 (231 for 127) [1.68 to 1.98] |
+| Identities that cover two people | 77 of 175 (44.0%) [0.33 to 0.54] | 131 of 224 (58.5%) [0.49 to 0.68] |
+| People never tracked | 3 | 4 |
+| False alerts per hour | 0.0 | 0.0 |
+| Time to alert after concealment | 23.47 s median, 59.42 s max | n/a |
 
 ## Funnel: where each true pick is lost
 
@@ -54,6 +56,22 @@ Each true pick walks the stages in order and is counted at the first one it fail
 | conceal or pay classified | 109 | 37 | 153 |
 | ledger basket | 72 | 3 | 184 |
 | alert | 69 | 9 | 147 |
+
+### All picks, stressed: 230 picks, 34 through every stage
+
+| stage | reached this stage | lost here | passed on its own |
+|---|---|---|---|
+| in view | 230 | 1 | 229 |
+| frame reached pipeline | 229 | 1 | 228 |
+| hand or item detected | 228 | 91 | 137 |
+| shelf event emitted | 137 | 12 | 160 |
+| right slot | 125 | 46 | 84 |
+| right sku | 79 | 4 | 116 |
+| associated to a shopper | 75 | 0 | 160 |
+| right shopper | 75 | 6 | 122 |
+| conceal or pay classified | 69 | 18 | 151 |
+| ledger basket | 51 | 5 | 167 |
+| alert | 46 | 12 | 136 |
 
 ### Outcome concealed: 55 picks, 2 through every stage
 
@@ -238,26 +256,26 @@ Clips with a scenario option against clips without it (whole clips, so other opt
 
 | clip | options | cameras | shoppers | thieves | picks | PICK events | stolen | flagged | alerts | false | honest flagged | ids | wall s |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 11001 | group wrongSlot shift bump night | 18 | 6 | 1 | 9 | 10 | 1 | 1 | 1 | 0 | 0 of 5 | 9 | 3.7 |
-| 11002 | group staff block dropScan night | 28 | 5 | 2 | 7 | 9 | 2 | 2 | 2 | 0 | 0 of 3 | 8 | 4.5 |
-| 11003 | wrongSlot | 27 | 5 | 1 | 14 | 16 | 2 | 0 | 0 | 0 | 0 of 4 | 8 | 6.0 |
-| 11004 | group wrongSlot dropScan | 26 | 5 | 1 | 8 | 10 | 2 | 2 | 0 | 0 | 0 of 4 | 7 | 5.1 |
-| 11005 | group wrongSlot shift night | 28 | 6 | 3 | 12 | 16 | 4 | 4 | 0 | 0 | 2 of 3 | 8 | 7.5 |
-| 11006 | group shift dropScan | 19 | 8 | 2 | 10 | 11 | 2 | 2 | 1 | 0 | 0 of 6 | 10 | 5.4 |
-| 11007 | group block night | 26 | 7 | 3 | 12 | 10 | 3 | 2 | 0 | 0 | 0 of 4 | 10 | 6.1 |
-| 11008 | group wrongSlot shift dropScan | 27 | 6 | 3 | 11 | 10 | 4 | 3 | 0 | 0 | 0 of 3 | 9 | 5.9 |
-| 11009 | group staff wrongSlot shift block | 25 | 6 | 3 | 15 | 18 | 4 | 3 | 1 | 0 | 1 of 3 | 9 | 6.3 |
-| 11010 | group staff wrongSlot shift block | 23 | 7 | 1 | 12 | 18 | 1 | 1 | 0 | 0 | 2 of 6 | 12 | 6.5 |
-| 11011 | group night | 22 | 7 | 5 | 17 | 15 | 7 | 3 | 0 | 0 | 0 of 2 | 9 | 6.0 |
-| 11012 | staff wrongSlot shift block night | 22 | 5 | 2 | 11 | 12 | 3 | 3 | 1 | 0 | 0 of 3 | 8 | 5.5 |
-| 11013 | group | 18 | 8 | 4 | 13 | 12 | 4 | 1 | 0 | 0 | 0 of 4 | 12 | 5.9 |
-| 11014 | staff shift bump block dropScan night | 32 | 4 | 2 | 7 | 12 | 2 | 2 | 0 | 0 | 1 of 2 | 7 | 9.9 |
-| 11015 | staff bump night | 23 | 6 | 2 | 15 | 19 | 3 | 2 | 0 | 0 | 0 of 4 | 9 | 10.7 |
-| 11016 | shift | 28 | 6 | 2 | 11 | 11 | 4 | 2 | 0 | 0 | 0 of 4 | 8 | 6.6 |
-| 11017 | group wrongSlot bump night | 31 | 7 | 3 | 15 | 17 | 3 | 2 | 0 | 0 | 0 of 4 | 14 | 9.1 |
-| 11018 | night | 24 | 4 | 1 | 7 | 6 | 1 | 0 | 0 | 0 | 0 of 3 | 6 | 4.9 |
-| 11019 | group wrongSlot shift dropScan | 34 | 5 | 1 | 9 | 7 | 1 | 0 | 0 | 0 | 1 of 4 | 7 | 7.5 |
-| 11020 | staff shift night | 23 | 7 | 2 | 15 | 20 | 2 | 1 | 0 | 0 | 1 of 5 | 10 | 7.0 |
+| 11001 | group wrongSlot shift bump night | 18 | 6 | 1 | 9 | 10 | 1 | 1 | 1 | 0 | 0 of 5 | 9 | 4.6 |
+| 11002 | group staff block dropScan night | 28 | 5 | 2 | 7 | 9 | 2 | 2 | 2 | 0 | 0 of 3 | 8 | 5.5 |
+| 11003 | wrongSlot | 27 | 5 | 1 | 14 | 16 | 2 | 0 | 0 | 0 | 0 of 4 | 8 | 7.2 |
+| 11004 | group wrongSlot dropScan | 26 | 5 | 1 | 8 | 10 | 2 | 2 | 0 | 0 | 0 of 4 | 7 | 5.8 |
+| 11005 | group wrongSlot shift night | 28 | 6 | 3 | 12 | 16 | 4 | 4 | 0 | 0 | 2 of 3 | 8 | 6.9 |
+| 11006 | group shift dropScan | 19 | 8 | 2 | 10 | 11 | 2 | 2 | 1 | 0 | 0 of 6 | 10 | 4.8 |
+| 11007 | group block night | 26 | 7 | 3 | 12 | 10 | 3 | 2 | 0 | 0 | 0 of 4 | 10 | 6.6 |
+| 11008 | group wrongSlot shift dropScan | 27 | 6 | 3 | 11 | 10 | 4 | 3 | 0 | 0 | 0 of 3 | 9 | 6.7 |
+| 11009 | group staff wrongSlot shift block | 25 | 6 | 3 | 15 | 18 | 4 | 3 | 1 | 0 | 1 of 3 | 9 | 7.0 |
+| 11010 | group staff wrongSlot shift block | 23 | 7 | 1 | 12 | 18 | 1 | 1 | 0 | 0 | 2 of 6 | 12 | 7.0 |
+| 11011 | group night | 22 | 7 | 5 | 17 | 15 | 7 | 3 | 0 | 0 | 0 of 2 | 9 | 6.4 |
+| 11012 | staff wrongSlot shift block night | 22 | 5 | 2 | 11 | 12 | 3 | 3 | 1 | 0 | 0 of 3 | 8 | 5.8 |
+| 11013 | group | 18 | 8 | 4 | 13 | 12 | 4 | 1 | 0 | 0 | 0 of 4 | 12 | 6.0 |
+| 11014 | staff shift bump block dropScan night | 32 | 4 | 2 | 7 | 12 | 2 | 2 | 0 | 0 | 1 of 2 | 7 | 10.6 |
+| 11015 | staff bump night | 23 | 6 | 2 | 15 | 19 | 3 | 2 | 0 | 0 | 0 of 4 | 9 | 14.3 |
+| 11016 | shift | 28 | 6 | 2 | 11 | 11 | 4 | 2 | 0 | 0 | 0 of 4 | 8 | 8.4 |
+| 11017 | group wrongSlot bump night | 31 | 7 | 3 | 15 | 17 | 3 | 2 | 0 | 0 | 0 of 4 | 14 | 10.7 |
+| 11018 | night | 24 | 4 | 1 | 7 | 6 | 1 | 0 | 0 | 0 | 0 of 3 | 6 | 5.8 |
+| 11019 | group wrongSlot shift dropScan | 34 | 5 | 1 | 9 | 7 | 1 | 0 | 0 | 0 | 1 of 4 | 7 | 9.5 |
+| 11020 | staff shift night | 23 | 7 | 2 | 15 | 20 | 2 | 1 | 0 | 0 | 1 of 5 | 10 | 8.8 |
 
 ## Every true pick
 

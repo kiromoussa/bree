@@ -7,9 +7,9 @@
   "edge": true,
   "max_frames": null
  },
- "scored_at": "2026-10-07 07:45",
- "commit": "",
- "wall_s": 198.6,
+ "scored_at": "2026-10-07 09:40",
+ "commit": "30d1cef",
+ "wall_s": 4.2,
  "scorecard": {
   "clips": 20,
   "sim_seconds": 1277.7,

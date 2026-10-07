@@ -87,6 +87,14 @@ slot overwrote the picture kept from before its first take, so the item coming b
 | Put-backs into another slot found | 8 of 15 | | 9 of 15 | |
 | Identities per person; on two people | 1.417; 77 of 175 | | 1.417; 77 of 175 | 1.2; 5 percent |
 | 20 percent of item cameras removed: thefts flagged; honest reviewed | 30 of 55 (9.1 points); 8 of 76 | | 30 of 55 (10.9 points); 8 of 76; 6 at alert tier, 4 of 4 alerts on thieves | at most 10 points |
+| Four-way stress: thefts flagged, at alert tier, honest reviewed | 18 of 55, 0, 11 of 76 | | 17 of 55 [0.17 to 0.46], 0, 12 of 76 [0.08 to 0.25] | |
+| Four-way stress: picks found, pick precision | 0.726, 0.789 of 218 | | 0.696, 0.801 of 206 | |
+
+The four-way stress (cameras removed, 0.5 degrees of pose error, receipts 5 s late, 5 percent of the planogram
+wrong) was run again from pixels with this round's shelf pass (`out/bench/r6/bench_dev2_stress.log`; the stored
+stressed shelf events of round 2 are in `out/bench/r5shelf/dev2_stress`). It is one theft and one honest shopper
+worse than round 5, inside both intervals, and it finds fewer picks (167 to 160 of 230). Why the clean picture
+costs picks when the camera poses are off was not looked at this round.
 
 The middle column is the same run joined with the ledger rule off (`scripts/bench/whatif.py r6pic_only --ledger
 '{"misread_where_stocked": false}'`). The ledger rule alone on the round 5 shelf events gives 36 of 55 and 11 of 76.

@@ -2,7 +2,7 @@
 
 SIMULATED (browser store simulator copy, scripts/bench/render_clip.mjs). Not real footage.
 
-20 clips (11001, 11002, 11003, 11004, 11005, 11006, 11007, 11008, 11009, 11010, 11011, 11012, 11013, 11014, 11015, 11016, 11017, 11018, 11019, 11020), 1278 s of sim time, 120 shoppers (44 thieves, 76 honest), 7 staff, 230 picks, 55 stolen items. Runner `bree.shelf.store:run`, options {"backend": "sim_sku", "edge": true, "max_frames": null}. Scored 2026-10-07 07:45, commit .
+20 clips (11001, 11002, 11003, 11004, 11005, 11006, 11007, 11008, 11009, 11010, 11011, 11012, 11013, 11014, 11015, 11016, 11017, 11018, 11019, 11020), 1278 s of sim time, 120 shoppers (44 thieves, 76 honest), 7 staff, 230 picks, 55 stolen items. Runner `bree.shelf.store:run`, options {"backend": "sim_sku", "edge": true, "max_frames": null}. Scored 2026-10-07 09:40, commit 30d1cef.
 
 ## Scorecard
 

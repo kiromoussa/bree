@@ -162,6 +162,22 @@ def confirm_puts(shelf: list[dict], assocs: list[Assoc], slots: dict, margin: fl
                 a.why += f"; given to person {rivals[0]}, who took from this place (person {a.person_id} did not)"
                 a.person_id, a.cost = rivals[0], dict(a.candidates)[rivals[0]]
         k = held(a.person_id, at)
+        if ev.get("source") == "hand_item":
+            # a put read from the item in a hand alone (bree.shelf.events.hand_only_takes) names the product, not the
+            # facing: it returns that product if this person holds it, or the one near-equal candidate who does
+            sku_of = lambda j: shelf[j].get("sku_id") or (slots.get(shelf[j].get("slot_id")) or {}).get("skuId")      # noqa: E731
+            has = lambda pid: next((n for n, (_, j) in enumerate(out_by.get(pid, [])) if sku_of(j) == ev.get("sku_id")), None)      # noqa: E731
+            k = has(a.person_id)
+            if k is None:
+                rivals = [pid for pid, c in a.candidates if pid != a.person_id and c <= (a.cost or 0.0) + margin and has(pid) is not None]
+                if len(rivals) == 1:
+                    a.why += f"; given to person {rivals[0]}, who holds this product (person {a.person_id} does not)"
+                    a.person_id, a.cost = rivals[0], dict(a.candidates)[rivals[0]]
+                    k = has(a.person_id)
+            if k is None:
+                keep[i] = False
+                a.why += "; put read from the item in a hand alone and nobody here holds that product: not passed to the ledger"
+                continue
         if k is not None:
             pair[i] = [out_by[a.person_id].pop(k)[1]]
         elif ev.get("source") != "both":

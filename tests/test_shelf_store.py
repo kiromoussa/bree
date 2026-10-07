@@ -288,3 +288,24 @@ def test_two_standing_readings_of_one_camera_at_two_slots_are_two_takes():
     assert len(one_act_per_reach([acts[0], ev(20.5, 0.6, "sku3", "b:245:S3")], [1, 1], two_slots=2.0)) == 1       # another camera: its slot may be off
     put = {"kind": "put", "t": 21.0, "t_start": 21.0, "point_3d": [0.2, 1.0, 0.0], "sku_id": "sku1", "source": "shelf_diff", "cameras": ["a"], "undoes": ["a:188:S1"]}
     assert len([g for g in one_act_per_reach([*acts, put], [1, 1, 1], two_slots=2.0) if g["kind"] == "take"]) == 1      # the first was an arm over the slot
+
+
+def test_a_product_seen_in_a_hand_is_a_take_only_if_a_hand_was_in_its_slot_and_no_take_was_read():
+    """bree.shelf.events.hand_only_takes on SYNTHETIC detector looks: the item of slot S2 comes out of its slot."""
+    from bree.shelf.events import hand_only_takes
+    layout = {"slots": SLOTS, "skus": [{"id": f"sku{i}", "size": [0.1, 0.18, 0.1]} for i in range(5)]}
+    b = slot_boxes(CAM, SLOTS, 1.0, 9.0)[0][2]
+    u, v = (b[0] + b[2]) / 2, (b[1] + b[3]) / 2
+    item = lambda k: [u - 20, v - 20 + 30 * k, u + 20, v + 20 + 30 * k, 0.9, "sku2", 0.8, True, False]      # noqa: E731  moving down, out of the slot
+    looks = lambda hand: {"C": [{"f": 18, "items": [], "hands": [[u - 10, v - 10, u + 10, v + 10, 0.8]] if hand else []}]      # noqa: E731
+                                + [{"f": 20 + 2 * k, "items": [item(k)], "hands": []} for k in range(8)]}
+    got = hand_only_takes(looks(True), {"C": CAM}, layout, 10.0, [], min_cams=1)
+    assert [(e["kind"], e["sku_id"], e["slot_id"], e["source"]) for e in got] == [("take", "sku2", "S2", "hand_item")]
+    assert hand_only_takes(looks(False), {"C": CAM}, layout, 10.0, [], min_cams=1) == []          # carried past: no hand came out of the slot
+    assert hand_only_takes({"C": looks(True)["C"][:5]}, {"C": CAM}, layout, 10.0, [], min_cams=1) == []       # seen too few times
+    read = [{"kind": "take", "sku_id": "sku2", "t_start": 1.9, "t_end": 2.4, "point_3d": SLOTS[2]["face"]}]
+    assert hand_only_takes(looks(True), {"C": CAM}, layout, 10.0, read, min_cams=1) == []         # the pixel comparison read it already
+    back = {"C": [{"f": 20 + 2 * k, "items": [item(7 - k)], "hands": []} for k in range(8)] + [{"f": 36, "items": [], "hands": [[u - 10, v - 10, u + 10, v + 10, 0.8]]}]}
+    assert hand_only_takes(back, {"C": CAM}, layout, 10.0, [], min_cams=1) == []                  # the item going in: puts are off by default
+    assert [(e["kind"], e["slot_id"]) for e in hand_only_takes(back, {"C": CAM}, layout, 10.0, [], puts=True, min_cams=1)] == [("put", "S2")]
+    assert hand_only_takes(looks(True), {"C": CAM}, layout, 10.0, []) == []           # one camera alone is not enough by default

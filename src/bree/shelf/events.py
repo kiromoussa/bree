@@ -385,6 +385,63 @@ def arrivals(events: list[dict], layout: dict, cfg: ShelfConfig | None = None, c
     return out
 
 
+def hand_only_takes(looks: dict[str, list[dict]], cams: dict, layout: dict, fps: float, shelf: list[dict], cfg: ShelfConfig | None = None,
+                    min_obs: int = 6, hand_s: float = 1.5, same_s: float = 3.0, same_m: float = 1.0, puts: bool = False, min_cams: int = 2) -> list[dict]:
+    """Takes (and with `puts`, puts) the pixel comparison cannot read, from the stored detector looks (no video): a
+    product seen in a hand that starts at a slot of that product and moves away, or comes from further away and ends
+    at one (bree.shelf.hand.HandItemCue, as the shelf pass builds its tracks). Where the next unit fills the place of
+    the taken one (a cooler row, a box in front of the same box) the picture before and after is the same, so this is
+    the only reading of that act. Alone the cue is mostly false (a product carried past its own shelf), so three
+    things must hold:
+      a hand was seen inside that slot's box in the `hand_s` seconds before the item first showed (take: it came out
+      of the shelf, it was not carried there) or after it was last seen (put), on any camera;
+      the item was seen at least `min_obs` times by one camera, and by at least `min_cams` cameras (two views agree:
+      with one camera, 4 of 6 such takes given to a person on dev2 and old DEV were false, with two or more 2 of 13);
+      the pixel comparison read no such act of that product within `same_s` and `same_m` (then this is that act).
+    One event per product, kind and moment: the cameras that saw it are merged, the slot is the one of the camera that
+    saw the item most often. A put made this way only counts in the join when that person holds that product
+    (bree.events.shelf.confirm_puts). Chosen on dev2 (REPORT.md, round 7).
+    ponytail: the slot is the nearest facing in one camera's picture, right about 1 time in 10 on dev2; triangulate
+    the first sighting from two cameras when the slot matters more than the product."""
+    cfg = cfg or ShelfConfig()
+    cand = []
+    for cam, rows in sorted(looks.items()):
+        if cam not in cams or not rows:
+            continue
+        sd = ShelfDiff(cam, cams[cam], layout["slots"], fps, None, skus_of(layout), layout.get("fixtures"))
+        cue = HandItemCue(sd, None, None, cfg.hand)
+        hands: dict[int, list] = {}
+        for look in rows:
+            hands[look["f"]] = [((h[0] + h[2]) / 2, (h[1] + h[3]) / 2) for h in look["hands"]]
+            for x0, y0, x1, y1, cf, sku, share, moved, stock in look["items"]:
+                if share >= cue.cfg.fg_frac and moved and not stock:
+                    cue._add(look["f"], sku, (x0 + x1) / 2, (y0 + y1) / 2, cf)
+        for tr in cue.tracks:
+            got = cue._slot(tr)
+            if got is None or (got[0] == "put" and not puts):
+                continue
+            b, n = sd.boxes[got[1]] / sd.cfg.scale, int(hand_s * fps)
+            span = range(tr["obs"][0][0] - n, tr["obs"][0][0] + 1) if got[0] == "take" else range(tr["obs"][-1][0], tr["obs"][-1][0] + n + 1)
+            ev = cue.as_event(tr)
+            ev["hand_in"] = sum(1 for f in span for u, v in hands.get(f, []) if b[0] <= u <= b[2] and b[1] <= v <= b[3])
+            cand.append(ev)
+    out: list[dict] = []
+    for e in sorted(cand, key=lambda e: e["t"]):
+        g = next((g for g in out if g["kind"] == e["kind"] and g["sku_id"] == e["sku_id"] and abs(g["t"] - e["t"]) <= same_s), None)
+        if g is None:
+            out.append({**e, "cameras": [e["camera_id"]], "views": [e]})
+        else:
+            g["views"].append(e)
+            g["cameras"] = sorted({*g["cameras"], e["camera_id"]})
+            g["hand_in"] = max(g["hand_in"], e["hand_in"])
+            if e["detector_frames"] > g["detector_frames"]:
+                g.update({k: e[k] for k in ("camera_id", "slot_id", "point_3d", "point_sigma_m", "hand_px", "slots", "detector_frames", "sku_conf", "evidence")})
+    read = [r for r in shelf if r.get("point_3d") is not None]
+    return [g for g in out if g["detector_frames"] >= min_obs and g["hand_in"] > 0 and len(g["cameras"]) >= min_cams
+            and not any(r["kind"] == g["kind"] and r["sku_id"] == g["sku_id"] and r["t_start"] - same_s <= g["t"] <= r["t_end"] + same_s
+                        and float(np.hypot(r["point_3d"][0] - g["point_3d"][0], r["point_3d"][2] - g["point_3d"][2])) <= same_m for r in read)]
+
+
 def fuse_views(events: list[dict], layout: dict, cfg: ShelfConfig | None = None) -> list[dict]:
     """One event per act: events of different cameras with the same kind, close in time and place, are merged. The
     slot is a vote (each view's candidate slots weighted by overlap, a detector-confirmed view counts double)."""

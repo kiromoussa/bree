@@ -20,7 +20,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from bree.events.shelf import load_payments, run_ledger, store_events, track_people, write_run
-from bree.shelf.events import arrivals, fuse_views, run_clip, unreliable_windows
+from bree.shelf.events import arrivals, fuse_views, hand_only_takes, run_clip, unreliable_windows
 from bree.track.associate import associate
 from bree.track.people import PEOPLE_KINDS, appearance, frames, person_detector
 
@@ -42,6 +42,9 @@ JOINT_RECEIPTS = True
 # Ledger.stocked: a paid item nobody saw them take stands for an unpaid pick ("one product under two names") only if the
 # planogram stocks that product on the fixture the pick was read at. On since round 6 on dev2 (REPORT.md, 2026-10-07).
 MISREAD_WHERE_STOCKED = True
+# bree.shelf.events.hand_only_takes: takes the pixel comparison cannot read (the next unit fills the place of the taken
+# one, most of all in the cooler), from the stored detector looks. Measured in round 7 on dev2 (REPORT.md, 2026-10-07).
+HAND_ONLY = True
 
 
 def _jsonl(p: Path) -> list[dict]:
@@ -126,7 +129,7 @@ def people_boxes(clip: Path, pipe: Path, cams: list[str], max_frames: int | None
 
 
 def rejoin(clip: Path, out: Path, review: bool = True, floor=None, assoc=None, join=None, ledger: dict | None = None, reach: dict | None = None,
-           conceal: bool | None = None, conceal_tier: bool | None = None, arrive: dict | bool | None = None) -> dict:
+           conceal: bool | None = None, conceal_tier: bool | None = None, arrive: dict | bool | None = None, hand_only: dict | bool | None = None) -> dict:
     """Stored shelf events and person boxes -> floor tracks, PICK / PUT_BACK, ledger, alerts, review store.
     conceal: give the ledger the concealment cues of the item cameras (default CONCEAL). conceal_tier: then raise a
     review to an alert by bree.concealment.tier.retier (default CONCEAL_TIER; the ledger's records stay in alerts_ledger.jsonl)."""
@@ -144,6 +147,11 @@ def rejoin(clip: Path, out: Path, review: bool = True, floor=None, assoc=None, j
     if arrive is not False:          # arrive: True, or the settings of `arrivals` (what-if)
         shelf = arrivals(shelf, layout, **(arrive if isinstance(arrive, dict) else {}))
     acts = fuse_views(shelf, layout)
+    hand_only, only = HAND_ONLY if hand_only is None else hand_only, []
+    if hand_only is not False and (pipe / "conceal").exists():          # hand_only: True, or the settings of `hand_only_takes` (what-if)
+        from bree.concealment.cue import load_looks
+        only = hand_only_takes({c: v for c, v in load_looks(pipe / "conceal").items() if c in meta["cameras"]}, load_calibration(clip), layout, fps, shelf, **(hand_only if isinstance(hand_only, dict) else {}))
+        acts = sorted(acts + only, key=lambda e: e["t_start"])
     for _ in range(3):         # merging repeats changes who fits what is left (two reads of one reach can go to two people), so look again
         n = len(acts)
         acts = one_act_per_reach(acts, [a.person_id for a in associate(acts, tracker.people(), layout, cams=cams, cfg=assoc)], **(reach or {}))
@@ -174,7 +182,7 @@ def rejoin(clip: Path, out: Path, review: bool = True, floor=None, assoc=None, j
     (pipe / "engine_log.txt").write_text("\n".join(tracker.log))
     # frame logs of the item cameras (the scorer's "hand or item detected" stage): the reach point of each shelf event
     hands: dict[tuple[str, int], list] = {}
-    for e in shelf:
+    for e in shelf + [v for g in only for v in g["views"]]:
         if e.get("hand_px"):
             for f in range(int(e["t_start"] * fps) - 5, int(e["t_end"] * fps) + 12):
                 hands.setdefault((e["camera_id"], f), []).append(e["hand_px"])

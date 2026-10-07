@@ -679,15 +679,17 @@ this path reads ground truth: the bench hands the runner a folder of links witho
 The camera model has one radial lens term (`k_div` in `calibration.json`, `bree.calib.camera.Camera`): slots, floor
 points and lines of sight are placed through the lens the camera was calibrated with.
 
-Concealment cue (SIMULATED, off by default). The shelf pass keeps every look of the held-item detector in
-`<out>/pipeline/conceal`; `bree.concealment.cue` turns them into "this item was seen in this shopper's hand and then
-their hands were seen without it", and the ledger raises an unpaid item with that mark to alert tier. Switches:
-`bree.shelf.store.CONCEAL` and `CONCEAL_TIER`, or `rejoin(..., conceal=True, conceal_tier=True)`, or
-`scripts/bench/whatif.py <name> --splits dev2 --conceal [--conceal-tier]`. On DEV2 it puts 5 of 55 stolen items at
-alert tier with 4 of 5 alerts on thieves and 1 on a staff member, which is why it is off. REPORT.md: round 1 on DEV2
-and the concealment section.
+Concealment cue (SIMULATED, on since round 4 on DEV2). The shelf pass keeps every look of the held-item detector in
+`<out>/pipeline/conceal`; `bree.concealment.cue` turns them into "this product was seen in this shopper's hand after
+the take and then their hands were seen without it", the ledger marks that unpaid item as concealed, and
+`bree.concealment.tier` raises the record to alert tier when the identity is not in doubt. Switches:
+`bree.shelf.store.CONCEAL` and `CONCEAL_TIER`, or `rejoin(..., conceal=False)`, or
+`scripts/bench/whatif.py <name> --splits dev2 --conceal '{"own_product": false}' [--conceal-tier]` for a setting of
+`ConcealConfig`. On DEV2 it puts 8 of 55 stolen items (6 of 44 thieves) at alert tier, 6 of 6 alerts on thieves.
+Staff who carry product off unpaid are not told from shoppers: enrol the staff look before a real store. REPORT.md:
+round 4 on DEV2 and the concealment section.
 
-Limits. With the concealment cue off, every flag is review tier and none is alert tier. The runner replays a
+Limits. A run without stored looks (the old DEV and TEST runs) has no cue, so every flag there is review tier. The runner replays a
 whole clip (tracks first, then association); a live version has to hold events for a few seconds. The stored person
 boxes carry clothing colour histograms: fine for simulated clips, not to be written to disk in a real store (see
 DECISIONS.md).
@@ -739,7 +741,9 @@ make bench-smoke     # one clip, 60 frames per camera, writes nothing to results
   `results/bench_dev2_drop.md`. Baseline of the committed pipeline: 33 of 55 thefts flagged, 16 of 76 honest
   shoppers reviewed, 1.551 identities per person. After round 1 (lens term): 34 of 55, 12 of 76, 1.417. After round 2 (a product
   that arrives in a slot is a put, `bree.shelf.events.arrivals`): 34 of 55, 10 of 76, put-backs found 20 of 34
-  (was 16), into another slot 8 of 15 (was 4).
+  (was 16), into another slot 8 of 15 (was 4). After round 4 (concealment cue and tier rule on, a take scores only
+  on sightings of its own product): 8 of 55 stolen items at alert tier, 6 of 6 alerts on thieves, 35 of 55 flagged,
+  11 of 76 honest shoppers reviewed.
 - A put event names the take it undoes (`undoes` against the take's `eids`) and says whether the item was seen going
   into the slot (`item_in`); `bree.events.shelf.confirm_puts` returns takes on that basis.
 

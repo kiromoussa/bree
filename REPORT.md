@@ -12,6 +12,124 @@ intervals. The goal on DEV2: thefts flagged at least 0.90, at alert tier at leas
 0.80 with precision 0.75, identities per shopper at most 1.2, and no more than 10 points of thefts flagged lost with
 20 percent of the item cameras removed.
 
+## 2026-10-07: round 4 on DEV2 (SIMULATED): the alert tier is no longer empty. Kept: the concealment cue reads only the taken product, and is on
+
+**Result.** The goal is not met. Kept: the concealment cue and its tier rule are on by default, after one change
+to what the cue counts as "the item still in the hand". DEV2: 8 of 55 stolen items at alert tier (6 of 44
+thieves), 6 alerts, all 6 on thieves, none on an honest shopper or on staff. Thefts flagged 34 to 35 of 55. Honest
+shoppers reviewed 10 to 11 of 76 (inside the interval, the wrong direction). Nothing else moves.
+
+### Gap chosen
+
+The alert tier: 0 against a bar of 0.50, the line furthest from its goal, and the only cue that tells a thief from
+an honest shopper whose receipt went astray. The ledger cannot do it alone. With the review bar at 0 it holds 49
+of 55 stolen items and 26 of 76 honest shoppers, and every discount it applies sits on both groups
+(`scripts/bench/study/r4_ledger.py`, truth for scoring only): "at the register, no receipt" 7 thieves, 8 honest
+shoppers and 3 staff records; "a paid item did not match" 9 thieves and 11 honest; "also fits another person" 3
+and 5. Whether any receipt was stamped during the register visit does not split them either (no receipt then: 2
+thieves, 2 honest, 3 staff). Round 2 found the same from the other side.
+
+Also counted this round, not acted on (`scripts/bench/study/r4_false.py`): the 61 false PICK events are 18 second
+events at a true take, 17 with nothing at that fixture within 3 s, 11 at a staff put, 6 at a shifted item, 9 at
+a put-back (5 into another slot). The 26 false PUT_BACK events are 13 at a true take, 11 with nothing near, 2 second events; 11 of the 26
+come from cooler cameras.
+
+### Root cause
+
+The cue asks: after the take, was the item seen on this person, and then were their hands seen without it. It
+counted any product detection on the line of sight of the person as "the item". On DEV2 every aisle has rail
+cameras looking across the aisle, and shelf stock behind the person passes the cue's three stock tests often
+enough: of 1,171 item sightings on a thief after the true hide, 1,096 named another product than the one taken
+(before the hide: 1,226 another product, 489 the true one). Each such sighting cancels six "hand, no item" moments, so a
+hidden item read as still in the hand. Example: 11001 P005 hides peanuts at 27.5 s and is "seen with an item" 83
+more times as relieva_ibu on G4L-price-rail-1.
+
+The same thing made the two staff alerts that kept the cue off since round 1. Both were staff puts read as takes
+(11002 at 18.7 s, 11012 at 30.5 s, `truth/acts.jsonl`); four stock sightings stood in for the item, then the
+restocker's empty hands made the cue.
+
+### What changed
+
+- `ConcealConfig.own_product` (on): the item of a take is a sighting that names its product, as any camera read
+  it or as planned for one of its candidate slots. A moment with only another product seen on the person counts
+  for nothing, neither "item seen" nor "no item". A take whose own product was not seen in the hand twice is not
+  scored, as before.
+- `bree.shelf.store.CONCEAL` and `CONCEAL_TIER` are on. A run without stored looks has no cue (old DEV, TEST).
+- `ConcealConfig.past_next` (off): the window runs past the next take of another product. Measured, not kept.
+- `bree.concealment.run.context` applies `arrivals` as `rejoin` does (the study scripts saw other acts than the
+  pipeline). `rejoin` writes every scored take to `pipeline/conceal_takes.jsonl`. `whatif.py --conceal` takes
+  `ConcealConfig` settings as JSON. Two tests.
+
+### DEV2 scorecard (`results/bench_dev2.md`, `results/bench_dev2_drop.md`, joined again from the stored runs with `--keep`)
+
+| SIMULATED, 20 clips | round 2 and 3 | round 4 | goal |
+|---|---|---|---|
+| Thefts flagged, alert or review | 34 of 55 (0.618) | 35 of 55 (0.636) [0.48 to 0.78] | 0.90 |
+| Thefts at alert tier | 0 of 55 | 8 of 55 (0.145) [0.04 to 0.26]; 6 of 44 thieves | 0.50 |
+| Alert precision | no alerts | 6 of 6 | 0.90 |
+| Honest shoppers alerted | 0 of 76 | 0 of 76 | |
+| Honest shoppers reviewed | 10 of 76 (0.132) | 11 of 76 (0.145) [0.08 to 0.22] | 0.05 |
+| Staff flagged (of them alert tier) | 3 of 7 (0) | 3 of 7 (0) | |
+| Picks found | 0.896 | 0.896 | 0.95 |
+| Right slot, right SKU | 0.641, 0.733 | 0.641, 0.733 | 0.92, 0.90 |
+| Put-back recall, precision | 0.588, 0.519 | 0.588, 0.519 | 0.80, 0.75 |
+| Identities per person; on two people | 1.417; 77 of 175 | 1.417; 77 of 175 | 1.2; 5 percent |
+| 20 percent of item cameras removed: thefts flagged | 29 of 55 (9.1 points) | 30 of 55 (9.1 points); 6 at alert tier, 4 of 4 alerts on thieves | at most 10 points |
+| Four-way stress: thefts flagged, at alert tier, honest reviewed | 17 of 55, 0, 11 of 76 | 17 of 55, 0, 12 of 76 | |
+
+Six alerts is a small number: "6 of 6" does not show the 0.90 bar is met, only that no false alert was seen.
+
+The three variants on the same stored events (`scripts/bench/whatif.py --conceal ... --conceal-tier`):
+
+| SIMULATED, DEV2 | alerts | on thieves | on staff | on honest shoppers | thefts flagged | honest shoppers alerted or reviewed |
+|---|---|---|---|---|---|---|
+| any product is the item (rounds 1 to 3, switched on) | 9 | 7 | 2 | 0 | 35 | 10 |
+| own product, another product counts as "no item" | 8 | 7 | 0 | 1 (11016 P002) | 37 | 12 |
+| own product, another product counts for nothing (kept) | 6 | 6 | 0 | 0 | 35 | 11 |
+| kept, plus `past_next` | 7 | 7 | 0 | 0 | 35 | 11 |
+
+`past_next` also cues 2 paid takes for 0 and lifts a staff record to 0.95, one cap from an alert: not kept.
+
+TRAIN-range clips (9 clips, 17 thieves, 36 honest shoppers; the cue's bar was set on 6 of them): 5 alerts, all on
+thieves, 0 honest shoppers alerted, honest shoppers reviewed 2 of 36 with the cue and without, thefts flagged 15
+to 16 of 19. Per take on the six tuning clips the new sightings are a little worse (7 true and 1 false cue for 9
+and 0 before; the false one is a paid take, held 10 s under another product's name), on DEV2 better (7 stolen
+items cued for 5, missed put-backs cued 1 for 3). The model, one bar on the change-point score, was not refitted.
+Old DEV rejoins to 17 of 20 and 2 of 22 as before (its runs have no looks, so no cue).
+
+The cost: 11009 P007 put an item back, the shelf pass missed the put, and the cue marks it concealed, which lifts
+a dropped record to review. 11004 P002, already reviewed, rises to 0.85 the same way. Both stay under alert tier
+because their identity is in doubt. A missed put-back looks like a concealment to this cue; put-back recall
+(0.588) is what protects honest shoppers here.
+
+### Where the 55 stolen items go in the cue now (`scripts/bench/study/r4_conceal.py`)
+
+| | stolen items |
+|---|---|
+| cued (4 at alert tier, 3 at review) | 7 |
+| the taken product not seen in the hand twice (9 have a window that closes at once: the take is inside the pay zone, mostly the counter display) | 18 |
+| scored under the bar | 11 |
+| the PICK is on another person | 9 |
+| read as put back (the last sighting lies on the line of sight of its own slot, or a false put-back) | 7 |
+| no PICK event | 3 |
+
+### What is left, in order
+
+1. **Alert tier (0.145 against 0.50).** By items in the table above: the taken product seen in the hand (18, of
+   them 9 inside the pay zone with no safe rule yet; right SKU is 0.733), the bar (11), identity (9 on another
+   person), the "back at its slot" test (7).
+2. **Staff on the floor.** No alert on staff on DEV2, not by design: a staff member who carries product off is
+   scored as a shopper. Nothing the pipeline has separates them (`scripts/bench/study/r4_staff.py`). Next step:
+   enrol the staff look from generator 2 clips on TRAIN seeds (the renderer needs a people-cameras-only option
+   first) and cap such identities at review.
+3. **Missed put-backs now cost more** (see the cost above): 14 of 34 are missed, 13 of 26 false PUT_BACK events
+   sit on a true take.
+4. **SIMULATOR LIMIT, unchanged from round 3:** identity (no personal space, no queue at the pay point).
+5. False and repeated picks (18 repeats, 17 with nothing near), right slot, the ledger's dropped thefts.
+
+Tests: `tests/test_concealment.py` 16 passed (two new); full suite 437 passed, 1 skipped, 0 failed (counted from the
+progress lines of `out/bench/r4/tests_full.log`); `scripts/bench/test_bench.py` passes. Logs: `out/bench/r4/`.
+
 ## 2026-10-06: round 3 on DEV2 (SIMULATED): identity. Nothing kept; most identity switches follow two simulated people standing in the same place
 
 **Result.** The goal is not met and the DEV2 scorecard is unchanged from round 2 (34 of 55 thefts flagged, 10 of 76

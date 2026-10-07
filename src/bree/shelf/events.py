@@ -254,9 +254,12 @@ def frames(path: Path, max_frames: int | None = None):
 
 
 def camera_events(video: Path, camera_id: str, cam: Camera, layout: dict, fps: float, cfg: ShelfConfig | None = None,
-                  detector=None, hand=None, max_frames: int | None = None, status: list | None = None) -> list[dict]:
-    """Shelf events of one video. Pass a list as `status` to also get the camera health records."""
+                  detector=None, hand=None, max_frames: int | None = None, status: list | None = None, looks: list | None = None) -> list[dict]:
+    """Shelf events of one video. Pass a list as `status` to also get the camera health records, and a list as `looks`
+    to get every look of the hand and held-item detector (bree.shelf.hand.HandItemCue.log; bree.concealment reads them)."""
     sc, out = ShelfCamera(camera_id, cam, layout, fps, cfg, detector, hand), []
+    if looks is not None and sc.cue is not None:
+        sc.cue.log = looks
     for im in frames(video, max_frames):
         out += sc.update(im)
     out += sc.finish()
@@ -282,9 +285,11 @@ def unreliable_windows(status: list[dict], t_end: float = float("inf")) -> dict[
 
 
 def _one_camera(args) -> tuple[list[dict], list[dict]]:
-    clip, cam_id, cfg, use_detector, max_frames = args
+    clip, cam_id, cfg, use_detector, max_frames, looks_dir = args
+    from bree.concealment.scan import patient_nms
     from bree.sim.bench import load_calibration
     cv2.setNumThreads(2)
+    patient_nms()          # the detector's NMS gives up after 2 s on a busy machine and drops boxes: the result must not depend on the load
     layout = json.loads((Path(clip) / "layout.json").read_text())
     fps = float(json.loads((Path(clip) / "clip.json").read_text())["fps"])
     det = None
@@ -292,21 +297,29 @@ def _one_camera(args) -> tuple[list[dict], list[dict]]:
         from bree.shelf.hand import sku_detector
         det = sku_detector()
     status: list[dict] = []
-    return camera_events(Path(clip) / f"{cam_id}.mp4", cam_id, load_calibration(clip)[cam_id], layout, fps, cfg, det, None, max_frames, status), status
+    looks: list[dict] | None = [] if looks_dir and det is not None else None
+    events = camera_events(Path(clip) / f"{cam_id}.mp4", cam_id, load_calibration(clip)[cam_id], layout, fps, cfg, det, None, max_frames, status, looks)
+    if looks is not None:
+        Path(looks_dir, f"looks_{cam_id}.jsonl").write_text("".join(json.dumps(r) + "\n" for r in looks))
+    return events, status
 
 
 def run_clip(clip: Path, cfg: ShelfConfig | None = None, jobs: int = 4, detector: bool = True, max_frames: int | None = None,
-             cameras: list[str] | None = None, verbose: bool = False, evidence_dir: str | None = None, status: list | None = None) -> list[dict]:
+             cameras: list[str] | None = None, verbose: bool = False, evidence_dir: str | None = None, status: list | None = None,
+             looks_dir: str | None = None) -> list[dict]:
     """Shelf events of every item camera of a clip folder (video, calibration.json, layout.json, clip.json), by t.
     evidence_dir: write before and after crops of every pixel-comparison event there (evidence.before / .after).
-    status: pass a list to also get the camera health records (see unreliable_windows)."""
+    status: pass a list to also get the camera health records (see unreliable_windows).
+    looks_dir: write looks_<camera>.jsonl there, every look of the held-item detector (for bree.concealment.cue)."""
     clip = Path(clip)
+    if looks_dir:
+        Path(looks_dir).mkdir(parents=True, exist_ok=True)
     if evidence_dir:
         cfg = replace(cfg or ShelfConfig(), diff=replace((cfg or ShelfConfig()).diff, evidence_dir=str(evidence_dir)))
     kind = {c["id"]: c["kind"] for c in json.loads((clip / "calibration.json").read_text())["cameras"]}
     cams = [c for c in json.loads((clip / "clip.json").read_text())["cameras"] if kind[c] in ITEM_KINDS and (not cameras or c in cameras)]
     with ProcessPoolExecutor(max(1, min(jobs, len(cams)))) as ex:
-        runs = list(ex.map(_one_camera, [(str(clip), c, cfg, detector, max_frames) for c in cams]))
+        runs = list(ex.map(_one_camera, [(str(clip), c, cfg, detector, max_frames, str(looks_dir) if looks_dir else None) for c in cams]))
     if verbose:
         for c, r in zip(cams, runs):
             print(f"  {c}: {len(r[0])} shelf events" + (f", status {[s['status'] for s in r[1]]}" if r[1] else ""), flush=True)

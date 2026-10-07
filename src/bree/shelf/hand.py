@@ -72,6 +72,7 @@ class HandItemCue:
         self.tracks: list[dict] = []
         self.hands: list[tuple[int, float, float, float]] = []
         self.detector_frames = self.detector_tiles = 0
+        self.log: list[dict] | None = None      # set to [] to keep every look: {"f", "items": [[x0, y0, x1, y1, conf, sku, changed share, moved, stock]], "hands": [[x0, y0, x1, y1, conf]]} (bree.concealment reads it)
         self._by_sku: dict[str, list[int]] = {}
         for i, s in enumerate(diff.slots):
             if diff.readable[i] or diff.area[i] > 0:
@@ -112,12 +113,21 @@ class HandItemCue:
                 self.hands += [(f, float(b[0] + b[2]) / 2, float(b[1] + b[3]) / 2, float(cf)) for b, cf in zip(hb, hc)]
         else:
             boxes, confs, cls = self.det(image, rois)
+            hb, hc = [], []
         names = getattr(self.det, "names", None)
+        look = None
+        if self.log is not None:
+            look = {"f": f, "items": [], "hands": [[*(round(float(v), 1) for v in b), round(float(cf), 3)] for b, cf in zip(hb, hc)]}
+            self.log.append(look)
         self.last = (f, np.asarray(boxes, float).reshape(-1, 4), [names[int(k)] if names is not None else str(k) for k in cls])
         for b, cf, k in zip(boxes, confs, cls):
             x0, y0, x1, y1 = (int(max(v * sc, 0)) for v in b)
             if x1 <= x0 or y1 <= y0 or cf < c.conf:
                 continue
+            if look is not None:
+                sku = names[int(k)] if names is not None else str(k)
+                look["items"].append([*(round(float(v), 1) for v in b), round(float(cf), 3), sku, round(float(d.changed[y0:y1, x0:x1].mean()), 3),
+                                      bool(recent[y0:y1, x0:x1].any()), bool(self.stock is not None and self.stock(sku, b))])
             if d.changed[y0:y1, x0:x1].mean() < c.fg_frac or not recent[y0:y1, x0:x1].any():
                 continue
             if self.stock is not None and self.stock(names[int(k)] if names is not None else str(k), b):

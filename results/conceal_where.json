@@ -1,0 +1,108 @@
+{
+ "what": "SIMULATED. Hand crops from rendered frames, held-out scenes (seeds of data/synth/hands/heldout_frames), truth hand boxes, centre crop.",
+ "classes": [
+  "shelf_empty",
+  "shelf_item",
+  "body_empty",
+  "body_item"
+ ],
+ "train_crops": 13918,
+ "heldout_crops": 3458,
+ "heldout_seeds": [
+  3000,
+  3001,
+  3002,
+  3003,
+  3004,
+  3005,
+  3006,
+  3007,
+  3008,
+  3009
+ ],
+ "accuracy": 0.652,
+ "confusion_rows_truth_cols_predicted": [
+  [
+   214,
+   64,
+   77,
+   37
+  ],
+  [
+   67,
+   179,
+   57,
+   83
+  ],
+  [
+   66,
+   76,
+   1616,
+   284
+  ],
+  [
+   37,
+   182,
+   172,
+   247
+  ]
+ ],
+ "at_shelf": {
+  "true": 520,
+  "false": 362,
+  "missed": 258,
+  "precision": 0.59,
+  "recall": 0.668
+ },
+ "item_in_hand": {
+  "true": 759,
+  "false": 574,
+  "missed": 265,
+  "precision": 0.569,
+  "recall": 0.741
+ },
+ "epochs": "4 (a complete 4-epoch schedule; these are the stored weights models/conceal_where.pt)",
+ "weights": "models/conceal_where.pt",
+ "other_runs": {
+  "16-epoch schedule stopped at epoch 8 (2026-10-05, machine needed)": {
+   "heldout_accuracy_by_epoch": [
+    0.381,
+    0.346,
+    0.485,
+    0.674,
+    0.671,
+    0.7,
+    0.698,
+    0.544
+   ],
+   "at_shelf": {
+    "true": 571,
+    "false": 581,
+    "missed": 207,
+    "precision": 0.496,
+    "recall": 0.734
+   },
+   "item_in_hand": {
+    "true": 918,
+    "false": 957,
+    "missed": 106,
+    "precision": 0.49,
+    "recall": 0.896
+   }
+  },
+  "30-epoch schedule stopped at epoch 4 (2026-10-05)": {
+   "heldout_accuracy_by_epoch": [
+    0.536,
+    0.591,
+    0.601,
+    0.669
+   ]
+  },
+  "16-epoch schedule on CPU stopped after epoch 1 (2026-10-06, 1647 s per epoch on the shared laptop)": {
+   "heldout_accuracy_by_epoch": [
+    0.381
+   ]
+  }
+ },
+ "status": "Not used by the cue's model. Training loss stayed between 1.0 and 1.3 (chance is 1.39): the net is not fitting the crops, so a longer schedule alone is not the fix."
+}

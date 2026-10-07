@@ -25,7 +25,7 @@ from bree.track.associate import AssocConfig  # noqa: E402
 from bree.track.floor import FloorConfig  # noqa: E402
 
 
-def run(name: str, split: str, join=None, reach=None, assoc=None, ledger=None, src: str | None = None, floor=None) -> dict:
+def run(name: str, split: str, join=None, reach=None, assoc=None, ledger=None, src: str | None = None, floor=None, conceal=None, conceal_tier=None) -> dict:
     scored = []
     for clip in clip_dirs(split):
         stored = Path(src or ROOT / "out" / "bench" / split) / clip.name / "pipeline"
@@ -33,11 +33,11 @@ def run(name: str, split: str, join=None, reach=None, assoc=None, ledger=None, s
             continue
         out = ROOT / "out" / "bench" / "whatif" / name / split / clip.name
         (out / "pipeline").mkdir(parents=True, exist_ok=True)
-        for f in [*stored.glob("people_*.jsonl"), stored / "shelf_events.jsonl"]:
+        for f in [*stored.glob("people_*.jsonl"), stored / "shelf_events.jsonl", *([stored / "conceal"] if (stored / "conceal").exists() else [])]:
             link = out / "pipeline" / f.name
             if not link.exists():
                 link.symlink_to(f.resolve())
-        rejoin(public_view(clip, out), out, review=False, floor=FloorConfig(**floor) if floor else None, join=join, reach=reach, assoc=AssocConfig(**assoc) if assoc else None, ledger=ledger)
+        rejoin(public_view(clip, out), out, review=False, floor=FloorConfig(**floor) if floor else None, join=join, reach=reach, assoc=AssocConfig(**assoc) if assoc else None, ledger=ledger, conceal=conceal, conceal_tier=conceal_tier)
         scored.append(score_clip(clip, out))
     res = {"split": split, **aggregate(scored), "clips": scored}
     (out.parent / "bench.json").write_text(json.dumps(res, indent=1))
@@ -59,8 +59,11 @@ if __name__ == "__main__":
     ap.add_argument("--splits", default="dev,train")
     for k in ("join", "reach", "assoc", "ledger", "floor"):
         ap.add_argument(f"--{k}", type=json.loads)
+    ap.add_argument("--src", help="folder of the finished runs (default out/bench/<split>)")
+    ap.add_argument("--conceal", action="store_true", default=None, help="the concealment cue on (bree.shelf.store.CONCEAL)")
+    ap.add_argument("--conceal-tier", action="store_true", default=None, help="and its tier rule (bree.concealment.tier)")
     a = ap.parse_args()
     if "test" in a.splits:
         raise SystemExit("the test split is for final numbers only")
     for split in a.splits.split(","):
-        print(a.name, line(run(a.name, split, a.join, a.reach, a.assoc, a.ledger, floor=a.floor)), flush=True)
+        print(a.name, line(run(a.name, split, a.join, a.reach, a.assoc, a.ledger, a.src, a.floor, a.conceal, a.conceal_tier)), flush=True)

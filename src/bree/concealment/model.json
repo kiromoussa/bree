@@ -1,0 +1,30 @@
+{
+ "features": [
+  "cusum"
+ ],
+ "log": [],
+ "mean": [
+  11.45714
+ ],
+ "scale": [
+  16.24806
+ ],
+ "coef": [
+  2.20236
+ ],
+ "intercept": -0.03435,
+ "fitted_on": {
+  "rows": "out/conceal/train/rows_tune2.jsonl",
+  "clips": [
+   "clip_4900",
+   "clip_4901",
+   "clip_4902",
+   "clip_4903",
+   "clip_4904",
+   "clip_4905"
+  ],
+  "takes": 28,
+  "positive": 10,
+  "note": "SIMULATED clips, TRAIN-range seeds"
+ }
+}

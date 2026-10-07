@@ -1,0 +1,3232 @@
+{
+ "what": "SIMULATED clips. Concealment cue through the ledger: off, on, and with the true concealment times as cues (a bound that reads truth).",
+ "clips": "data/synth/bench/train",
+ "seeds": [
+  "4900",
+  "4901",
+  "4902",
+  "4903",
+  "4904",
+  "4905"
+ ],
+ "summary": {
+  "cue_before_ledger": {
+   "thieves": 13,
+   "thieves_with_a_cue": 9,
+   "thieves_with_a_cue_ci95": [
+    0.424,
+    0.873
+   ],
+   "honest_shoppers": 19,
+   "honest_with_a_cue": 0,
+   "honest_with_a_cue_ci95": [
+    0.0,
+    0.168
+   ],
+   "cues_on_no_shopper": 0,
+   "thieves_cued": [
+    "4900:P003",
+    "4901:P001",
+    "4901:P006",
+    "4902:P003",
+    "4903:P003",
+    "4903:P004",
+    "4904:P002",
+    "4905:P002",
+    "4905:P005"
+   ],
+   "honest_cued": []
+  },
+  "on": {
+   "thieves": 13,
+   "thieves_at_alert": 3,
+   "thieves_at_alert_ci95": [
+    0.082,
+    0.503
+   ],
+   "thieves_at_alert_or_review": 11,
+   "honest_shoppers": 19,
+   "honest_at_alert": 0,
+   "honest_at_alert_ci95": [
+    0.0,
+    0.168
+   ],
+   "honest_at_alert_or_review": 2,
+   "alerts_on_nobody": 0,
+   "who_alerted": [
+    "4900:P003",
+    "4901:P001",
+    "4905:P002"
+   ],
+   "honest_alerted": [],
+   "thieves_not_at_alert_because": {
+    "a paid item did not match the basket": 2,
+    "a pick that also fits another person": 1,
+    "identity uncertain": 3,
+    "no record with an unpaid item under this shopper": 2,
+    "review: score under the alert bar, nothing marked concealed": 2
+   },
+   "thieves_not_at_alert": {
+    "4901:P003": "no record with an unpaid item under this shopper",
+    "4901:P005": "review: score under the alert bar, nothing marked concealed",
+    "4901:P006": "a paid item did not match the basket",
+    "4902:P003": "a paid item did not match the basket",
+    "4903:P003": "identity uncertain",
+    "4903:P004": "identity uncertain",
+    "4904:P001": "no record with an unpaid item under this shopper",
+    "4904:P002": "a pick that also fits another person",
+    "4905:P001": "review: score under the alert bar, nothing marked concealed",
+    "4905:P005": "identity uncertain"
+   },
+   "stolen_items": 15,
+   "thefts_alerted": 4,
+   "thefts_alerted_or_reviewed": 13,
+   "false_alerts_on_honest_shoppers": 0,
+   "false_alerts_on_nobody": 0,
+   "reviews_on_honest_shoppers": 2,
+   "alert_precision": 1.0
+  },
+  "off": {
+   "thieves": 13,
+   "thieves_at_alert": 0,
+   "thieves_at_alert_ci95": [
+    0.0,
+    0.228
+   ],
+   "thieves_at_alert_or_review": 10,
+   "honest_shoppers": 19,
+   "honest_at_alert": 0,
+   "honest_at_alert_ci95": [
+    0.0,
+    0.168
+   ],
+   "honest_at_alert_or_review": 2,
+   "alerts_on_nobody": 0,
+   "who_alerted": [],
+   "honest_alerted": [],
+   "thieves_not_at_alert_because": {
+    "no concealment or item-in-hand at exit": 2,
+    "no record with an unpaid item under this shopper": 3,
+    "review: score under the alert bar, nothing marked concealed": 8
+   },
+   "thieves_not_at_alert": {
+    "4900:P003": "review: score under the alert bar, nothing marked concealed",
+    "4901:P001": "no record with an unpaid item under this shopper",
+    "4901:P003": "no record with an unpaid item under this shopper",
+    "4901:P005": "review: score under the alert bar, nothing marked concealed",
+    "4901:P006": "review: score under the alert bar, nothing marked concealed",
+    "4902:P003": "review: score under the alert bar, nothing marked concealed",
+    "4903:P003": "review: score under the alert bar, nothing marked concealed",
+    "4903:P004": "review: score under the alert bar, nothing marked concealed",
+    "4904:P001": "no record with an unpaid item under this shopper",
+    "4904:P002": "no concealment or item-in-hand at exit",
+    "4905:P001": "review: score under the alert bar, nothing marked concealed",
+    "4905:P002": "no concealment or item-in-hand at exit",
+    "4905:P005": "review: score under the alert bar, nothing marked concealed"
+   },
+   "stolen_items": 15,
+   "thefts_alerted": 0,
+   "thefts_alerted_or_reviewed": 12,
+   "false_alerts_on_honest_shoppers": 0,
+   "false_alerts_on_nobody": 0,
+   "reviews_on_honest_shoppers": 2,
+   "alert_precision": null
+  },
+  "oracle": {
+   "thieves": 13,
+   "thieves_at_alert": 3,
+   "thieves_at_alert_ci95": [
+    0.082,
+    0.503
+   ],
+   "thieves_at_alert_or_review": 12,
+   "honest_shoppers": 19,
+   "honest_at_alert": 0,
+   "honest_at_alert_ci95": [
+    0.0,
+    0.168
+   ],
+   "honest_at_alert_or_review": 2,
+   "alerts_on_nobody": 0,
+   "who_alerted": [
+    "4900:P003",
+    "4901:P001",
+    "4905:P002"
+   ],
+   "honest_alerted": [],
+   "thieves_not_at_alert_because": {
+    "a paid item did not match the basket": 1,
+    "a pick that also fits another person": 1,
+    "identity uncertain": 6,
+    "no record with an unpaid item under this shopper": 1,
+    "review: score under the alert bar, nothing marked concealed": 1
+   },
+   "thieves_not_at_alert": {
+    "4901:P003": "identity uncertain",
+    "4901:P005": "identity uncertain",
+    "4901:P006": "a paid item did not match the basket",
+    "4902:P003": "identity uncertain",
+    "4903:P003": "identity uncertain",
+    "4903:P004": "identity uncertain",
+    "4904:P001": "no record with an unpaid item under this shopper",
+    "4904:P002": "a pick that also fits another person",
+    "4905:P001": "review: score under the alert bar, nothing marked concealed",
+    "4905:P005": "identity uncertain"
+   },
+   "stolen_items": 15,
+   "thefts_alerted": 4,
+   "thefts_alerted_or_reviewed": 14,
+   "false_alerts_on_honest_shoppers": 0,
+   "false_alerts_on_nobody": 0,
+   "reviews_on_honest_shoppers": 2,
+   "alert_precision": 1.0
+  },
+  "on_tier": {
+   "thieves": 13,
+   "thieves_at_alert": 4,
+   "thieves_at_alert_ci95": [
+    0.127,
+    0.576
+   ],
+   "thieves_at_alert_or_review": 11,
+   "honest_shoppers": 19,
+   "honest_at_alert": 0,
+   "honest_at_alert_ci95": [
+    0.0,
+    0.168
+   ],
+   "honest_at_alert_or_review": 2,
+   "alerts_on_nobody": 0,
+   "who_alerted": [
+    "4900:P003",
+    "4901:P001",
+    "4904:P002",
+    "4905:P002"
+   ],
+   "honest_alerted": [],
+   "thieves_not_at_alert_because": {
+    "identity uncertain": 5,
+    "no record with an unpaid item under this shopper": 2,
+    "unpaid, nothing marked concealed": 2
+   },
+   "thieves_not_at_alert": {
+    "4901:P003": "no record with an unpaid item under this shopper",
+    "4901:P005": "unpaid, nothing marked concealed",
+    "4901:P006": "identity uncertain",
+    "4902:P003": "identity uncertain",
+    "4903:P003": "identity uncertain",
+    "4903:P004": "identity uncertain",
+    "4904:P001": "no record with an unpaid item under this shopper",
+    "4905:P001": "unpaid, nothing marked concealed",
+    "4905:P005": "identity uncertain"
+   },
+   "stolen_items": 15,
+   "thefts_alerted": 5,
+   "thefts_alerted_or_reviewed": 13,
+   "false_alerts_on_honest_shoppers": 0,
+   "false_alerts_on_nobody": 0,
+   "reviews_on_honest_shoppers": 2,
+   "alert_precision": 1.0
+  },
+  "on_tier_any_identity": {
+   "thieves": 13,
+   "thieves_at_alert": 9,
+   "thieves_at_alert_ci95": [
+    0.424,
+    0.873
+   ],
+   "thieves_at_alert_or_review": 11,
+   "honest_shoppers": 19,
+   "honest_at_alert": 0,
+   "honest_at_alert_ci95": [
+    0.0,
+    0.168
+   ],
+   "honest_at_alert_or_review": 2,
+   "alerts_on_nobody": 0,
+   "who_alerted": [
+    "4900:P003",
+    "4901:P001",
+    "4901:P006",
+    "4902:P003",
+    "4903:P003",
+    "4903:P004",
+    "4904:P002",
+    "4905:P002",
+    "4905:P005"
+   ],
+   "honest_alerted": [],
+   "thieves_not_at_alert_because": {
+    "no record with an unpaid item under this shopper": 2,
+    "unpaid, nothing marked concealed": 2
+   },
+   "thieves_not_at_alert": {
+    "4901:P003": "no record with an unpaid item under this shopper",
+    "4901:P005": "unpaid, nothing marked concealed",
+    "4904:P001": "no record with an unpaid item under this shopper",
+    "4905:P001": "unpaid, nothing marked concealed"
+   },
+   "stolen_items": 15,
+   "thefts_alerted": 11,
+   "thefts_alerted_or_reviewed": 13,
+   "false_alerts_on_honest_shoppers": 0,
+   "false_alerts_on_nobody": 0,
+   "reviews_on_honest_shoppers": 2,
+   "alert_precision": 1.0
+  },
+  "oracle_tier": {
+   "thieves": 13,
+   "thieves_at_alert": 4,
+   "thieves_at_alert_ci95": [
+    0.127,
+    0.576
+   ],
+   "thieves_at_alert_or_review": 12,
+   "honest_shoppers": 19,
+   "honest_at_alert": 0,
+   "honest_at_alert_ci95": [
+    0.0,
+    0.168
+   ],
+   "honest_at_alert_or_review": 2,
+   "alerts_on_nobody": 0,
+   "who_alerted": [
+    "4900:P003",
+    "4901:P001",
+    "4904:P002",
+    "4905:P002"
+   ],
+   "honest_alerted": [],
+   "thieves_not_at_alert_because": {
+    "identity uncertain": 7,
+    "no record with an unpaid item under this shopper": 1,
+    "unpaid, nothing marked concealed": 1
+   },
+   "thieves_not_at_alert": {
+    "4901:P003": "identity uncertain",
+    "4901:P005": "identity uncertain",
+    "4901:P006": "identity uncertain",
+    "4902:P003": "identity uncertain",
+    "4903:P003": "identity uncertain",
+    "4903:P004": "identity uncertain",
+    "4904:P001": "no record with an unpaid item under this shopper",
+    "4905:P001": "unpaid, nothing marked concealed",
+    "4905:P005": "identity uncertain"
+   },
+   "stolen_items": 15,
+   "thefts_alerted": 5,
+   "thefts_alerted_or_reviewed": 14,
+   "false_alerts_on_honest_shoppers": 0,
+   "false_alerts_on_nobody": 0,
+   "reviews_on_honest_shoppers": 2,
+   "alert_precision": 1.0
+  },
+  "oracle_tier_any_identity": {
+   "thieves": 13,
+   "thieves_at_alert": 11,
+   "thieves_at_alert_ci95": [
+    0.578,
+    0.957
+   ],
+   "thieves_at_alert_or_review": 12,
+   "honest_shoppers": 19,
+   "honest_at_alert": 0,
+   "honest_at_alert_ci95": [
+    0.0,
+    0.168
+   ],
+   "honest_at_alert_or_review": 2,
+   "alerts_on_nobody": 0,
+   "who_alerted": [
+    "4900:P003",
+    "4901:P001",
+    "4901:P003",
+    "4901:P005",
+    "4901:P006",
+    "4902:P003",
+    "4903:P003",
+    "4903:P004",
+    "4904:P002",
+    "4905:P002",
+    "4905:P005"
+   ],
+   "honest_alerted": [],
+   "thieves_not_at_alert_because": {
+    "no record with an unpaid item under this shopper": 1,
+    "unpaid, nothing marked concealed": 1
+   },
+   "thieves_not_at_alert": {
+    "4904:P001": "no record with an unpaid item under this shopper",
+    "4905:P001": "unpaid, nothing marked concealed"
+   },
+   "stolen_items": 15,
+   "thefts_alerted": 13,
+   "thefts_alerted_or_reviewed": 14,
+   "false_alerts_on_honest_shoppers": 0,
+   "false_alerts_on_nobody": 0,
+   "reviews_on_honest_shoppers": 2,
+   "alert_precision": 1.0
+  }
+ },
+ "thefts": {
+  "on": [
+   {
+    "clip": 4900,
+    "shopper": "P003",
+    "sku": "voltlink_usbc",
+    "slot": "G3L-S2-21",
+    "t_pick": 18.83,
+    "t_conceal": 21.83,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 13.37
+   },
+   {
+    "clip": 4901,
+    "shopper": "P001",
+    "sku": "arcwave_berry",
+    "slot": "D10-S5-3",
+    "t_pick": 14.67,
+    "t_conceal": 17.67,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": false,
+    "tags": [],
+    "time_to_alert_s": 16.43
+   },
+   {
+    "clip": 4901,
+    "shopper": "P003",
+    "sku": "cocoa_crest",
+    "slot": "G2L-S1-9",
+    "t_pick": 23.27,
+    "t_conceal": 28.03,
+    "alert": false,
+    "alert_or_review": false,
+    "sku_in_alert": false,
+    "listed_unpaid": false,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4901,
+    "shopper": "P005",
+    "sku": "relieva_aceta",
+    "slot": "G3R-S1-27",
+    "t_pick": 33.53,
+    "t_conceal": 36.53,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4901,
+    "shopper": "P006",
+    "sku": "relieva_aceta",
+    "slot": "G1L-S3-21",
+    "t_pick": 37.53,
+    "t_conceal": 47.67,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4902,
+    "shopper": "P003",
+    "sku": "cocoa_crest",
+    "slot": "CK-10",
+    "t_pick": 14.67,
+    "t_conceal": 29.77,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4902,
+    "shopper": "P003",
+    "sku": "ridgeline_original",
+    "slot": "G4R-S3-40",
+    "t_pick": 42.97,
+    "t_conceal": 49.9,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4903,
+    "shopper": "P003",
+    "sku": "arcwave_original",
+    "slot": "D10-S5-4",
+    "t_pick": 23.03,
+    "t_conceal": 31.17,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4903,
+    "shopper": "P004",
+    "sku": "arcwave_berry",
+    "slot": "D11-S5-2",
+    "t_pick": 38.47,
+    "t_conceal": 46.4,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4904,
+    "shopper": "P001",
+    "sku": "ridgeline_original",
+    "slot": "G3L-S1-42",
+    "t_pick": 10.53,
+    "t_conceal": 13.53,
+    "alert": false,
+    "alert_or_review": false,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4904,
+    "shopper": "P002",
+    "sku": "peanut_pilot",
+    "slot": "G2R-S4-20",
+    "t_pick": 12.53,
+    "t_conceal": 20.37,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4905,
+    "shopper": "P001",
+    "sku": "cocoa_crest",
+    "slot": "CK-5",
+    "t_pick": 10.3,
+    "t_conceal": 13.3,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": false,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4905,
+    "shopper": "P002",
+    "sku": "arcwave_berry",
+    "slot": "D12-S5-7",
+    "t_pick": 24.07,
+    "t_conceal": 35.87,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 37.23
+   },
+   {
+    "clip": 4905,
+    "shopper": "P005",
+    "sku": "relieva_ibu",
+    "slot": "G2R-S1-12",
+    "t_pick": 31.13,
+    "t_conceal": 34.13,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4905,
+    "shopper": "P002",
+    "sku": "arcwave_tropical",
+    "slot": "D11-S5-4",
+    "t_pick": 47.27,
+    "t_conceal": 59.43,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 13.67
+   }
+  ],
+  "off": [
+   {
+    "clip": 4900,
+    "shopper": "P003",
+    "sku": "voltlink_usbc",
+    "slot": "G3L-S2-21",
+    "t_pick": 18.83,
+    "t_conceal": 21.83,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4901,
+    "shopper": "P001",
+    "sku": "arcwave_berry",
+    "slot": "D10-S5-3",
+    "t_pick": 14.67,
+    "t_conceal": 17.67,
+    "alert": false,
+    "alert_or_review": false,
+    "sku_in_alert": false,
+    "listed_unpaid": false,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4901,
+    "shopper": "P003",
+    "sku": "cocoa_crest",
+    "slot": "G2L-S1-9",
+    "t_pick": 23.27,
+    "t_conceal": 28.03,
+    "alert": false,
+    "alert_or_review": false,
+    "sku_in_alert": false,
+    "listed_unpaid": false,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4901,
+    "shopper": "P005",
+    "sku": "relieva_aceta",
+    "slot": "G3R-S1-27",
+    "t_pick": 33.53,
+    "t_conceal": 36.53,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4901,
+    "shopper": "P006",
+    "sku": "relieva_aceta",
+    "slot": "G1L-S3-21",
+    "t_pick": 37.53,
+    "t_conceal": 47.67,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4902,
+    "shopper": "P003",
+    "sku": "cocoa_crest",
+    "slot": "CK-10",
+    "t_pick": 14.67,
+    "t_conceal": 29.77,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4902,
+    "shopper": "P003",
+    "sku": "ridgeline_original",
+    "slot": "G4R-S3-40",
+    "t_pick": 42.97,
+    "t_conceal": 49.9,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4903,
+    "shopper": "P003",
+    "sku": "arcwave_original",
+    "slot": "D10-S5-4",
+    "t_pick": 23.03,
+    "t_conceal": 31.17,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4903,
+    "shopper": "P004",
+    "sku": "arcwave_berry",
+    "slot": "D11-S5-2",
+    "t_pick": 38.47,
+    "t_conceal": 46.4,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4904,
+    "shopper": "P001",
+    "sku": "ridgeline_original",
+    "slot": "G3L-S1-42",
+    "t_pick": 10.53,
+    "t_conceal": 13.53,
+    "alert": false,
+    "alert_or_review": false,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4904,
+    "shopper": "P002",
+    "sku": "peanut_pilot",
+    "slot": "G2R-S4-20",
+    "t_pick": 12.53,
+    "t_conceal": 20.37,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4905,
+    "shopper": "P001",
+    "sku": "cocoa_crest",
+    "slot": "CK-5",
+    "t_pick": 10.3,
+    "t_conceal": 13.3,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": false,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4905,
+    "shopper": "P002",
+    "sku": "arcwave_berry",
+    "slot": "D12-S5-7",
+    "t_pick": 24.07,
+    "t_conceal": 35.87,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4905,
+    "shopper": "P005",
+    "sku": "relieva_ibu",
+    "slot": "G2R-S1-12",
+    "t_pick": 31.13,
+    "t_conceal": 34.13,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4905,
+    "shopper": "P002",
+    "sku": "arcwave_tropical",
+    "slot": "D11-S5-4",
+    "t_pick": 47.27,
+    "t_conceal": 59.43,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   }
+  ],
+  "oracle": [
+   {
+    "clip": 4900,
+    "shopper": "P003",
+    "sku": "voltlink_usbc",
+    "slot": "G3L-S2-21",
+    "t_pick": 18.83,
+    "t_conceal": 21.83,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 13.37
+   },
+   {
+    "clip": 4901,
+    "shopper": "P001",
+    "sku": "arcwave_berry",
+    "slot": "D10-S5-3",
+    "t_pick": 14.67,
+    "t_conceal": 17.67,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": false,
+    "tags": [],
+    "time_to_alert_s": 16.43
+   },
+   {
+    "clip": 4901,
+    "shopper": "P003",
+    "sku": "cocoa_crest",
+    "slot": "G2L-S1-9",
+    "t_pick": 23.27,
+    "t_conceal": 28.03,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": false,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4901,
+    "shopper": "P005",
+    "sku": "relieva_aceta",
+    "slot": "G3R-S1-27",
+    "t_pick": 33.53,
+    "t_conceal": 36.53,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4901,
+    "shopper": "P006",
+    "sku": "relieva_aceta",
+    "slot": "G1L-S3-21",
+    "t_pick": 37.53,
+    "t_conceal": 47.67,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4902,
+    "shopper": "P003",
+    "sku": "cocoa_crest",
+    "slot": "CK-10",
+    "t_pick": 14.67,
+    "t_conceal": 29.77,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4902,
+    "shopper": "P003",
+    "sku": "ridgeline_original",
+    "slot": "G4R-S3-40",
+    "t_pick": 42.97,
+    "t_conceal": 49.9,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4903,
+    "shopper": "P003",
+    "sku": "arcwave_original",
+    "slot": "D10-S5-4",
+    "t_pick": 23.03,
+    "t_conceal": 31.17,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4903,
+    "shopper": "P004",
+    "sku": "arcwave_berry",
+    "slot": "D11-S5-2",
+    "t_pick": 38.47,
+    "t_conceal": 46.4,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4904,
+    "shopper": "P001",
+    "sku": "ridgeline_original",
+    "slot": "G3L-S1-42",
+    "t_pick": 10.53,
+    "t_conceal": 13.53,
+    "alert": false,
+    "alert_or_review": false,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4904,
+    "shopper": "P002",
+    "sku": "peanut_pilot",
+    "slot": "G2R-S4-20",
+    "t_pick": 12.53,
+    "t_conceal": 20.37,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4905,
+    "shopper": "P001",
+    "sku": "cocoa_crest",
+    "slot": "CK-5",
+    "t_pick": 10.3,
+    "t_conceal": 13.3,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": false,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4905,
+    "shopper": "P002",
+    "sku": "arcwave_berry",
+    "slot": "D12-S5-7",
+    "t_pick": 24.07,
+    "t_conceal": 35.87,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 37.23
+   },
+   {
+    "clip": 4905,
+    "shopper": "P005",
+    "sku": "relieva_ibu",
+    "slot": "G2R-S1-12",
+    "t_pick": 31.13,
+    "t_conceal": 34.13,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4905,
+    "shopper": "P002",
+    "sku": "arcwave_tropical",
+    "slot": "D11-S5-4",
+    "t_pick": 47.27,
+    "t_conceal": 59.43,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 13.67
+   }
+  ],
+  "on_tier": [
+   {
+    "clip": 4900,
+    "shopper": "P003",
+    "sku": "voltlink_usbc",
+    "slot": "G3L-S2-21",
+    "t_pick": 18.83,
+    "t_conceal": 21.83,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 13.37
+   },
+   {
+    "clip": 4901,
+    "shopper": "P001",
+    "sku": "arcwave_berry",
+    "slot": "D10-S5-3",
+    "t_pick": 14.67,
+    "t_conceal": 17.67,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": false,
+    "tags": [],
+    "time_to_alert_s": 16.43
+   },
+   {
+    "clip": 4901,
+    "shopper": "P003",
+    "sku": "cocoa_crest",
+    "slot": "G2L-S1-9",
+    "t_pick": 23.27,
+    "t_conceal": 28.03,
+    "alert": false,
+    "alert_or_review": false,
+    "sku_in_alert": false,
+    "listed_unpaid": false,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4901,
+    "shopper": "P005",
+    "sku": "relieva_aceta",
+    "slot": "G3R-S1-27",
+    "t_pick": 33.53,
+    "t_conceal": 36.53,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4901,
+    "shopper": "P006",
+    "sku": "relieva_aceta",
+    "slot": "G1L-S3-21",
+    "t_pick": 37.53,
+    "t_conceal": 47.67,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4902,
+    "shopper": "P003",
+    "sku": "cocoa_crest",
+    "slot": "CK-10",
+    "t_pick": 14.67,
+    "t_conceal": 29.77,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4902,
+    "shopper": "P003",
+    "sku": "ridgeline_original",
+    "slot": "G4R-S3-40",
+    "t_pick": 42.97,
+    "t_conceal": 49.9,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4903,
+    "shopper": "P003",
+    "sku": "arcwave_original",
+    "slot": "D10-S5-4",
+    "t_pick": 23.03,
+    "t_conceal": 31.17,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4903,
+    "shopper": "P004",
+    "sku": "arcwave_berry",
+    "slot": "D11-S5-2",
+    "t_pick": 38.47,
+    "t_conceal": 46.4,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4904,
+    "shopper": "P001",
+    "sku": "ridgeline_original",
+    "slot": "G3L-S1-42",
+    "t_pick": 10.53,
+    "t_conceal": 13.53,
+    "alert": false,
+    "alert_or_review": false,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4904,
+    "shopper": "P002",
+    "sku": "peanut_pilot",
+    "slot": "G2R-S4-20",
+    "t_pick": 12.53,
+    "t_conceal": 20.37,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 18.03
+   },
+   {
+    "clip": 4905,
+    "shopper": "P001",
+    "sku": "cocoa_crest",
+    "slot": "CK-5",
+    "t_pick": 10.3,
+    "t_conceal": 13.3,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": false,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4905,
+    "shopper": "P002",
+    "sku": "arcwave_berry",
+    "slot": "D12-S5-7",
+    "t_pick": 24.07,
+    "t_conceal": 35.87,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 37.23
+   },
+   {
+    "clip": 4905,
+    "shopper": "P005",
+    "sku": "relieva_ibu",
+    "slot": "G2R-S1-12",
+    "t_pick": 31.13,
+    "t_conceal": 34.13,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4905,
+    "shopper": "P002",
+    "sku": "arcwave_tropical",
+    "slot": "D11-S5-4",
+    "t_pick": 47.27,
+    "t_conceal": 59.43,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 13.67
+   }
+  ],
+  "on_tier_any_identity": [
+   {
+    "clip": 4900,
+    "shopper": "P003",
+    "sku": "voltlink_usbc",
+    "slot": "G3L-S2-21",
+    "t_pick": 18.83,
+    "t_conceal": 21.83,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 13.37
+   },
+   {
+    "clip": 4901,
+    "shopper": "P001",
+    "sku": "arcwave_berry",
+    "slot": "D10-S5-3",
+    "t_pick": 14.67,
+    "t_conceal": 17.67,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": false,
+    "tags": [],
+    "time_to_alert_s": 16.43
+   },
+   {
+    "clip": 4901,
+    "shopper": "P003",
+    "sku": "cocoa_crest",
+    "slot": "G2L-S1-9",
+    "t_pick": 23.27,
+    "t_conceal": 28.03,
+    "alert": false,
+    "alert_or_review": false,
+    "sku_in_alert": false,
+    "listed_unpaid": false,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4901,
+    "shopper": "P005",
+    "sku": "relieva_aceta",
+    "slot": "G3R-S1-27",
+    "t_pick": 33.53,
+    "t_conceal": 36.53,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4901,
+    "shopper": "P006",
+    "sku": "relieva_aceta",
+    "slot": "G1L-S3-21",
+    "t_pick": 37.53,
+    "t_conceal": 47.67,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 28.03
+   },
+   {
+    "clip": 4902,
+    "shopper": "P003",
+    "sku": "cocoa_crest",
+    "slot": "CK-10",
+    "t_pick": 14.67,
+    "t_conceal": 29.77,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 39.93
+   },
+   {
+    "clip": 4902,
+    "shopper": "P003",
+    "sku": "ridgeline_original",
+    "slot": "G4R-S3-40",
+    "t_pick": 42.97,
+    "t_conceal": 49.9,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 19.8
+   },
+   {
+    "clip": 4903,
+    "shopper": "P003",
+    "sku": "arcwave_original",
+    "slot": "D10-S5-4",
+    "t_pick": 23.03,
+    "t_conceal": 31.17,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 33.63
+   },
+   {
+    "clip": 4903,
+    "shopper": "P004",
+    "sku": "arcwave_berry",
+    "slot": "D11-S5-2",
+    "t_pick": 38.47,
+    "t_conceal": 46.4,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 16.3
+   },
+   {
+    "clip": 4904,
+    "shopper": "P001",
+    "sku": "ridgeline_original",
+    "slot": "G3L-S1-42",
+    "t_pick": 10.53,
+    "t_conceal": 13.53,
+    "alert": false,
+    "alert_or_review": false,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4904,
+    "shopper": "P002",
+    "sku": "peanut_pilot",
+    "slot": "G2R-S4-20",
+    "t_pick": 12.53,
+    "t_conceal": 20.37,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 18.03
+   },
+   {
+    "clip": 4905,
+    "shopper": "P001",
+    "sku": "cocoa_crest",
+    "slot": "CK-5",
+    "t_pick": 10.3,
+    "t_conceal": 13.3,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": false,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4905,
+    "shopper": "P002",
+    "sku": "arcwave_berry",
+    "slot": "D12-S5-7",
+    "t_pick": 24.07,
+    "t_conceal": 35.87,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 37.23
+   },
+   {
+    "clip": 4905,
+    "shopper": "P005",
+    "sku": "relieva_ibu",
+    "slot": "G2R-S1-12",
+    "t_pick": 31.13,
+    "t_conceal": 34.13,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 13.87
+   },
+   {
+    "clip": 4905,
+    "shopper": "P002",
+    "sku": "arcwave_tropical",
+    "slot": "D11-S5-4",
+    "t_pick": 47.27,
+    "t_conceal": 59.43,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 13.67
+   }
+  ],
+  "oracle_tier": [
+   {
+    "clip": 4900,
+    "shopper": "P003",
+    "sku": "voltlink_usbc",
+    "slot": "G3L-S2-21",
+    "t_pick": 18.83,
+    "t_conceal": 21.83,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 13.37
+   },
+   {
+    "clip": 4901,
+    "shopper": "P001",
+    "sku": "arcwave_berry",
+    "slot": "D10-S5-3",
+    "t_pick": 14.67,
+    "t_conceal": 17.67,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": false,
+    "tags": [],
+    "time_to_alert_s": 16.43
+   },
+   {
+    "clip": 4901,
+    "shopper": "P003",
+    "sku": "cocoa_crest",
+    "slot": "G2L-S1-9",
+    "t_pick": 23.27,
+    "t_conceal": 28.03,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": false,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4901,
+    "shopper": "P005",
+    "sku": "relieva_aceta",
+    "slot": "G3R-S1-27",
+    "t_pick": 33.53,
+    "t_conceal": 36.53,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4901,
+    "shopper": "P006",
+    "sku": "relieva_aceta",
+    "slot": "G1L-S3-21",
+    "t_pick": 37.53,
+    "t_conceal": 47.67,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4902,
+    "shopper": "P003",
+    "sku": "cocoa_crest",
+    "slot": "CK-10",
+    "t_pick": 14.67,
+    "t_conceal": 29.77,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4902,
+    "shopper": "P003",
+    "sku": "ridgeline_original",
+    "slot": "G4R-S3-40",
+    "t_pick": 42.97,
+    "t_conceal": 49.9,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4903,
+    "shopper": "P003",
+    "sku": "arcwave_original",
+    "slot": "D10-S5-4",
+    "t_pick": 23.03,
+    "t_conceal": 31.17,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4903,
+    "shopper": "P004",
+    "sku": "arcwave_berry",
+    "slot": "D11-S5-2",
+    "t_pick": 38.47,
+    "t_conceal": 46.4,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4904,
+    "shopper": "P001",
+    "sku": "ridgeline_original",
+    "slot": "G3L-S1-42",
+    "t_pick": 10.53,
+    "t_conceal": 13.53,
+    "alert": false,
+    "alert_or_review": false,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4904,
+    "shopper": "P002",
+    "sku": "peanut_pilot",
+    "slot": "G2R-S4-20",
+    "t_pick": 12.53,
+    "t_conceal": 20.37,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 18.03
+   },
+   {
+    "clip": 4905,
+    "shopper": "P001",
+    "sku": "cocoa_crest",
+    "slot": "CK-5",
+    "t_pick": 10.3,
+    "t_conceal": 13.3,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": false,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4905,
+    "shopper": "P002",
+    "sku": "arcwave_berry",
+    "slot": "D12-S5-7",
+    "t_pick": 24.07,
+    "t_conceal": 35.87,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 37.23
+   },
+   {
+    "clip": 4905,
+    "shopper": "P005",
+    "sku": "relieva_ibu",
+    "slot": "G2R-S1-12",
+    "t_pick": 31.13,
+    "t_conceal": 34.13,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4905,
+    "shopper": "P002",
+    "sku": "arcwave_tropical",
+    "slot": "D11-S5-4",
+    "t_pick": 47.27,
+    "t_conceal": 59.43,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 13.67
+   }
+  ],
+  "oracle_tier_any_identity": [
+   {
+    "clip": 4900,
+    "shopper": "P003",
+    "sku": "voltlink_usbc",
+    "slot": "G3L-S2-21",
+    "t_pick": 18.83,
+    "t_conceal": 21.83,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 13.37
+   },
+   {
+    "clip": 4901,
+    "shopper": "P001",
+    "sku": "arcwave_berry",
+    "slot": "D10-S5-3",
+    "t_pick": 14.67,
+    "t_conceal": 17.67,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": false,
+    "tags": [],
+    "time_to_alert_s": 16.43
+   },
+   {
+    "clip": 4901,
+    "shopper": "P003",
+    "sku": "cocoa_crest",
+    "slot": "G2L-S1-9",
+    "t_pick": 23.27,
+    "t_conceal": 28.03,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": false,
+    "tags": [],
+    "time_to_alert_s": 13.37
+   },
+   {
+    "clip": 4901,
+    "shopper": "P005",
+    "sku": "relieva_aceta",
+    "slot": "G3R-S1-27",
+    "t_pick": 33.53,
+    "t_conceal": 36.53,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 18.97
+   },
+   {
+    "clip": 4901,
+    "shopper": "P006",
+    "sku": "relieva_aceta",
+    "slot": "G1L-S3-21",
+    "t_pick": 37.53,
+    "t_conceal": 47.67,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 28.03
+   },
+   {
+    "clip": 4902,
+    "shopper": "P003",
+    "sku": "cocoa_crest",
+    "slot": "CK-10",
+    "t_pick": 14.67,
+    "t_conceal": 29.77,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 39.93
+   },
+   {
+    "clip": 4902,
+    "shopper": "P003",
+    "sku": "ridgeline_original",
+    "slot": "G4R-S3-40",
+    "t_pick": 42.97,
+    "t_conceal": 49.9,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 19.8
+   },
+   {
+    "clip": 4903,
+    "shopper": "P003",
+    "sku": "arcwave_original",
+    "slot": "D10-S5-4",
+    "t_pick": 23.03,
+    "t_conceal": 31.17,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 33.63
+   },
+   {
+    "clip": 4903,
+    "shopper": "P004",
+    "sku": "arcwave_berry",
+    "slot": "D11-S5-2",
+    "t_pick": 38.47,
+    "t_conceal": 46.4,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 16.3
+   },
+   {
+    "clip": 4904,
+    "shopper": "P001",
+    "sku": "ridgeline_original",
+    "slot": "G3L-S1-42",
+    "t_pick": 10.53,
+    "t_conceal": 13.53,
+    "alert": false,
+    "alert_or_review": false,
+    "sku_in_alert": false,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4904,
+    "shopper": "P002",
+    "sku": "peanut_pilot",
+    "slot": "G2R-S4-20",
+    "t_pick": 12.53,
+    "t_conceal": 20.37,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 18.03
+   },
+   {
+    "clip": 4905,
+    "shopper": "P001",
+    "sku": "cocoa_crest",
+    "slot": "CK-5",
+    "t_pick": 10.3,
+    "t_conceal": 13.3,
+    "alert": false,
+    "alert_or_review": true,
+    "sku_in_alert": false,
+    "listed_unpaid": false,
+    "tags": [],
+    "time_to_alert_s": null
+   },
+   {
+    "clip": 4905,
+    "shopper": "P002",
+    "sku": "arcwave_berry",
+    "slot": "D12-S5-7",
+    "t_pick": 24.07,
+    "t_conceal": 35.87,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 37.23
+   },
+   {
+    "clip": 4905,
+    "shopper": "P005",
+    "sku": "relieva_ibu",
+    "slot": "G2R-S1-12",
+    "t_pick": 31.13,
+    "t_conceal": 34.13,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 13.87
+   },
+   {
+    "clip": 4905,
+    "shopper": "P002",
+    "sku": "arcwave_tropical",
+    "slot": "D11-S5-4",
+    "t_pick": 47.27,
+    "t_conceal": 59.43,
+    "alert": true,
+    "alert_or_review": true,
+    "sku_in_alert": true,
+    "listed_unpaid": true,
+    "tags": [],
+    "time_to_alert_s": 13.67
+   }
+  ]
+ },
+ "alerts": {
+  "on": [
+   {
+    "clip": 4900,
+    "alert_id": "A00001",
+    "tier": "alert",
+    "person_id": 4,
+    "shopper": "P003",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 35.2,
+    "skus": [
+     "voltlink_usbc"
+    ],
+    "confidence": 1.0
+   },
+   {
+    "clip": 4901,
+    "alert_id": "A00001",
+    "tier": "alert",
+    "person_id": 2,
+    "shopper": "P001",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 34.1,
+    "skus": [
+     "arcwave_original"
+    ],
+    "confidence": 0.969
+   },
+   {
+    "clip": 4901,
+    "alert_id": "A00002",
+    "tier": "review",
+    "person_id": 6,
+    "shopper": "P005",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 55.5,
+    "skus": [
+     "relieva_aceta"
+    ],
+    "confidence": 0.45
+   },
+   {
+    "clip": 4901,
+    "alert_id": "A00003",
+    "tier": "review",
+    "person_id": 5,
+    "shopper": "P004",
+    "role": "shopper",
+    "true_theft": false,
+    "t_emitted": 66.8,
+    "skus": [
+     "cocoa_crest"
+    ],
+    "confidence": 0.5
+   },
+   {
+    "clip": 4901,
+    "alert_id": "A00004",
+    "tier": "review",
+    "person_id": 8,
+    "shopper": "P006",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 75.7,
+    "skus": [
+     "fizzo_cola",
+     "relieva_aceta"
+    ],
+    "confidence": 0.9
+   },
+   {
+    "clip": 4902,
+    "alert_id": "A00001",
+    "tier": "review",
+    "person_id": 4,
+    "shopper": "P003",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 69.7,
+    "skus": [
+     "cocoa_crest",
+     "ridgeline_original"
+    ],
+    "confidence": 0.9
+   },
+   {
+    "clip": 4903,
+    "alert_id": "A00001",
+    "tier": "review",
+    "person_id": 5,
+    "shopper": "P004",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 62.7,
+    "skus": [
+     "arcwave_berry"
+    ],
+    "confidence": 0.85
+   },
+   {
+    "clip": 4903,
+    "alert_id": "A00002",
+    "tier": "review",
+    "person_id": 4,
+    "shopper": "P003",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 64.8,
+    "skus": [
+     "arcwave_original",
+     "fizzo_zero"
+    ],
+    "confidence": 0.9
+   },
+   {
+    "clip": 4904,
+    "alert_id": "A00001",
+    "tier": "review",
+    "person_id": 3,
+    "shopper": "P002",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 38.4,
+    "skus": [
+     "ridgeline_original",
+     "peanut_pilot"
+    ],
+    "confidence": 1.0
+   },
+   {
+    "clip": 4904,
+    "alert_id": "A00002",
+    "tier": "review",
+    "person_id": 5,
+    "shopper": "P004",
+    "role": "shopper",
+    "true_theft": false,
+    "t_emitted": 50.9,
+    "skus": [
+     "cocoa_crest",
+     "ridgeline_original"
+    ],
+    "confidence": 0.7
+   },
+   {
+    "clip": 4905,
+    "alert_id": "A00001",
+    "tier": "review",
+    "person_id": 2,
+    "shopper": "P001",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 29.7,
+    "skus": [
+     "cocoa_crest"
+    ],
+    "confidence": 0.45
+   },
+   {
+    "clip": 4905,
+    "alert_id": "A00002",
+    "tier": "review",
+    "person_id": 3,
+    "shopper": "P005",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 48.0,
+    "skus": [
+     "relieva_ibu"
+    ],
+    "confidence": 1.0
+   },
+   {
+    "clip": 4905,
+    "alert_id": "A00003",
+    "tier": "alert",
+    "person_id": 4,
+    "shopper": "P002",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 73.1,
+    "skus": [
+     "arcwave_tropical",
+     "arcwave_berry"
+    ],
+    "confidence": 1.0
+   }
+  ],
+  "off": [
+   {
+    "clip": 4900,
+    "alert_id": "A00001",
+    "tier": "review",
+    "person_id": 4,
+    "shopper": "P003",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 53.0,
+    "skus": [
+     "voltlink_usbc"
+    ],
+    "confidence": 0.65
+   },
+   {
+    "clip": 4901,
+    "alert_id": "A00001",
+    "tier": "review",
+    "person_id": 6,
+    "shopper": "P005",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 55.5,
+    "skus": [
+     "relieva_aceta"
+    ],
+    "confidence": 0.45
+   },
+   {
+    "clip": 4901,
+    "alert_id": "A00002",
+    "tier": "review",
+    "person_id": 5,
+    "shopper": "P004",
+    "role": "shopper",
+    "true_theft": false,
+    "t_emitted": 66.8,
+    "skus": [
+     "cocoa_crest"
+    ],
+    "confidence": 0.5
+   },
+   {
+    "clip": 4901,
+    "alert_id": "A00003",
+    "tier": "review",
+    "person_id": 8,
+    "shopper": "P006",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 75.7,
+    "skus": [
+     "relieva_aceta",
+     "fizzo_cola"
+    ],
+    "confidence": 0.55
+   },
+   {
+    "clip": 4902,
+    "alert_id": "A00001",
+    "tier": "review",
+    "person_id": 4,
+    "shopper": "P003",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 69.7,
+    "skus": [
+     "cocoa_crest",
+     "ridgeline_original"
+    ],
+    "confidence": 0.55
+   },
+   {
+    "clip": 4903,
+    "alert_id": "A00001",
+    "tier": "review",
+    "person_id": 5,
+    "shopper": "P004",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 62.7,
+    "skus": [
+     "arcwave_berry"
+    ],
+    "confidence": 0.5
+   },
+   {
+    "clip": 4903,
+    "alert_id": "A00002",
+    "tier": "review",
+    "person_id": 4,
+    "shopper": "P003",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 64.8,
+    "skus": [
+     "arcwave_original",
+     "fizzo_zero"
+    ],
+    "confidence": 0.55
+   },
+   {
+    "clip": 4904,
+    "alert_id": "A00001",
+    "tier": "review",
+    "person_id": 3,
+    "shopper": "P002",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 38.4,
+    "skus": [
+     "ridgeline_original",
+     "peanut_pilot"
+    ],
+    "confidence": 0.7
+   },
+   {
+    "clip": 4904,
+    "alert_id": "A00002",
+    "tier": "review",
+    "person_id": 5,
+    "shopper": "P004",
+    "role": "shopper",
+    "true_theft": false,
+    "t_emitted": 50.9,
+    "skus": [
+     "cocoa_crest",
+     "ridgeline_original"
+    ],
+    "confidence": 0.7
+   },
+   {
+    "clip": 4905,
+    "alert_id": "A00001",
+    "tier": "review",
+    "person_id": 2,
+    "shopper": "P001",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 29.7,
+    "skus": [
+     "cocoa_crest"
+    ],
+    "confidence": 0.45
+   },
+   {
+    "clip": 4905,
+    "alert_id": "A00002",
+    "tier": "review",
+    "person_id": 3,
+    "shopper": "P005",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 48.0,
+    "skus": [
+     "relieva_ibu"
+    ],
+    "confidence": 0.65
+   },
+   {
+    "clip": 4905,
+    "alert_id": "A00003",
+    "tier": "review",
+    "person_id": 4,
+    "shopper": "P002",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 73.1,
+    "skus": [
+     "arcwave_berry",
+     "arcwave_tropical"
+    ],
+    "confidence": 0.7
+   }
+  ],
+  "oracle": [
+   {
+    "clip": 4900,
+    "alert_id": "A00001",
+    "tier": "alert",
+    "person_id": 4,
+    "shopper": "P003",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 35.2,
+    "skus": [
+     "voltlink_usbc"
+    ],
+    "confidence": 1.0
+   },
+   {
+    "clip": 4901,
+    "alert_id": "A00001",
+    "tier": "alert",
+    "person_id": 2,
+    "shopper": "P001",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 34.1,
+    "skus": [
+     "unknown"
+    ],
+    "confidence": 0.95
+   },
+   {
+    "clip": 4901,
+    "alert_id": "A00002",
+    "tier": "review",
+    "person_id": 7,
+    "shopper": "P003",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 41.4,
+    "skus": [
+     "unknown"
+    ],
+    "confidence": 0.95
+   },
+   {
+    "clip": 4901,
+    "alert_id": "A00003",
+    "tier": "review",
+    "person_id": 6,
+    "shopper": "P005",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 55.5,
+    "skus": [
+     "relieva_aceta"
+    ],
+    "confidence": 0.8
+   },
+   {
+    "clip": 4901,
+    "alert_id": "A00004",
+    "tier": "review",
+    "person_id": 5,
+    "shopper": "P004",
+    "role": "shopper",
+    "true_theft": false,
+    "t_emitted": 66.8,
+    "skus": [
+     "cocoa_crest"
+    ],
+    "confidence": 0.5
+   },
+   {
+    "clip": 4901,
+    "alert_id": "A00005",
+    "tier": "review",
+    "person_id": 8,
+    "shopper": "P006",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 75.7,
+    "skus": [
+     "fizzo_cola",
+     "relieva_aceta"
+    ],
+    "confidence": 0.9
+   },
+   {
+    "clip": 4902,
+    "alert_id": "A00001",
+    "tier": "review",
+    "person_id": 4,
+    "shopper": "P003",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 69.7,
+    "skus": [
+     "cocoa_crest",
+     "ridgeline_original"
+    ],
+    "confidence": 0.9
+   },
+   {
+    "clip": 4903,
+    "alert_id": "A00001",
+    "tier": "review",
+    "person_id": 5,
+    "shopper": "P004",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 62.7,
+    "skus": [
+     "arcwave_berry"
+    ],
+    "confidence": 0.85
+   },
+   {
+    "clip": 4903,
+    "alert_id": "A00002",
+    "tier": "review",
+    "person_id": 4,
+    "shopper": "P003",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 64.8,
+    "skus": [
+     "arcwave_original",
+     "fizzo_zero"
+    ],
+    "confidence": 0.9
+   },
+   {
+    "clip": 4904,
+    "alert_id": "A00001",
+    "tier": "review",
+    "person_id": 3,
+    "shopper": "P002",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 38.4,
+    "skus": [
+     "ridgeline_original",
+     "peanut_pilot"
+    ],
+    "confidence": 1.0
+   },
+   {
+    "clip": 4904,
+    "alert_id": "A00002",
+    "tier": "review",
+    "person_id": 5,
+    "shopper": "P004",
+    "role": "shopper",
+    "true_theft": false,
+    "t_emitted": 50.9,
+    "skus": [
+     "cocoa_crest",
+     "ridgeline_original"
+    ],
+    "confidence": 0.7
+   },
+   {
+    "clip": 4905,
+    "alert_id": "A00001",
+    "tier": "review",
+    "person_id": 2,
+    "shopper": "P001",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 29.7,
+    "skus": [
+     "cocoa_crest"
+    ],
+    "confidence": 0.45
+   },
+   {
+    "clip": 4905,
+    "alert_id": "A00002",
+    "tier": "review",
+    "person_id": 3,
+    "shopper": "P005",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 48.0,
+    "skus": [
+     "relieva_ibu"
+    ],
+    "confidence": 1.0
+   },
+   {
+    "clip": 4905,
+    "alert_id": "A00003",
+    "tier": "alert",
+    "person_id": 4,
+    "shopper": "P002",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 73.1,
+    "skus": [
+     "arcwave_berry",
+     "arcwave_tropical"
+    ],
+    "confidence": 1.0
+   }
+  ],
+  "on_tier": [
+   {
+    "clip": 4900,
+    "alert_id": "A00001",
+    "tier": "alert",
+    "person_id": 4,
+    "shopper": "P003",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 35.2,
+    "skus": [
+     "voltlink_usbc"
+    ],
+    "confidence": 1.0
+   },
+   {
+    "clip": 4901,
+    "alert_id": "A00001",
+    "tier": "alert",
+    "person_id": 2,
+    "shopper": "P001",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 34.1,
+    "skus": [
+     "arcwave_original"
+    ],
+    "confidence": 0.969
+   },
+   {
+    "clip": 4901,
+    "alert_id": "A00002",
+    "tier": "review",
+    "person_id": 6,
+    "shopper": "P005",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 55.5,
+    "skus": [
+     "relieva_aceta"
+    ],
+    "confidence": 0.45
+   },
+   {
+    "clip": 4901,
+    "alert_id": "A00003",
+    "tier": "review",
+    "person_id": 5,
+    "shopper": "P004",
+    "role": "shopper",
+    "true_theft": false,
+    "t_emitted": 66.8,
+    "skus": [
+     "cocoa_crest"
+    ],
+    "confidence": 0.5
+   },
+   {
+    "clip": 4901,
+    "alert_id": "A00004",
+    "tier": "review",
+    "person_id": 8,
+    "shopper": "P006",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 75.7,
+    "skus": [
+     "fizzo_cola",
+     "relieva_aceta"
+    ],
+    "confidence": 0.9
+   },
+   {
+    "clip": 4902,
+    "alert_id": "A00001",
+    "tier": "review",
+    "person_id": 4,
+    "shopper": "P003",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 69.7,
+    "skus": [
+     "cocoa_crest",
+     "ridgeline_original"
+    ],
+    "confidence": 0.9
+   },
+   {
+    "clip": 4903,
+    "alert_id": "A00001",
+    "tier": "review",
+    "person_id": 5,
+    "shopper": "P004",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 62.7,
+    "skus": [
+     "arcwave_berry"
+    ],
+    "confidence": 0.85
+   },
+   {
+    "clip": 4903,
+    "alert_id": "A00002",
+    "tier": "review",
+    "person_id": 4,
+    "shopper": "P003",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 64.8,
+    "skus": [
+     "arcwave_original",
+     "fizzo_zero"
+    ],
+    "confidence": 0.9
+   },
+   {
+    "clip": 4904,
+    "alert_id": "A00001",
+    "tier": "alert",
+    "person_id": 3,
+    "shopper": "P002",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 38.4,
+    "skus": [
+     "ridgeline_original",
+     "peanut_pilot"
+    ],
+    "confidence": 1.0
+   },
+   {
+    "clip": 4904,
+    "alert_id": "A00002",
+    "tier": "review",
+    "person_id": 5,
+    "shopper": "P004",
+    "role": "shopper",
+    "true_theft": false,
+    "t_emitted": 50.9,
+    "skus": [
+     "cocoa_crest",
+     "ridgeline_original"
+    ],
+    "confidence": 0.7
+   },
+   {
+    "clip": 4905,
+    "alert_id": "A00001",
+    "tier": "review",
+    "person_id": 2,
+    "shopper": "P001",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 29.7,
+    "skus": [
+     "cocoa_crest"
+    ],
+    "confidence": 0.45
+   },
+   {
+    "clip": 4905,
+    "alert_id": "A00002",
+    "tier": "review",
+    "person_id": 3,
+    "shopper": "P005",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 48.0,
+    "skus": [
+     "relieva_ibu"
+    ],
+    "confidence": 1.0
+   },
+   {
+    "clip": 4905,
+    "alert_id": "A00003",
+    "tier": "alert",
+    "person_id": 4,
+    "shopper": "P002",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 73.1,
+    "skus": [
+     "arcwave_tropical",
+     "arcwave_berry"
+    ],
+    "confidence": 1.0
+   }
+  ],
+  "on_tier_any_identity": [
+   {
+    "clip": 4900,
+    "alert_id": "A00001",
+    "tier": "alert",
+    "person_id": 4,
+    "shopper": "P003",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 35.2,
+    "skus": [
+     "voltlink_usbc"
+    ],
+    "confidence": 1.0
+   },
+   {
+    "clip": 4901,
+    "alert_id": "A00001",
+    "tier": "alert",
+    "person_id": 2,
+    "shopper": "P001",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 34.1,
+    "skus": [
+     "arcwave_original"
+    ],
+    "confidence": 0.969
+   },
+   {
+    "clip": 4901,
+    "alert_id": "A00002",
+    "tier": "review",
+    "person_id": 6,
+    "shopper": "P005",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 55.5,
+    "skus": [
+     "relieva_aceta"
+    ],
+    "confidence": 0.45
+   },
+   {
+    "clip": 4901,
+    "alert_id": "A00003",
+    "tier": "review",
+    "person_id": 5,
+    "shopper": "P004",
+    "role": "shopper",
+    "true_theft": false,
+    "t_emitted": 66.8,
+    "skus": [
+     "cocoa_crest"
+    ],
+    "confidence": 0.5
+   },
+   {
+    "clip": 4901,
+    "alert_id": "A00004",
+    "tier": "alert",
+    "person_id": 8,
+    "shopper": "P006",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 75.7,
+    "skus": [
+     "fizzo_cola",
+     "relieva_aceta"
+    ],
+    "confidence": 0.9
+   },
+   {
+    "clip": 4902,
+    "alert_id": "A00001",
+    "tier": "alert",
+    "person_id": 4,
+    "shopper": "P003",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 69.7,
+    "skus": [
+     "cocoa_crest",
+     "ridgeline_original"
+    ],
+    "confidence": 0.9
+   },
+   {
+    "clip": 4903,
+    "alert_id": "A00001",
+    "tier": "alert",
+    "person_id": 5,
+    "shopper": "P004",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 62.7,
+    "skus": [
+     "arcwave_berry"
+    ],
+    "confidence": 0.85
+   },
+   {
+    "clip": 4903,
+    "alert_id": "A00002",
+    "tier": "alert",
+    "person_id": 4,
+    "shopper": "P003",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 64.8,
+    "skus": [
+     "arcwave_original",
+     "fizzo_zero"
+    ],
+    "confidence": 0.9
+   },
+   {
+    "clip": 4904,
+    "alert_id": "A00001",
+    "tier": "alert",
+    "person_id": 3,
+    "shopper": "P002",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 38.4,
+    "skus": [
+     "ridgeline_original",
+     "peanut_pilot"
+    ],
+    "confidence": 1.0
+   },
+   {
+    "clip": 4904,
+    "alert_id": "A00002",
+    "tier": "review",
+    "person_id": 5,
+    "shopper": "P004",
+    "role": "shopper",
+    "true_theft": false,
+    "t_emitted": 50.9,
+    "skus": [
+     "cocoa_crest",
+     "ridgeline_original"
+    ],
+    "confidence": 0.7
+   },
+   {
+    "clip": 4905,
+    "alert_id": "A00001",
+    "tier": "review",
+    "person_id": 2,
+    "shopper": "P001",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 29.7,
+    "skus": [
+     "cocoa_crest"
+    ],
+    "confidence": 0.45
+   },
+   {
+    "clip": 4905,
+    "alert_id": "A00002",
+    "tier": "alert",
+    "person_id": 3,
+    "shopper": "P005",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 48.0,
+    "skus": [
+     "relieva_ibu"
+    ],
+    "confidence": 1.0
+   },
+   {
+    "clip": 4905,
+    "alert_id": "A00003",
+    "tier": "alert",
+    "person_id": 4,
+    "shopper": "P002",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 73.1,
+    "skus": [
+     "arcwave_tropical",
+     "arcwave_berry"
+    ],
+    "confidence": 1.0
+   }
+  ],
+  "oracle_tier": [
+   {
+    "clip": 4900,
+    "alert_id": "A00001",
+    "tier": "alert",
+    "person_id": 4,
+    "shopper": "P003",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 35.2,
+    "skus": [
+     "voltlink_usbc"
+    ],
+    "confidence": 1.0
+   },
+   {
+    "clip": 4901,
+    "alert_id": "A00001",
+    "tier": "alert",
+    "person_id": 2,
+    "shopper": "P001",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 34.1,
+    "skus": [
+     "unknown"
+    ],
+    "confidence": 0.95
+   },
+   {
+    "clip": 4901,
+    "alert_id": "A00002",
+    "tier": "review",
+    "person_id": 7,
+    "shopper": "P003",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 41.4,
+    "skus": [
+     "unknown"
+    ],
+    "confidence": 0.95
+   },
+   {
+    "clip": 4901,
+    "alert_id": "A00003",
+    "tier": "review",
+    "person_id": 6,
+    "shopper": "P005",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 55.5,
+    "skus": [
+     "relieva_aceta"
+    ],
+    "confidence": 0.8
+   },
+   {
+    "clip": 4901,
+    "alert_id": "A00004",
+    "tier": "review",
+    "person_id": 5,
+    "shopper": "P004",
+    "role": "shopper",
+    "true_theft": false,
+    "t_emitted": 66.8,
+    "skus": [
+     "cocoa_crest"
+    ],
+    "confidence": 0.5
+   },
+   {
+    "clip": 4901,
+    "alert_id": "A00005",
+    "tier": "review",
+    "person_id": 8,
+    "shopper": "P006",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 75.7,
+    "skus": [
+     "fizzo_cola",
+     "relieva_aceta"
+    ],
+    "confidence": 0.9
+   },
+   {
+    "clip": 4902,
+    "alert_id": "A00001",
+    "tier": "review",
+    "person_id": 4,
+    "shopper": "P003",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 69.7,
+    "skus": [
+     "cocoa_crest",
+     "ridgeline_original"
+    ],
+    "confidence": 0.9
+   },
+   {
+    "clip": 4903,
+    "alert_id": "A00001",
+    "tier": "review",
+    "person_id": 5,
+    "shopper": "P004",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 62.7,
+    "skus": [
+     "arcwave_berry"
+    ],
+    "confidence": 0.85
+   },
+   {
+    "clip": 4903,
+    "alert_id": "A00002",
+    "tier": "review",
+    "person_id": 4,
+    "shopper": "P003",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 64.8,
+    "skus": [
+     "arcwave_original",
+     "fizzo_zero"
+    ],
+    "confidence": 0.9
+   },
+   {
+    "clip": 4904,
+    "alert_id": "A00001",
+    "tier": "alert",
+    "person_id": 3,
+    "shopper": "P002",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 38.4,
+    "skus": [
+     "ridgeline_original",
+     "peanut_pilot"
+    ],
+    "confidence": 1.0
+   },
+   {
+    "clip": 4904,
+    "alert_id": "A00002",
+    "tier": "review",
+    "person_id": 5,
+    "shopper": "P004",
+    "role": "shopper",
+    "true_theft": false,
+    "t_emitted": 50.9,
+    "skus": [
+     "cocoa_crest",
+     "ridgeline_original"
+    ],
+    "confidence": 0.7
+   },
+   {
+    "clip": 4905,
+    "alert_id": "A00001",
+    "tier": "review",
+    "person_id": 2,
+    "shopper": "P001",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 29.7,
+    "skus": [
+     "cocoa_crest"
+    ],
+    "confidence": 0.45
+   },
+   {
+    "clip": 4905,
+    "alert_id": "A00002",
+    "tier": "review",
+    "person_id": 3,
+    "shopper": "P005",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 48.0,
+    "skus": [
+     "relieva_ibu"
+    ],
+    "confidence": 1.0
+   },
+   {
+    "clip": 4905,
+    "alert_id": "A00003",
+    "tier": "alert",
+    "person_id": 4,
+    "shopper": "P002",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 73.1,
+    "skus": [
+     "arcwave_berry",
+     "arcwave_tropical"
+    ],
+    "confidence": 1.0
+   }
+  ],
+  "oracle_tier_any_identity": [
+   {
+    "clip": 4900,
+    "alert_id": "A00001",
+    "tier": "alert",
+    "person_id": 4,
+    "shopper": "P003",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 35.2,
+    "skus": [
+     "voltlink_usbc"
+    ],
+    "confidence": 1.0
+   },
+   {
+    "clip": 4901,
+    "alert_id": "A00001",
+    "tier": "alert",
+    "person_id": 2,
+    "shopper": "P001",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 34.1,
+    "skus": [
+     "unknown"
+    ],
+    "confidence": 0.95
+   },
+   {
+    "clip": 4901,
+    "alert_id": "A00002",
+    "tier": "alert",
+    "person_id": 7,
+    "shopper": "P003",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 41.4,
+    "skus": [
+     "unknown"
+    ],
+    "confidence": 0.95
+   },
+   {
+    "clip": 4901,
+    "alert_id": "A00003",
+    "tier": "alert",
+    "person_id": 6,
+    "shopper": "P005",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 55.5,
+    "skus": [
+     "relieva_aceta"
+    ],
+    "confidence": 0.8
+   },
+   {
+    "clip": 4901,
+    "alert_id": "A00004",
+    "tier": "review",
+    "person_id": 5,
+    "shopper": "P004",
+    "role": "shopper",
+    "true_theft": false,
+    "t_emitted": 66.8,
+    "skus": [
+     "cocoa_crest"
+    ],
+    "confidence": 0.5
+   },
+   {
+    "clip": 4901,
+    "alert_id": "A00005",
+    "tier": "alert",
+    "person_id": 8,
+    "shopper": "P006",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 75.7,
+    "skus": [
+     "fizzo_cola",
+     "relieva_aceta"
+    ],
+    "confidence": 0.9
+   },
+   {
+    "clip": 4902,
+    "alert_id": "A00001",
+    "tier": "alert",
+    "person_id": 4,
+    "shopper": "P003",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 69.7,
+    "skus": [
+     "cocoa_crest",
+     "ridgeline_original"
+    ],
+    "confidence": 0.9
+   },
+   {
+    "clip": 4903,
+    "alert_id": "A00001",
+    "tier": "alert",
+    "person_id": 5,
+    "shopper": "P004",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 62.7,
+    "skus": [
+     "arcwave_berry"
+    ],
+    "confidence": 0.85
+   },
+   {
+    "clip": 4903,
+    "alert_id": "A00002",
+    "tier": "alert",
+    "person_id": 4,
+    "shopper": "P003",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 64.8,
+    "skus": [
+     "arcwave_original",
+     "fizzo_zero"
+    ],
+    "confidence": 0.9
+   },
+   {
+    "clip": 4904,
+    "alert_id": "A00001",
+    "tier": "alert",
+    "person_id": 3,
+    "shopper": "P002",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 38.4,
+    "skus": [
+     "ridgeline_original",
+     "peanut_pilot"
+    ],
+    "confidence": 1.0
+   },
+   {
+    "clip": 4904,
+    "alert_id": "A00002",
+    "tier": "review",
+    "person_id": 5,
+    "shopper": "P004",
+    "role": "shopper",
+    "true_theft": false,
+    "t_emitted": 50.9,
+    "skus": [
+     "cocoa_crest",
+     "ridgeline_original"
+    ],
+    "confidence": 0.7
+   },
+   {
+    "clip": 4905,
+    "alert_id": "A00001",
+    "tier": "review",
+    "person_id": 2,
+    "shopper": "P001",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 29.7,
+    "skus": [
+     "cocoa_crest"
+    ],
+    "confidence": 0.45
+   },
+   {
+    "clip": 4905,
+    "alert_id": "A00002",
+    "tier": "alert",
+    "person_id": 3,
+    "shopper": "P005",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 48.0,
+    "skus": [
+     "relieva_ibu"
+    ],
+    "confidence": 1.0
+   },
+   {
+    "clip": 4905,
+    "alert_id": "A00003",
+    "tier": "alert",
+    "person_id": 4,
+    "shopper": "P002",
+    "role": "shopper",
+    "true_theft": true,
+    "t_emitted": 73.1,
+    "skus": [
+     "arcwave_berry",
+     "arcwave_tropical"
+    ],
+    "confidence": 1.0
+   }
+  ]
+ },
+ "truth_thieves": [
+  "4900:P003",
+  "4901:P001",
+  "4901:P003",
+  "4901:P005",
+  "4901:P006",
+  "4902:P003",
+  "4903:P003",
+  "4903:P004",
+  "4904:P001",
+  "4904:P002",
+  "4905:P001",
+  "4905:P002",
+  "4905:P005"
+ ]
+}

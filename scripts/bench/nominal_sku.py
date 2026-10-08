@@ -12,7 +12,7 @@ import json, sys
 from collections import Counter
 from pathlib import Path
 
-BASE = "/Users/kiromoussa/bree/software/shared/example-layout.json"
+BASE = str(Path.home() / "bree" / "software" / "shared" / "example-layout.json")  # the workspace repo cloned at ~/bree
 
 
 def nominal(slots, base):

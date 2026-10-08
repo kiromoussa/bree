@@ -1,0 +1,32 @@
+{
+ "data_note": "SIMULATED store frames only",
+ "base_weights": "yolo26n.pt",
+ "data": "data/synth/sku/data.yaml",
+ "classes": 33,
+ "train_images": 13596,
+ "imgsz": 640,
+ "epochs": 6,
+ "batch": 32,
+ "device": "mps",
+ "train_wall_s": 19250.5,
+ "train_wall_min": 320.8,
+ "validated_every_epoch": false,
+ "val_split_at_end": {
+  "metrics/mAP50(B)": 0.9734,
+  "metrics/mAP50-95(B)": 0.8838
+ },
+ "augmentation": {
+  "hsv_h": 0.01,
+  "hsv_s": 0.4,
+  "hsv_v": 0.35,
+  "fliplr": 0.0,
+  "flipud": 0.0,
+  "scale": 0.25,
+  "translate": 0.1,
+  "mosaic": 0.5,
+  "close_mosaic": 2,
+  "erasing": 0.0
+ },
+ "run_dir": "/Users/kiromoussa/bree-vision/data/synth/runs/sim_sku",
+ "weights": "/Users/kiromoussa/bree-vision/data/synth/weights/sim_sku.pt"
+}

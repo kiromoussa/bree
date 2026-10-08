@@ -3,8 +3,8 @@
 # tuning runs of other streams write to out/bench/dev2. SIMULATED clips.
 # usage: dev2_baseline.sh plain|stress [wait]     "wait": start only when the dev2 render is over (a second plain worker)
 # Several workers can run: a clip whose run folder exists is left to the worker that made it.
-WT=/Users/kiromoussa/bree-vision/out/wt-baseline
-MAIN=/Users/kiromoussa/bree-vision
+MAIN=$(cd "$(dirname "$0")/../../.." && pwd)
+WT=$MAIN/out/wt-baseline
 B=$MAIN/out/bench/dev2_baseline
 cd $WT
 export PYTHONPATH=$WT/src

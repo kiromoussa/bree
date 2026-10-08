@@ -1,7 +1,7 @@
 #!/bin/sh
 # Re-score the committed-pipeline baseline of dev2 whenever another run finishes; keep the latest scorecard in results/bench_dev2_baseline.*
-WT=/Users/kiromoussa/bree-vision/out/wt-baseline
-MAIN=/Users/kiromoussa/bree-vision
+MAIN=$(cd "$(dirname "$0")/../../.." && pwd)
+WT=$MAIN/out/wt-baseline
 B=$MAIN/out/bench/dev2_baseline
 cd $WT
 export PYTHONPATH=$WT/src

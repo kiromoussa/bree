@@ -40,6 +40,13 @@ def _font(name: str, size: int) -> ImageFont.FreeTypeFont:
     for p in (_FONT_DIR / name, *map(Path, _FALLBACK)):
         if p.exists():
             return ImageFont.truetype(str(p), size)
+    try:  # Linux without the macOS or Debian fonts: matplotlib ships DejaVu
+        import matplotlib
+        p = Path(matplotlib.get_data_path()) / "fonts/ttf/DejaVuSans-Bold.ttf"
+        if p.exists():
+            return ImageFont.truetype(str(p), size)
+    except ImportError:
+        pass
     raise FileNotFoundError("no plate font found; set bree.plates.synth._FALLBACK to a bold TTF")
 
 

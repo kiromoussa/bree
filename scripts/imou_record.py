@@ -123,6 +123,25 @@ def enforce_cap(root, cap_bytes, log):
     return total
 
 
+def run_ffmpeg(cmd, timeout):
+    """Run ffmpeg; on stop request send SIGINT so it finalizes the mp4 (the partial segment is kept)."""
+    pr = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+    t0 = time.time()
+    stopped = False
+    while pr.poll() is None:
+        if STOP.is_set() or time.time() - t0 > timeout:
+            stopped = True
+            pr.send_signal(signal.SIGINT)
+            try:
+                pr.wait(20)
+            except subprocess.TimeoutExpired:
+                pr.kill()
+            break
+        time.sleep(1)
+    err = pr.stderr.read()
+    return subprocess.CompletedProcess(cmd, 0 if stopped else pr.returncode, "", err)
+
+
 def record_loop(ch, api, root, status, args, log, deadline):
     out_dir = root / f"ch{ch:02d}"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -136,7 +155,7 @@ def record_loop(ch, api, root, status, args, log, deadline):
             url = api.live_url(ch)
             cmd = ["ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error", "-rw_timeout", "20000000", "-i", url,
                    "-map", "0:v:0", "-an", "-c", "copy", "-t", str(dur), "-f", "mp4", "-movflags", "+faststart", "-y", str(part)]
-            p = subprocess.run(cmd, capture_output=True, text=True, timeout=dur + 120)
+            p = run_ffmpeg(cmd, dur + 120)
             size = part.stat().st_size if part.exists() else 0
             if p.returncode != 0 and size < 100_000:
                 raise RuntimeError(f"ffmpeg rc={p.returncode} {scrub(p.stderr.strip()[-200:])}")
@@ -200,7 +219,7 @@ def main():
     for t in ths:
         t.join(timeout=30)  # ffmpeg children finish their segment or time out; unfinished .part files are removed
     for f in root.glob("ch*/*.part"):
-        f.unlink()
+        f.unlink()  # only leftovers of a crash; a clean stop renames partial segments
     log("exit")
 
 

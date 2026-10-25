@@ -175,7 +175,7 @@ def record_loop(ch, api, root, status, args, log, deadline):
             if part.exists():
                 part.unlink()
             STOP.wait(backoff)
-            backoff = min(backoff * 2, 300)
+            backoff = min(backoff * 2, 60)  # live sessions can go stale for a long time; retries are cheap
 
 
 def main():

@@ -201,7 +201,7 @@ def main():
     api = Imou(env)
     status = Status(data / "recorder_status.json", channels)
     for s in (signal.SIGTERM, signal.SIGINT):
-        signal.signal(s, lambda *_: STOP.set())
+        signal.signal(s, lambda n, _f: (log(f"signal {n} received, stopping"), STOP.set()))
     deadline = time.time() + args.hours * 3600
     log(f"start pid={os.getpid()} channels={channels} seg={args.seg_seconds}s hours={args.hours} cap={args.cap_gb}GB")
     status.write()

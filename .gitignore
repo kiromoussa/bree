@@ -29,3 +29,10 @@ kaggle.json
 *.ts
 models/*
 !models/.gitkeep
+
+# ultra run: real footage and outputs never in git
+data/real/
+*.mkv
+*.mov
+*.jpg.real
+out/

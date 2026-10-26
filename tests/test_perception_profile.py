@@ -128,3 +128,21 @@ def test_label_loader_normalises_all_channels():
     chans = {l.channel for l in load_labels()}
     assert chans <= {7, 10, 12, 14, 15, 29} and len(chans) >= 4
     assert all(l.split in ("dev", "heldout") for l in load_labels())
+
+
+@pytest.mark.vision
+def test_calibrate_smoke_on_synthetic_clip(tmp_path):
+    """The calibration script runs end to end on a tiny synthetic clip and writes a loadable profile."""
+    cv2 = pytest.importorskip("cv2")
+    pytest.importorskip("ultralytics")
+    from bree.perception.calibrate import calibrate
+    path = str(tmp_path / "clip.mp4")
+    w = cv2.VideoWriter(path, cv2.VideoWriter_fourcc(*"mp4v"), 10, (640, 360))
+    rng = np.random.default_rng(1)
+    for _ in range(30):
+        w.write(rng.integers(0, 255, (360, 640, 3), dtype=np.uint8))
+    w.release()
+    prof, report = calibrate(path, "cam_test", "aisle", samples=12, device="cpu")
+    save_profile(prof, tmp_path / "p.yaml")
+    assert load_profile(tmp_path / "p.yaml").camera == "cam_test"
+    assert report["selection"]["label_kind"].startswith("REAL-UNLABELLED") and set(report["candidates"]) >= {"s640"}

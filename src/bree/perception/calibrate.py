@@ -79,7 +79,7 @@ def calibrate(video: str, camera: str, role: str, samples: int = 60, max_ms: flo
               conf: float = 0.3, device: str | None = None, labels_channel: int | None = None,
               preview: Path | None = None) -> tuple[PerceptionProfile, dict]:
     from ultralytics import YOLO
-    from bree.cli import _weights
+    from bree.perception.sweep import resolve_weights as _weights
     from bree.hw import detect_hardware
     device = device or detect_hardware().device
     frames = sample_frames(video, samples)

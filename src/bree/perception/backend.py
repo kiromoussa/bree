@@ -19,7 +19,7 @@ class ProfiledBackend(YoloBackend):
 
     def __init__(self, profile: PerceptionProfile, class_map: dict[str, str] | None = None, device: str = "cpu",
                  products: bool = False, runtime: str = "pytorch"):
-        from bree.cli import _weights
+        from bree.perception.sweep import resolve_weights as _weights
         self.profile = profile
         super().__init__(_weights(profile.pose_weights), _weights(profile.weights), class_map or {}, device=device,
                          imgsz=profile.imgsz, pose_crop=profile.pose_crop, person_conf=profile.person_conf,

@@ -18,6 +18,14 @@ from bree.perception import frames as fr
 from bree.perception.labels import DATA_DIR, load_labels
 from bree.perception.sliced import SliceSpec, sliced_predict
 
+def resolve_weights(name: str) -> str:
+    """repo models/ first, then <data>/perception/models/ (extra public weights fetched once, e.g. yolo26m.pt)."""
+    for d in (Path(__file__).resolve().parents[3] / "models", DATA_DIR / "perception" / "models"):
+        if (d / name).exists():
+            return str(d / name)
+    return name
+
+
 # name -> (weights, imgsz, SliceSpec)
 CONFIGS: dict[str, tuple[str, int, SliceSpec]] = {
     "s640": ("yolo26s.pt", 640, SliceSpec()),
@@ -25,6 +33,9 @@ CONFIGS: dict[str, tuple[str, int, SliceSpec]] = {
     "s1280": ("yolo26s.pt", 1280, SliceSpec()),
     "n640": ("yolo26n.pt", 640, SliceSpec()),
     "n1280": ("yolo26n.pt", 1280, SliceSpec()),
+    "m640": ("yolo26m.pt", 640, SliceSpec()),
+    "m960": ("yolo26m.pt", 960, SliceSpec()),
+    "m640_t2x2": ("yolo26m.pt", 640, SliceSpec(2, 2)),
     "s640_t2x2": ("yolo26s.pt", 640, SliceSpec(2, 2)),
     "s640_t3x2": ("yolo26s.pt", 640, SliceSpec(3, 2)),
     "s640_t4x3": ("yolo26s.pt", 640, SliceSpec(4, 3)),
@@ -36,7 +47,7 @@ def run_config(name: str, channels: list[int], data_dir: Path = DATA_DIR, conf: 
                spec_override: tuple | None = None) -> dict:
     from ultralytics import YOLO
     wts, imgsz, spec = spec_override or CONFIGS[name]
-    model = YOLO(str(Path(__file__).resolve().parents[3] / "models" / wts))
+    model = YOLO(resolve_weights(wts))
     out_dir = data_dir / "perception" / "dets" / name
     out_dir.mkdir(parents=True, exist_ok=True)
     timing = {}

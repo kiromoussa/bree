@@ -30,7 +30,7 @@ from bree.detect.base import PerceptionBackend
 from bree.events.observations import FrameObs
 from bree.events.types import Event, EventType
 from bree.events.zones import StoreConfig, merge_stores
-from bree.ingest.source import VideoSource
+from bree.ingest.source import open_source
 from bree.ledger import build_ledger
 from bree.ledger.payments import PaymentSource, MockPayments
 from bree.track.multicam import StoreEvents
@@ -68,7 +68,7 @@ class _Cam:
 
     def __init__(self, cam: CameraInput, out: Path, suffix: str, max_frames: int | None, tracker_cls):
         self.name, self.store = cam.name, cam.store
-        self.src = cam.source if hasattr(cam.source, "fps") else VideoSource(cam.source, max_frames=max_frames)
+        self.src = cam.source if hasattr(cam.source, "fps") else open_source(cam.source, max_frames=max_frames)
         self.frames = iter(self.src)
         self.tracker = tracker_cls(self.src.fps)
         self.evidence = EvidenceBuffer(self.src.fps)

@@ -1,4 +1,4 @@
-"""Video input: files, webcams, and RTSP/HTTP streams, as one iterator of frames."""
+"""Video input: files, webcams, RTSP/HTTP streams and imou:// DVR channels, as one iterator of frames."""
 from __future__ import annotations
 
 import time
@@ -57,3 +57,11 @@ class VideoSource:
             yield Frame(i, t, img, now)
             i += 1
         self.cap.release()
+
+
+def open_source(src, max_frames: int | None = None):
+    """VideoSource for files / webcams / rtsp / http, ImouSource for imou://<serial>/<channel> (bree.ingest.imou)."""
+    from bree.ingest.imou import ImouSource, is_imou_url
+    if is_imou_url(src):
+        return ImouSource(src, max_frames=max_frames)
+    return VideoSource(src, max_frames=max_frames)

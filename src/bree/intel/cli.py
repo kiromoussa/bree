@@ -97,6 +97,31 @@ def cmd_activity(args) -> None:
         print(Path(v).name, [(round(a), round(b)) for a, b in sp])
 
 
+def cmd_counts(args) -> None:
+    from bree.intel.detections import read_detections
+    from bree.intel.flow import IntelConfig, run_detections
+    from bree.intel.labelcounts import load_counts, score_counts
+    from bree.intel.layout import load_layout
+    from bree.intel.run import segment_start
+    from bree.intel.staticmask import learn_static_mask
+    import numpy as np
+    rows = load_counts(args.labels)
+    logs, size = {}, None
+    for v in args.video:
+        stem = Path(v).stem
+        d = Path(args.dets_dir) / (stem + ".jsonl")
+        if not d.exists():
+            continue
+        meta, frames = read_detections(d)
+        size = (meta["width"], meta["height"])
+        layout = load_layout(args.layout, size)
+        if args.learn_mask:
+            layout.ignore = list(layout.ignore) + [np.array(p) for p in learn_static_mask(frames, size)]
+        _, eng = run_detections(frames, layout, IntelConfig(), segment_start(v, layout.clock_offset_s), keep_frames=True)
+        logs[stem] = eng.frame_log
+    print(json.dumps(score_counts(logs, rows, size, include_staff=True), indent=1))
+
+
 def register(sub) -> None:
     p = sub.add_parser("intel", help="people-flow analytics from recorded segments (counts, dwell, queue, staff, daily digest)")
     s = p.add_subparsers(dest="intel_cmd", required=True)
@@ -130,6 +155,14 @@ def register(sub) -> None:
     n.add_argument("--history", nargs="*", help="hourly.json files from earlier days/weeks")
     n.add_argument("--min-history", type=int, default=3)
     n.set_defaults(func=cmd_anomalies)
+
+    c = s.add_parser("counts", help="score people-in-view counts against agent-made count labels (REAL-MODEL-LABELLED, not ground truth)")
+    c.add_argument("video", nargs="+")
+    c.add_argument("--layout", required=True)
+    c.add_argument("--labels", required=True)
+    c.add_argument("--dets-dir", required=True)
+    c.add_argument("--learn-mask", action="store_true")
+    c.set_defaults(func=cmd_counts)
 
     a = s.add_parser("activity", help="labelling helper: intervals where the door area changes (detector independent)")
     a.add_argument("video", nargs="+")

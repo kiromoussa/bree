@@ -296,3 +296,17 @@ def test_station_yaml_rule_override(tmp_path):
     assert st.label("c1") == "Door" and st.label("zz") == "zz"
     r = next(r for r in st.rules if r.name == "long_queue")
     assert r.threshold == 5 and r.for_s == 60      # other fields kept
+
+
+def test_shelfstate_adapter(tmp_path):
+    from bree.product.shelfadapt import adapt_shelfstate
+    p = tmp_path / "events.jsonl"
+    rows = [{"camera_id": "ch15", "kind": "stock_down", "region_id": "cooler1", "conf": 0.8, "wall": "2026-10-25T18:30:00"},
+            {"camera_id": "ch15", "kind": "door_ajar", "region_id": "door2", "conf": 0.6, "wall": "2026-10-25T18:31:00"},
+            {"camera_id": "ch15", "kind": "weird", "wall": "2026-10-25T18:31:00"},
+            {"camera_id": "ch15", "kind": "restock", "conf": 0.9}]
+    p.write_text("".join(json.dumps(r) + "\n" for r in rows) + "{torn")
+    sigs, rep = adapt_shelfstate(p, "trumanrd", tz=dt.timezone.utc)
+    assert [s.meta["state"] for s in sigs] == ["low", "door_open"]
+    assert sigs[1].value == 1.0 and sigs[0].zone == "cooler1" and sigs[0].source == "real_unlabelled"
+    assert rep["skipped"] == {"no_wall": 1, "unknown_kind": 1, "low_conf": 0, "bad_line": 1}

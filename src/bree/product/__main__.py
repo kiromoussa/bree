@@ -80,6 +80,15 @@ def cmd_ingest(args):
     print(rep)
 
 
+def cmd_ingest_shelf(args):
+    from bree.product.shelfadapt import adapt_shelfstate
+    data = Path(args.data)
+    st = load_station(args.station or (data / "station.yaml" if (data / "station.yaml").is_file() else None))
+    sigs, rep = adapt_shelfstate(args.events, st.store_id, args.camera, args.source, clock_offset_s=st.clock_offset_s)
+    SignalLog(data / "signals", st.tz).append(sigs)
+    print(rep)
+
+
 def cmd_digest(args):
     data, st, log, review = _open(args)
     app = appmod.ProductApp(log, st, review, replay=True)
@@ -123,6 +132,11 @@ def main(argv=None):
     i.add_argument("--store-yaml"); i.add_argument("--queue-zone"); i.add_argument("--staff-zone")
     i.add_argument("--source", default="real_unlabelled", choices=["simulated", "real_unlabelled", "real_model_labelled", "real_ground_truth", "live"])
     i.set_defaults(fn=cmd_ingest)
+    sh = sub.add_parser("ingest-shelf", help="shelf-state events.jsonl (bree.shelfstate) as shelf signals")
+    sh.add_argument("--data", required=True); sh.add_argument("--station")
+    sh.add_argument("--events", required=True); sh.add_argument("--camera")
+    sh.add_argument("--source", default="real_unlabelled", choices=["simulated", "real_unlabelled", "real_model_labelled", "real_ground_truth", "live"])
+    sh.set_defaults(fn=cmd_ingest_shelf)
     g = sub.add_parser("digest", help="write a digest HTML file")
     g.add_argument("--data", required=True); g.add_argument("--station")
     g.add_argument("--date", help="day (daily) or last day (weekly), YYYY-MM-DD; default the newest data")

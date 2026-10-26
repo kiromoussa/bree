@@ -1,0 +1,12 @@
+# Truman Rd, channel 12: aisle toward the front window, chest freezers. Polygons are normalised (x, y), drawn by eye
+# from one still (not calibrated). Later regions win where polygons overlap.
+camera_id: ch12
+station: trumanrd
+role: aisle
+regions:
+  - {id: aisle_floor, kind: floor, polygon: [[0.38,0.5],[0.48,0.4],[0.53,0.48],[0.66,0.8],[0.76,1],[0.36,1],[0.4,0.9]]}
+  - {id: gondola_left_face, kind: shelf, polygon: [[0.5,0.18],[0.66,0.2],[0.78,0.5],[0.79,0.82],[0.72,0.9],[0.62,0.78],[0.5,0.45]]}
+  - {id: racks_right, kind: shelf, polygon: [[0.66,0.12],[0.95,0.2],[1,0.55],[0.93,0.75],[0.82,0.72],[0.66,0.35]]}
+  - {id: chest_freezers, kind: shelf, polygon: [[0.25,0.38],[0.375,0.38],[0.375,0.62],[0.34,0.88],[0.19,0.88],[0.24,0.63]]}
+  - {id: back_counter, kind: ignore, polygon: [[0.33,0.0],[0.72,0.0],[0.72,0.18],[0.45,0.2],[0.33,0.22]]}
+  - {id: window_glass, kind: ignore, polygon: [[0,0],[0.31,0],[0.31,0.25],[0.27,0.45],[0.22,0.62],[0.2,0.8],[0.16,0.95],[0,1]]}

@@ -145,35 +145,42 @@ def apply_h(H: np.ndarray, pts) -> np.ndarray:
 
 # ---------------------------------------------------------------- accent tiles
 
-def accent_tiles(image: np.ndarray, roi: np.ndarray | None = None, delta: float = 14.0, min_area: float = 1500.0,
-                 max_area_share: float = 0.08) -> list[np.ndarray]:
-    """Floor tiles that differ from the plank colour, as convex quadrilaterals (4, 2) in pixels: the pixels of the
-    floor region whose smoothed grey level is more than `delta` away from the median of the region (darker and
-    lighter), connected components with four corners (cv2.approxPolyDP), convex, area between min_area and a share
-    of the picture. The floor region defaults to the lower 70 percent and is meant to be corrected (roi)."""
+def roi_mask(shape, roi) -> np.ndarray:
+    """uint8 mask of a floor region: one polygon (N, 2) or a list of polygons, in pixels."""
     import cv2
-    g = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    s = cv2.GaussianBlur(g, (0, 0), 3)
-    mask = np.zeros(g.shape, np.uint8)
-    if roi is None:
-        mask[int(g.shape[0] * 0.3):] = 255
-    else:
-        cv2.fillPoly(mask, [np.asarray(roi, np.int32)], 255)
-    med = float(np.median(s[mask > 0]))
+    polys = roi if isinstance(roi, (list, tuple)) and np.ndim(roi[0]) == 2 else [roi]
+    mask = np.zeros(shape[:2], np.uint8)
+    cv2.fillPoly(mask, [np.asarray(p, np.int32) for p in polys], 255)
+    return mask
+
+
+def accent_tiles(image: np.ndarray, roi: np.ndarray, delta: float = 10.0, min_area: float = 900.0,
+                 sigma_bg: float = 35.0) -> list[np.ndarray]:
+    """Floor tiles that differ from the plank colour, as convex quadrilaterals (4, 2) in pixels. `roi` is the floor
+    polygon (pixels), drawn by a person: the shelves and windows around it are not floor and would be found as
+    tiles. Inside it the smoothed grey level is compared with a heavily blurred local floor level (so the brightness
+    gradient of the perspective does not matter): pixels more than `delta` darker or lighter, connected, with four
+    corners (cv2.approxPolyDP) and convex, are tiles."""
+    import cv2
+    g = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY).astype(np.float32)
+    s = cv2.GaussianBlur(g, (0, 0), 2.5)
+    mask = roi_mask(g.shape, roi)
+    m1 = (mask > 0).astype(np.float32)
+    bg = cv2.GaussianBlur(s * m1, (0, 0), sigma_bg) / np.maximum(cv2.GaussianBlur(m1, (0, 0), sigma_bg), 1e-3)
     quads = []
     for sign in (-1, 1):
-        m = ((sign * (s.astype(np.float32) - med) > delta) & (mask > 0)).astype(np.uint8) * 255
-        m = cv2.morphologyEx(m, cv2.MORPH_CLOSE, np.ones((9, 9), np.uint8))
+        m = ((sign * (s - bg) > delta) & (mask > 0)).astype(np.uint8) * 255
+        m = cv2.morphologyEx(m, cv2.MORPH_CLOSE, np.ones((7, 7), np.uint8))
         m = cv2.morphologyEx(m, cv2.MORPH_OPEN, np.ones((7, 7), np.uint8))
         cs, _ = cv2.findContours(m, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         for c in cs:
             a = cv2.contourArea(c)
-            if a < min_area or a > max_area_share * g.size:
+            if a < min_area:
                 continue
             hull = cv2.convexHull(c)
             peri = cv2.arcLength(hull, True)
-            ap = cv2.approxPolyDP(hull, 0.035 * peri, True)
-            if len(ap) == 4 and cv2.contourArea(ap) > 0.8 * a:
+            ap = cv2.approxPolyDP(hull, 0.04 * peri, True)
+            if len(ap) == 4 and cv2.contourArea(ap) > 0.75 * a:
                 quads.append(ap.reshape(4, 2).astype(float))
     return quads
 
@@ -289,3 +296,49 @@ def propose(image: np.ndarray, roi=None) -> dict:
             for q in accent_tiles(image, roi):
                 out["tiles"].append({"quad": q.round(1).tolist(), "rect_err_deg": round(quad_rect_error(H, q), 2)})
     return out
+
+
+# ---------------------------------------------------------------- tiles from a rough box
+
+def tile_in_box(image: np.ndarray, box, dark: bool = True, eps_list=(0.02, 0.03, 0.04, 0.06, 0.08)) -> np.ndarray | None:
+    """One floor tile or mat inside a rough box [x0, y0, x1, y1] (pixels, a person's eyeballing is enough): Otsu split of
+    the smoothed grey level inside the box, the largest blob of the dark (or light) class, its convex hull reduced to
+    four corners. Returns (4, 2) corners ordered top-left, top-right, bottom-right, bottom-left in the picture, or
+    None when the blob has no clean four-corner shape or touches the box border on more than one side (box too tight
+    or the tile cut by something). A person confirms the result on the overlay; this only does the sub-pixel part."""
+    import cv2
+    x0, y0, x1, y1 = [int(v) for v in box]
+    crop = cv2.GaussianBlur(cv2.cvtColor(image[y0:y1, x0:x1], cv2.COLOR_BGR2GRAY), (0, 0), 1.5)
+    _, m = cv2.threshold(crop, 0, 255, (cv2.THRESH_BINARY_INV if dark else cv2.THRESH_BINARY) | cv2.THRESH_OTSU)
+    m = cv2.morphologyEx(m, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
+    m = cv2.morphologyEx(m, cv2.MORPH_CLOSE, np.ones((9, 9), np.uint8))
+    n, lab, stats, _ = cv2.connectedComponentsWithStats(m)
+    if n < 2:
+        return None
+    k = 1 + int(np.argmax(stats[1:, cv2.CC_STAT_AREA]))
+    blob = (lab == k).astype(np.uint8)
+    cs, _ = cv2.findContours(blob, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    hull = cv2.convexHull(max(cs, key=cv2.contourArea))
+    peri = cv2.arcLength(hull, True)
+    quad = None
+    for e in eps_list:
+        ap = cv2.approxPolyDP(hull, e * peri, True)
+        if len(ap) == 4:
+            quad = ap.reshape(4, 2).astype(float)
+            break
+    if quad is None:
+        return None
+    border = (quad[:, 0] <= 2).sum() + (quad[:, 0] >= x1 - x0 - 3).sum() + (quad[:, 1] <= 2).sum() + (quad[:, 1] >= y1 - y0 - 3).sum()
+    if border > 1:
+        return None
+    return order_quad(quad + [x0, y0])
+
+
+def order_quad(q: np.ndarray) -> np.ndarray:
+    """Corners ordered top-left, top-right, bottom-right, bottom-left (the two highest are the top)."""
+    q = np.asarray(q, float)
+    top = q[np.argsort(q[:, 1])[:2]]
+    bot = q[np.argsort(q[:, 1])[2:]]
+    top = top[np.argsort(top[:, 0])]
+    bot = bot[np.argsort(bot[:, 0])]
+    return np.array([top[0], top[1], bot[1], bot[0]])

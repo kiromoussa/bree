@@ -8,20 +8,23 @@ from __future__ import annotations
 import numpy as np
 
 from bree.detect.base import Detections
+from bree.perf import half_kwargs
 from bree.pose.yolo_pose import YoloPose
 
 
 class YoloBackend:
     name = "yolo"
+    overlap_ok = True   # stateless per call (apart from last_bags, returned with the call): safe to run ahead
 
     def __init__(self, pose_weights: str, detect_weights: str, class_map: dict[str, str],
                  device: str = "cpu", imgsz: int = 640, pose_crop: int = 160,
                  person_conf: float = 0.3, product_conf: float = 0.25, products: bool = True,
-                 runtime: str = "pytorch", providers: list | None = None, dedupe_inside: float = 0.85):
+                 runtime: str = "pytorch", providers: list | None = None, dedupe_inside: float = 0.85,
+                 half: bool = False):
         from bree.edge.ort import load_yolo
         self.det = load_yolo(detect_weights, "detect", imgsz, runtime, providers)
         self.dedupe_inside = dedupe_inside   # drop a person box this much inside a larger one (0 = off)
-        self.pose = YoloPose(pose_weights, device, crop_size=pose_crop, runtime=runtime, providers=providers)
+        self.pose = YoloPose(pose_weights, device, crop_size=pose_crop, runtime=runtime, providers=providers, half=half)
         if runtime == "onnx":
             device = "cpu"   # Ultralytics pre/post-processing; ONNX Runtime picks the accelerator (bree.edge.ort)
         self.class_map = class_map if products else {}   # detector class name -> item category
@@ -33,12 +36,13 @@ class YoloBackend:
                         and n not in self.class_map]
         self.last_bags = None
         self.device, self.imgsz = device, imgsz
+        self.precision = half_kwargs(half, device, runtime)   # {} = fp32
         self.person_conf, self.product_conf = person_conf, product_conf
 
     def __call__(self, image: np.ndarray) -> tuple[Detections, Detections]:
         r = self.det.predict(image, imgsz=self.imgsz, conf=min(self.person_conf, self.product_conf),
                              device=self.device, classes=[self.person_id] + self.product_ids + self.bag_ids,
-                             verbose=False)[0]
+                             verbose=False, **self.precision)[0]
         boxes = r.boxes.xyxy.cpu().numpy() if r.boxes is not None else np.zeros((0, 4))
         confs = r.boxes.conf.cpu().numpy() if r.boxes is not None else np.zeros(0)
         cls = r.boxes.cls.cpu().numpy().astype(int) if r.boxes is not None else np.zeros(0, int)

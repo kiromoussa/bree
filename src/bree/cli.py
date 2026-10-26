@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -31,7 +32,9 @@ def _weights(name: str) -> str:
     return str(p) if p.exists() else name   # ultralytics downloads by name if missing
 
 
-def make_backend(kind: str, store, imgsz: int | None = None, products: bool = True, runtime: str = "pytorch"):
+def make_backend(kind: str, store, imgsz: int | None = None, products: bool = True, runtime: str = "pytorch",
+                 half: bool | None = None):
+    """`half`: fp16 detector + pose on CUDA (None = whatever the active bree.perf profile says)."""
     if kind == "toy":
         from bree.detect.toy import ToyBackend
         return ToyBackend()
@@ -41,8 +44,11 @@ def make_backend(kind: str, store, imgsz: int | None = None, products: bool = Tr
     from bree.detect.yolo import YoloBackend
     from bree.hw import detect_hardware
     hw = detect_hardware()
+    if half is None:
+        from bree.perf import resolve
+        half = resolve().half
     return YoloBackend(_weights(hw.pose_model), _weights(hw.detect_model), store.product_classes,
-                       device=hw.device, imgsz=imgsz or hw.imgsz, products=products, runtime=runtime)
+                       device=hw.device, imgsz=imgsz or hw.imgsz, products=products, runtime=runtime, half=half)
 
 
 def cmd_hw(args) -> None:
@@ -88,6 +94,9 @@ def main(argv: list[str] | None = None) -> None:
     r.add_argument("--runtime", choices=RUNTIMES, default="pytorch", help=RUNTIME_HELP)
     r.add_argument("--max-frames", type=int, default=None)
     r.add_argument("--no-video", action="store_true", help="skip writing annotated.mp4")
+    r.add_argument("--perf", default=None, metavar="PROFILE",
+                   help="speed/heat profile: off | balanced (default) | fast, optionally ',key=value' overrides "
+                        "(also $BREE_PERF; docs/ultra/perf.md)")
     r.add_argument("--no-products", action="store_true", help="people + pose only")
     r.set_defaults(func=cmd_run)
 
@@ -96,6 +105,11 @@ def main(argv: list[str] | None = None) -> None:
     commands.register(sub)
 
     args = ap.parse_args(argv)
+    if args.cmd in ("run", "dashboard", "shadow"):     # the commands that load models and push frames
+        from bree.perf import ENV, apply_runtime, resolve
+        if getattr(args, "perf", None):
+            os.environ[ENV] = args.perf                 # run_store / make_backend read the same profile
+        apply_runtime(resolve(), torch_needed=getattr(args, "backend", "yolo") != "toy")
     args.func(args)
 
 

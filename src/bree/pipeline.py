@@ -18,10 +18,10 @@ from __future__ import annotations
 
 import json
 import time
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field, asdict, replace
 from pathlib import Path
 
-import cv2
 import numpy as np
 
 from bree.alerts.annotate import draw_frame
@@ -30,7 +30,9 @@ from bree.detect.base import PerceptionBackend
 from bree.events.observations import FrameObs
 from bree.events.types import Event, EventType
 from bree.events.zones import StoreConfig, merge_stores
-from bree.ingest.source import VideoSource
+from bree.alerts.videofile import open_video_writer
+from bree.ingest.source import open_source, prefetch
+from bree.perf import PerfProfile, resolve
 from bree.ledger import build_ledger
 from bree.ledger.payments import PaymentSource, MockPayments
 from bree.track.multicam import StoreEvents
@@ -66,10 +68,13 @@ class CameraInput:
 class _Cam:
     """One camera's runtime state: video, tracker, evidence frames, per-camera logs."""
 
-    def __init__(self, cam: CameraInput, out: Path, suffix: str, max_frames: int | None, tracker_cls):
+    def __init__(self, cam: CameraInput, out: Path, suffix: str, max_frames: int | None, tracker_cls,
+                 perf: PerfProfile):
         self.name, self.store = cam.name, cam.store
-        self.src = cam.source if hasattr(cam.source, "fps") else VideoSource(cam.source, max_frames=max_frames)
+        self.src = cam.source if hasattr(cam.source, "fps") else open_source(cam.source, max_frames, nvdec=perf.nvdec)
         self.frames = iter(self.src)
+        if perf.overlap and not self.src.live:      # decode the next frames while this one is processed
+            self.frames = prefetch(self.frames)
         self.tracker = tracker_cls(self.src.fps)
         self.evidence = EvidenceBuffer(self.src.fps)
         self.frames_log = (out / f"frames{suffix}.jsonl").open("w")
@@ -95,21 +100,25 @@ def run_pipeline(source: str, store: StoreConfig, backend: PerceptionBackend, ou
                  payments: PaymentSource | None = None, save_video: bool = True,
                  max_frames: int | None = None, ledger_overrides: dict | None = None,
                  on_alert=None, on_frame=None, verbose: bool = True, realtime: bool = False,
-                 log_frames: bool = True) -> RunSummary:
+                 log_frames: bool = True, perf: PerfProfile | str | None = None) -> RunSummary:
     """One camera."""
     return run_store([CameraInput(store.camera_id, source, store)], backend, out_dir, payments=payments,
                      save_video=save_video, max_frames=max_frames, ledger_overrides=ledger_overrides,
                      on_alert=on_alert, on_frame=on_frame, verbose=verbose, realtime=realtime,
-                     log_frames=log_frames)
+                     log_frames=log_frames, perf=perf)
 
 
 def run_store(cameras: list[CameraInput], backend: PerceptionBackend, out_dir: str | Path,
               payments: PaymentSource | None = None, save_video: bool = True,
               max_frames: int | None = None, ledger_overrides: dict | None = None,
               on_alert=None, on_frame=None, verbose: bool = True, realtime: bool = False,
-              log_frames: bool = True, handoff: dict | None = None) -> RunSummary:
+              log_frames: bool = True, handoff: dict | None = None,
+              perf: PerfProfile | str | None = None) -> RunSummary:
     """One store, one or more cameras, one ledger. `handoff`: MultiCamIdentity settings
-    (max_dist_m, max_gap_s). Several cameras need `camera.floor_points` in every store YAML."""
+    (max_dist_m, max_gap_s). Several cameras need `camera.floor_points` in every store YAML.
+    `perf`: bree.perf profile (name, spec string or PerfProfile; default $BREE_PERF or "balanced"): only "fast"
+    changes what is computed or written (overlap, NVDEC, NVENC, capped annotated.mp4); see docs/ultra/perf.md."""
+    perf = perf if isinstance(perf, PerfProfile) else resolve(perf)
     from bree.track.bytetrack import Tracker   # ultralytics: only imported when video actually runs
     if len({c.name for c in cameras}) != len(cameras):
         raise ValueError("camera names must be unique")
@@ -121,7 +130,7 @@ def run_store(cameras: list[CameraInput], backend: PerceptionBackend, out_dir: s
         raise ValueError(f"cameras {loose} read hub bursts on the hub's clock: give every BurstSource the same t0")
     fusion = StoreEvents({c.name: c.store for c in cameras}, handoff)
     ledger = build_ledger(merge_stores([c.store for c in cameras]), **(ledger_overrides or {}))
-    cams = [_Cam(c, out, f"_{c.name}" if multi else "", max_frames, Tracker) for c in cameras]
+    cams = [_Cam(c, out, f"_{c.name}" if multi else "", max_frames, Tracker, perf) for c in cameras]
     by_name = {c.name: c for c in cams}
     if any(e.r.reid for e in fusion.engines.values()):
         # Body re-ID (never the face). Features stay in memory: nothing below writes them anywhere.
@@ -164,24 +173,42 @@ def run_store(cameras: list[CameraInput], backend: PerceptionBackend, out_dir: s
         cam.evidence.on_event(ev)
         return ledger.on_event(ev)
 
-    heads = {c.name: next(c.frames, None) for c in cams}
+    # perf.overlap: a one-thread pool runs the detector on the next frame of each camera while the main thread
+    # finishes the current one. Same calls, same order per camera, same results; only the waiting overlaps.
+    pool = ThreadPoolExecutor(1, thread_name_prefix="bree-detect") \
+        if perf.overlap and getattr(backend, "overlap_ok", False) else None
+
+    def detect(image):
+        t0 = time.perf_counter()
+        persons_det, products_det = backend(image)
+        return persons_det, products_det, getattr(backend, "last_bags", None), time.perf_counter() - t0
+
+    def read_head(c: _Cam):
+        fr = next(c.frames, None)
+        return fr, (pool.submit(detect, fr.image) if pool is not None and fr is not None else None)
+
+    heads = {c.name: read_head(c) for c in cams}
     while True:
         # Next frame in camera time across all cameras (one camera: just the next frame).
-        waiting = [c for c in cams if heads[c.name] is not None]
+        waiting = [c for c in cams if heads[c.name][0] is not None]
         if not waiting:
             break
-        c = min(waiting, key=lambda k: heads[k.name].t)
-        fr = heads[c.name]
-        heads[c.name] = next(c.frames, None)
+        c = min(waiting, key=lambda k: heads[k.name][0].t)
+        fr, fut = heads[c.name]
+        heads[c.name] = read_head(c)
         if multi:   # live cameras share one clock (each source starts its own at first read)
             fr = replace(fr, camera=c.name, t=fr.wall - t_wall0 if c.src.live else fr.t)
 
         f0 = time.perf_counter()
-        persons_det, products_det = backend(fr.image)
+        if fut is not None:
+            persons_det, products_det, bags, det_s = fut.result()
+        else:
+            persons_det, products_det = backend(fr.image)
+            bags, det_s = getattr(backend, "last_bags", None), None
         f1 = time.perf_counter()
         persons, products = c.tracker.update(persons_det, products_det, fr.image.shape[:2])
         if c.reid is not None:
-            c.reid.update(fr.image, persons, fr.t, getattr(backend, "last_bags", None))
+            c.reid.update(fr.image, persons, fr.t, bags)
         f2 = time.perf_counter()
         obs = FrameObs(fr.index, fr.t, persons, products)
         events = fusion.update(c.name, obs)
@@ -200,12 +227,13 @@ def run_store(cameras: list[CameraInput], backend: PerceptionBackend, out_dir: s
         baskets = {p.track_id: open_baskets.get(fusion.person_id(c.name, p.track_id), []) for p in persons}
         dt = f4 - f0
         fps_ema = 1 / dt if fps_ema is None else 0.9 * fps_ema + 0.1 / max(dt, 1e-6)
-        vis = draw_frame(fr.image, c.store, persons, products, c.recent, baskets, fps_ema, blur=True)
+        scale = min(1.0, perf.video_width / fr.image.shape[1]) if perf.video_width > 0 else 1.0
+        vis = draw_frame(fr.image, c.store, persons, products, c.recent, baskets, fps_ema, blur=True, scale=scale)
         c.evidence.add_frame(fr.t, vis)
         if save_video:
             if c.writer is None:
                 h, w = vis.shape[:2]
-                c.writer = cv2.VideoWriter(str(c.video_path), cv2.VideoWriter_fourcc(*"mp4v"), c.src.fps, (w, h))
+                c.writer = open_video_writer(str(c.video_path), c.src.fps, (w, h), nvenc=perf.nvenc)
             c.writer.write(vis)
         handle_alerts(alerts, fr.wall)
         # Reconciled with no flag -> evidence is deleted right away.
@@ -216,7 +244,8 @@ def run_store(cameras: list[CameraInput], backend: PerceptionBackend, out_dir: s
                         k.evidence.discard(pid)
         f5 = time.perf_counter()
 
-        for k, v in zip(timings, (f1 - f0, f2 - f1, f3 - f2, f4 - f3, f5 - f4)):
+        # detect: with overlap this is the detector's own compute time (it ran while the previous frame was handled)
+        for k, v in zip(timings, (f1 - f0 if det_s is None else det_s, f2 - f1, f3 - f2, f4 - f3, f5 - f4)):
             timings[k] += v
         persons_seen.update(fusion.person_id(c.name, p.track_id) for p in persons)
         if log_frames:   # off for long shadow runs: one line per frame, forever
@@ -251,6 +280,8 @@ def run_store(cameras: list[CameraInput], backend: PerceptionBackend, out_dir: s
                         for name, eng in fusion.engines.items() if eng.r.closed_world}
     if fusion.identity is not None and fusion.identity.closed_world:      # several cameras: one pool for the store
         summary.identity["store"] = {"occupancy": fusion.identity.occupancy(), **fusion.identity.cw_stats}
+    if pool is not None:
+        pool.shutdown()
     events_log.close(); sink.close()
     for c in cams:
         c.frames_log.close()

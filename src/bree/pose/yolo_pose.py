@@ -9,16 +9,20 @@ from __future__ import annotations
 
 import numpy as np
 
+from bree.perf import half_kwargs
+
 
 class YoloPose:
     def __init__(self, weights: str, device: str = "cpu", crop_size: int = 160, conf: float = 0.1,
-                 pad_x: float = 0.25, pad_y: float = 0.10, runtime: str = "pytorch", providers: list | None = None):
+                 pad_x: float = 0.25, pad_y: float = 0.10, runtime: str = "pytorch", providers: list | None = None,
+                 half: bool = False):
         from bree.edge.ort import load_yolo
         self.model = load_yolo(weights, "pose", crop_size, runtime, providers)
         # ONNX exports are static batch 1 (what TensorRT / CoreML / NPUs run best): one crop per call.
         self.per_crop = runtime == "onnx"
         self.device = "cpu" if self.per_crop else device
         self.crop_size, self.conf = crop_size, conf
+        self.precision = half_kwargs(half, self.device, runtime)
         self.pad_x, self.pad_y = pad_x, pad_y
 
     def __call__(self, image: np.ndarray, boxes: np.ndarray) -> np.ndarray:
@@ -36,7 +40,7 @@ class YoloPose:
             X2, Y2 = int(min(W, x2 + self.pad_x * w)), int(min(H, y2 + self.pad_y * h))
             crops.append(image[Y1:Y2, X1:X2])
             origins.append((X1, Y1, x1 - X1, y1 - Y1, x2 - X1, y2 - Y1))
-        kw = dict(imgsz=self.crop_size, conf=self.conf, device=self.device, verbose=False)
+        kw = dict(imgsz=self.crop_size, conf=self.conf, device=self.device, verbose=False, **self.precision)
         results = ([self.model.predict(c, **kw)[0] for c in crops] if self.per_crop
                    else self.model.predict(crops, **kw))
         for i, (r, (X1, Y1, bx1, by1, bx2, by2)) in enumerate(zip(results, origins)):

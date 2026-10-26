@@ -6,6 +6,8 @@ falling back to the top of the person box. We never crop or store faces.
 """
 from __future__ import annotations
 
+from dataclasses import replace
+
 import cv2
 import numpy as np
 
@@ -60,14 +62,34 @@ def draw_zones(img: np.ndarray, store: StoreConfig, scale: float = 1.0) -> None:
     cv2.addWeighted(overlay, 0.18, img, 0.82, 0, dst=img)
 
 
+def _scale_persons(persons: list[PersonObs], s: float) -> list[PersonObs]:
+    out = []
+    for p in persons:
+        kp = None if p.keypoints is None else p.keypoints * np.array([s, s, 1], np.float32)
+        out.append(replace(p, bbox=tuple(v * s for v in p.bbox), keypoints=kp))
+    return out
+
+
 def draw_frame(img: np.ndarray, store: StoreConfig | None, persons: list[PersonObs],
                products: list[ProductObs], recent: list[Event], baskets: dict[int, list[str]] | None = None,
-               fps: float | None = None, blur: bool = True) -> np.ndarray:
-    out = img.copy()
+               fps: float | None = None, blur: bool = True, scale: float = 1.0) -> np.ndarray:
+    """`scale` < 1 draws on a downscaled copy (persons / products / zones are in the full-size image's pixels).
+    Heads are pixelated AFTER the downscale, at the output size, so the saved image never holds more detail than
+    the full-size pixelation would leave."""
+    if scale < 1.0:
+        h0, w0 = img.shape[:2]
+        out = cv2.resize(img, (max(2, int(w0 * scale) // 2 * 2), max(2, int(h0 * scale) // 2 * 2)),
+                         interpolation=cv2.INTER_AREA)
+        persons = _scale_persons(persons, out.shape[1] / w0)
+        products = [replace(q, bbox=tuple(v * out.shape[1] / w0 for v in q.bbox)) for q in products]
+        scale = out.shape[1] / w0
+    else:
+        out = img.copy()
+        scale = 1.0
     if blur:
         blur_heads(out, persons)
     if store is not None:
-        draw_zones(out, store)
+        draw_zones(out, store, scale)
     for p in persons:
         c = _color(p.track_id)
         x1, y1, x2, y2 = map(int, p.bbox)

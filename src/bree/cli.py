@@ -61,7 +61,16 @@ def cmd_run(args) -> None:
         raise SystemExit("give one --store per --source (several cameras of one store)")
     stores = [load_store_config(p) for p in store_paths]
     cams = [CameraInput(s.camera_id, src, s) for src, s in zip(args.source, stores)]
-    backend = make_backend(args.backend, merge_stores(stores), args.imgsz, products=not args.no_products, runtime=args.runtime)
+    if args.perception_profile:
+        if len(cams) != 1 or args.backend != "yolo":
+            raise SystemExit("--perception-profile needs the yolo backend and exactly one --source")
+        from bree.hw import detect_hardware
+        from bree.perception.backend import ProfiledBackend
+        from bree.perception.profile import load_profile
+        backend = ProfiledBackend(load_profile(args.perception_profile), stores[0].product_classes,
+                                  device=detect_hardware().device, products=not args.no_products, runtime=args.runtime)
+    else:
+        backend = make_backend(args.backend, merge_stores(stores), args.imgsz, products=not args.no_products, runtime=args.runtime)
     payments = open_payments(args.payments, stream_start_wall=time.time())
     s = run_store(cams, backend, args.out, payments=payments,
                   save_video=not args.no_video, max_frames=args.max_frames)
@@ -88,6 +97,9 @@ def main(argv: list[str] | None = None) -> None:
     r.add_argument("--runtime", choices=RUNTIMES, default="pytorch", help=RUNTIME_HELP)
     r.add_argument("--max-frames", type=int, default=None)
     r.add_argument("--no-video", action="store_true", help="skip writing annotated.mp4")
+    r.add_argument("--perception-profile", default=None, metavar="YAML",
+                   help="per-camera perception profile (bree.perception: sliced inference, ghost masks, tracker); "
+                        "one per run, so use it with a single --source")
     r.add_argument("--no-products", action="store_true", help="people + pose only")
     r.set_defaults(func=cmd_run)
 

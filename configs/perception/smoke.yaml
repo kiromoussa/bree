@@ -1,0 +1,6 @@
+camera: ch29
+role: counter_overhead
+detector: {weights: yolo26s.pt, imgsz: 640, person_conf: 0.3}
+slices: {cols: 2, rows: 2, overlap: 0.2, full_frame: true}
+tracker: {buffer_s: 2.0, new_track_thresh: 0.5}
+events: {min_track_age_s: 1.0}

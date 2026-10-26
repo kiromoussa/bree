@@ -153,7 +153,7 @@ class ProductApp:
             if r["state"] != "ok":
                 attention.append({"kind": "shelf", "text": f"{r['zone']}: {r['state'].replace('_', ' ')}", "camera": r["camera"]})
         for c in cams:
-            if c["status"] in ("stale", "offline"):
+            if c["status"] in ("stale", "offline") and not self.replay:     # saved clips have gaps by construction
                 attention.append({"kind": "camera", "text": f"{c['label']} has not reported for {int((c['age_s'] or 0) // 60)} min", "camera": c["id"]})
         if pending:
             attention.append({"kind": "review", "text": f"{len(pending)} item(s) waiting for your review"})

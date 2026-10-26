@@ -59,7 +59,7 @@ class Layout:
     station: str
     camera: str
     size: tuple[int, int]
-    door: DoorLine
+    door: DoorLine | None
     zones: list[FlowZone]
     ignore: list[np.ndarray] = field(default_factory=list)
     clock_offset_s: float = 0.0
@@ -89,8 +89,8 @@ def load_layout(path: str | Path, size: tuple[int, int] | None = None) -> Layout
     def pts(v):
         return np.asarray(v, float) * s
 
-    dl = d["door_line"]
-    door = DoorLine(pts(dl["a"]), pts(dl["b"]), pts(dl["inside"]), float(dl.get("margin_px", 12)) * float(s.mean()))
+    dl = d.get("door_line")        # cameras that do not see a door (aisles, counter overhead) have none: no entries or exits
+    door = DoorLine(pts(dl["a"]), pts(dl["b"]), pts(dl["inside"]), float(dl.get("margin_px", 12)) * float(s.mean())) if dl else None
     zones = []
     for z in d.get("zones", []):
         if z["kind"] not in KINDS:

@@ -186,3 +186,42 @@ def test_baseline_needs_history_and_flags_outliers():
     assert base.score({"hour": "2026-10-06T16:00", "coverage_s": 3600.0, "entries_per_hour": 60, "queue_mean": None, "register_time_median_s": None}) == []   # a Tuesday: no history
     assert Baseline.fit(mondays[:2]).score({"hour": "2026-10-05T16:00", "coverage_s": 3600.0, "entries_per_hour": 60, "queue_mean": None, "register_time_median_s": None}) == []
     assert base.score({"hour": "2026-10-05T16:00", "coverage_s": 60.0, "entries_per_hour": 60, "queue_mean": None, "register_time_median_s": None}) == []
+
+
+def test_static_mask_learns_a_ghost_but_not_a_walker():
+    from bree.intel.staticmask import learn_static_mask
+    frames = []
+    for i in range(60):
+        ghost = {"bbox": [1100, 100, 1200, 260], "conf": 0.4}
+        walker = {"bbox": [100 + 15 * i, 300, 200 + 15 * i, 600], "conf": 0.9}
+        frames.append({"t": i / FPS, "persons": [ghost, walker]})
+    mask = learn_static_mask(frames, (1280, 720))
+    assert mask and all(poly[0][0] > 900 for poly in mask)            # only the ghost corner
+    from bree.intel.flowtrack import _inside
+    assert any(_inside(p, 1150, 260) for p in mask) and not any(_inside(p, 400, 600) for p in mask)
+
+
+def test_confident_still_person_is_not_masked():
+    from bree.intel.staticmask import learn_static_mask
+    frames = [{"t": i, "persons": [{"bbox": [500, 100, 640, 500], "conf": 0.9}]} for i in range(40)]
+    assert learn_static_mask(frames, (1280, 720)) == []
+
+
+def test_doorless_layout_gives_no_door_events():
+    lay = load_layout(Path(__file__).resolve().parents[1] / "configs" / "intel_aisle_view.yaml", (1280, 720))
+    assert lay.door is None
+    frames = walk([(370, 150, 0), (370, 330, 2.0), (370, 560, 2.0)])
+    recs, eng = run_detections(merge(frames), lay, IntelConfig(), None)
+    assert door(recs) == [] and [r for r in recs if r["type"] == "track"]
+
+
+def test_count_label_adapter_and_scorer(tmp_path):
+    import json as _json
+    from bree.intel.labelcounts import load_counts, score_counts
+    p = tmp_path / "l.json"
+    p.write_text(_json.dumps({"frames": [{"segment": "s", "t_s": 5, "split": "dev", "visible_persons": 1, "centres_xy": [[0.5, 0.5]]},
+                                         {"segment": "s", "t_s": 9, "split": "dev", "visible_persons": 0, "centres_xy": []}]}))
+    rows = load_counts(p)
+    log = [(5.0, [(1, "customer", 10.0, 10.0)]), (9.0, [])]
+    r = score_counts({"s": log}, rows, (1280, 720))
+    assert r["dev"]["exact"] == 1.0 and r["dev"]["presence"] == 1.0

@@ -11,7 +11,7 @@ from pathlib import Path
 
 def cmd_run(args) -> None:
     from bree.intel.run import run_segments
-    flow = run_segments(args.video, args.layout, args.out, dets_dir=args.dets_dir, stride=args.stride, imgsz=args.imgsz)
+    flow = run_segments(args.video, args.layout, args.out, dets_dir=args.dets_dir, stride=args.stride, imgsz=args.imgsz, learn_mask=args.learn_mask)
     n = sum(1 for _ in flow.open())
     print(f"{n} records -> {flow}")
 
@@ -19,6 +19,17 @@ def cmd_run(args) -> None:
 def cmd_report(args) -> None:
     from bree.intel import aggregate as ag
     recs = ag.read_records(args.flow)
+    cams = sorted({r.get("camera", "") for r in recs})
+    if len(cams) > 1:       # several cameras: one report folder per camera
+        for c in cams:
+            sub = [r for r in recs if r.get("camera", "") == c]
+            tmp = Path(args.out) / (c or "camera")
+            tmp.mkdir(parents=True, exist_ok=True)
+            (tmp / "flow.jsonl").write_text("".join(json.dumps(r) + "\n" for r in sub))
+            args2 = type(args)(**{**vars(args), "flow": [str(tmp / "flow.jsonl")], "out": str(tmp)})
+            print(f"--- camera {c}")
+            cmd_report(args2)
+        return
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     hours = ag.hourly(recs)
@@ -97,6 +108,7 @@ def register(sub) -> None:
     r.add_argument("--dets-dir", help="cache for detections (default <out>/dets)")
     r.add_argument("--stride", type=int, default=5, help="analyse every Nth frame (default 5: 6 fps from a 30 fps source)")
     r.add_argument("--imgsz", type=int, default=960)
+    r.add_argument("--learn-mask", action="store_true", help="ignore spots where low-confidence boxes sit still all segment (posters, displays, reflections)")
     r.set_defaults(func=cmd_run)
 
     g = s.add_parser("report", help="hourly / daily aggregates, digest text and heatmaps from flow.jsonl")

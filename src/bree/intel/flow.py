@@ -155,12 +155,14 @@ class FlowEngine:
 
     def _on_birth(self, tr: Track, st: _TS) -> None:
         x, y = st.first_foot
-        if any(z.contains(x, y) for z in self.mats) and self.L.door.signed(x, y) > -self.L.door.margin:
+        if self.L.door is not None and any(z.contains(x, y) for z in self.mats) and self.L.door.signed(x, y) > -self.L.door.margin:
             st.born_on_mats = True
 
     # ---- door -----------------------------------------------------------------------------------------------
     def _door(self, tr: Track, st: _TS, x: float, y: float, t: float, out: list) -> None:
         d = self.L.door
+        if d is None:
+            return
         if d.in_span(x, y):
             s = d.signed(x, y)
             side = 1 if s > d.margin else -1 if s < -d.margin else 0

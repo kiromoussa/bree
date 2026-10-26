@@ -27,7 +27,7 @@ def segment_start(video: str | Path, offset_s: float = 0.0) -> datetime | None:
 
 
 def run_segments(videos: list[str], layout_path: str, out_dir: str, dets_dir: str | None = None, stride: int = 5,
-                 imgsz: int | None = 960, cfg: IntelConfig | None = None, detector=None) -> Path:
+                 imgsz: int | None = 960, cfg: IntelConfig | None = None, detector=None, learn_mask: bool = False) -> Path:
     """Analyse `videos` in name order. Writes <out_dir>/flow.jsonl and <out_dir>/heat.npz. Returns the flow.jsonl path."""
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -41,13 +41,17 @@ def run_segments(videos: list[str], layout_path: str, out_dir: str, dets_dir: st
                 detect_segment(v, d, stride=stride, imgsz=imgsz, detector=detector)
             meta, frames = read_detections(d)
             layout = load_layout(layout_path, (meta["width"], meta["height"]))
+            if learn_mask:     # static ghosts: boxes that sit on one spot all segment at low confidence
+                from bree.intel.staticmask import learn_static_mask
+                layout.ignore = list(layout.ignore) + [np.array(p) for p in learn_static_mask(frames, (meta["width"], meta["height"]))]
             start = segment_start(v, layout.clock_offset_s)
             recs, eng = run_detections(frames, layout, cfg, start)
             t_end = frames[-1]["t"] if frames else 0.0
             fh.write(json.dumps({"type": "segment", "video": Path(v).name, "t0": 0.0, "t1": round(t_end, 2),
                                  "ts": start.isoformat(timespec="seconds") if start else None, "entries": eng.entries,
-                                 "exits": eng.exits, "initial": eng.initial}) + "\n")
+                                 "exits": eng.exits, "initial": eng.initial, "camera": layout.camera}) + "\n")
             for r in recs:
+                r["camera"] = layout.camera
                 fh.write(json.dumps(r) + "\n")
             for k in heat:
                 heat[k] = eng.heat[k] if heat[k] is None else heat[k] + eng.heat[k]

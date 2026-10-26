@@ -12,6 +12,7 @@ It measures DVR clock minus reference clock; it cannot say which time zone the D
 """
 from __future__ import annotations
 
+import os
 import re
 import shutil
 import subprocess
@@ -39,7 +40,7 @@ def have_tesseract() -> bool:
 def _ocr(binary: np.ndarray, tmp: Path) -> str:
     cv2.imwrite(str(tmp), binary)
     r = subprocess.run(["tesseract", str(tmp), "-", "--psm", "7", "-c", "tessedit_char_whitelist=0123456789-: "],
-                       capture_output=True, text=True, timeout=20)
+                       capture_output=True, text=True, timeout=20, env={**os.environ, "OMP_THREAD_LIMIT": "1"})
     return r.stdout.strip()
 
 
@@ -54,27 +55,28 @@ def _masks(gray: np.ndarray) -> list[np.ndarray]:
     return out
 
 
-def candidate_texts(image: np.ndarray, region=DEFAULT_REGION) -> list[str]:
-    """OCR text of the clock corner under several binarisations, on the whole overlay and on its time half
-    (empty list if tesseract is missing)."""
+def iter_candidate_texts(image: np.ndarray, region=DEFAULT_REGION):
+    """Yield OCR text of the clock corner under several binarisations, on the whole overlay and on its time half
+    (nothing if tesseract is missing). Lazy: callers stop as soon as enough reads agree."""
     if not have_tesseract():
-        return []
+        return
     h, w = image.shape[:2]
     x0, y0, x1, y1 = region
-    x0, x1 = x0 - 0.02, min(1.0, x1)
-    crop = image[int(y0 * h):int(y1 * h), int(max(0, x0) * w):int(x1 * w)]
+    crop = image[int(y0 * h):int(y1 * h), int(max(0, x0 - 0.02) * w):int(min(1.0, x1) * w)]
     gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY) if crop.ndim == 3 else crop
-    out = []
     with tempfile.TemporaryDirectory() as d:
         tmp = Path(d) / "c.png"
         for m in _masks(gray):
-            for part in (m, m[:, int(m.shape[1] * 0.55):]):    # whole overlay, then the HH:MM:SS half
+            for part in (m[:, int(m.shape[1] * 0.55):], m):    # the HH:MM:SS half, then the whole overlay
                 b = part
                 if b.shape[1] < 600:   # tesseract wants characters about 30+ px high
                     b = cv2.resize(b, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
                 b = cv2.copyMakeBorder(b, 20, 20, 20, 20, cv2.BORDER_CONSTANT, value=255)
-                out.append(_ocr(b, tmp))
-    return out
+                yield _ocr(b, tmp)
+
+
+def candidate_texts(image: np.ndarray, region=DEFAULT_REGION) -> list[str]:
+    return list(iter_candidate_texts(image, region))
 
 
 def parse_time_of_day(texts: list[str]) -> int | None:
@@ -106,9 +108,18 @@ def parse_datetime(texts: list[str]) -> datetime | None:
     return None
 
 
-def read_clock(image: np.ndarray, region=DEFAULT_REGION) -> int | None:
-    """Time of day (seconds since midnight, DVR clock) shown in the frame, or None."""
-    return parse_time_of_day(candidate_texts(image, region))
+def read_clock(image: np.ndarray, region=DEFAULT_REGION, agree: int = 2) -> int | None:
+    """Time of day (seconds since midnight, DVR clock) shown in the frame, or None. Stops OCR-ing as soon as
+    `agree` binarisations give the same time (most frames need 2-4 tesseract calls, hard ones all 14)."""
+    seen, votes = [], {}
+    for text in iter_candidate_texts(image, region):
+        seen.append(text)
+        t = parse_time_of_day([text])
+        if t is not None:
+            votes[t] = votes.get(t, 0) + 1
+            if votes[t] >= agree:
+                return t
+    return parse_time_of_day(seen)
 
 
 @dataclass

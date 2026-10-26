@@ -348,6 +348,8 @@ class ImouSource:
         self.fps = fps if fps and 0 < fps < 240 else 15.0
         self.width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         self.height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        if p.get("calibrate_clock") in ("1", "true"):
+            self.calibrate_clock()
         self.health.update(True, state="ok", width=self.width, height=self.height, fps=self.fps, stream=self.target.stream,
                            clock_offset_s=self.clock.offset_s)
 
@@ -363,6 +365,28 @@ class ImouSource:
             self.cap = None
             raise StreamUnavailable("live address did not open")
         self._opened_at, self._run_frames = time.time(), 0
+
+    def calibrate_clock(self, n: int = 5, step_s: float = 1.0):
+        """Read the DVR clock burned into n frames (about step_s apart) and set the station clock offset to
+        overlay time minus this machine's local time. The estimate includes the stream latency (a few seconds
+        for HLS). Frames used here are not delivered. Leaves the clock alone if the overlay is unreadable."""
+        from bree.ingest.overlay import DAY, estimate_offset, read_clock
+        samples, skip = [], max(1, int(self.fps * step_s))
+        for _ in range(n):
+            img = None
+            for _ in range(skip):
+                ok, f = self.cap.read()
+                if not ok:
+                    break
+                img = f
+            if img is None:
+                break
+            lt = time.localtime()
+            samples.append(((lt.tm_hour * 3600 + lt.tm_min * 60 + lt.tm_sec) % DAY, read_clock(img)))
+        est = estimate_offset(samples)
+        if est.ok:
+            self.clock = StationClock(est.offset_s, "overlay")
+        return est
 
     def _stream_ended(self) -> None:
         """The stream stopped giving frames. A run shorter than min_run_s of media is a stub, not a hiccup."""

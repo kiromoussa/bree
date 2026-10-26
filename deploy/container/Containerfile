@@ -1,0 +1,31 @@
+# BREE edge image (x86-64, CPU). Build from the repo root:
+#   docker build -f deploy/container/Containerfile -t bree-edge:dev .
+# Run (read-only root, no network needed for the pipeline itself, footage and config mounted from the host):
+#   docker run --rm --read-only --tmpfs /tmp --cap-drop ALL --security-opt no-new-privileges \
+#     -v $HOME/bree-data:/data -v $HOME/.config/bree:/config:ro -v $HOME/bree/models:/app/models:ro \
+#     --env-file $HOME/.config/bree/imou.env bree-edge:dev shadow --config /config/shadow.yaml
+# Model weights (yolo26 *.pt) are not in git: mount them at /app/models (see SETUP_OTHER_COMPUTER.md).
+# GPU: use an nvidia/cuda base and the default CUDA torch wheel instead of the CPU index below (not built or tested here).
+# Jetson / ARM: this x86 recipe does not apply. Use NVIDIA's l4t-pytorch base for the Jetson's JetPack, install
+# ultralytics + the pinned requirements without torch, and build TensorRT engines on the device (yolo export format=engine).
+# Raspberry Pi nodes do not run the pipeline, only bree.edge.node (deploy/pi/).
+FROM python:3.11-slim AS base
+ENV PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 OMP_NUM_THREADS=4
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg libglib2.0-0 tini \
+    && rm -rf /var/lib/apt/lists/*
+RUN useradd --system --create-home --uid 10001 bree
+WORKDIR /app
+COPY pyproject.toml README.md ./
+# CPU-only torch first (the default PyPI wheel is the 2+ GB CUDA build); the pins in pyproject then see torch 2.14.0 as satisfied.
+RUN pip install torch==2.14.0 torchvision==0.29.0 --index-url https://download.pytorch.org/whl/cpu
+COPY src ./src
+COPY configs ./configs
+COPY weights ./weights
+RUN pip install ".[vision,export]"
+USER bree
+ENV PYTHONPATH=/app/src
+VOLUME ["/data", "/config"]
+HEALTHCHECK --interval=60s --timeout=20s --start-period=60s --retries=3 \
+    CMD python -m bree.trust doctor --data /data || exit 1
+ENTRYPOINT ["/usr/bin/tini", "--", "python", "-m", "bree.cli"]
+CMD ["--help"]

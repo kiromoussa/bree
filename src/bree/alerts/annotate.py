@@ -38,7 +38,11 @@ def head_box(p: PersonObs, kpt_conf: float = 0.3) -> tuple[int, int, int, int]:
     return int(cx - r), int(cy - r), int(cx + r), int(cy + r)
 
 
-def blur_heads(img: np.ndarray, persons: list[PersonObs]) -> np.ndarray:
+def blur_heads(img: np.ndarray, persons: list[PersonObs], guard=None) -> np.ndarray:
+    """Pixelate heads in place. With a bree.trust.privacy.Guard the face detector and the hold are added on top of the
+    pose heads (the pipeline passes one per camera); without, only the pose/box heads below."""
+    if guard is not None:
+        return guard.protect(img, persons)
     h, w = img.shape[:2]
     for p in persons:
         x1, y1, x2, y2 = head_box(p)
@@ -62,10 +66,10 @@ def draw_zones(img: np.ndarray, store: StoreConfig, scale: float = 1.0) -> None:
 
 def draw_frame(img: np.ndarray, store: StoreConfig | None, persons: list[PersonObs],
                products: list[ProductObs], recent: list[Event], baskets: dict[int, list[str]] | None = None,
-               fps: float | None = None, blur: bool = True) -> np.ndarray:
+               fps: float | None = None, blur: bool = True, guard=None) -> np.ndarray:
     out = img.copy()
     if blur:
-        blur_heads(out, persons)
+        blur_heads(out, persons, guard)
     if store is not None:
         draw_zones(out, store)
     for p in persons:

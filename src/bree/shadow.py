@@ -243,6 +243,11 @@ def _run_cameras(name: str, cams: list[Camera], cfg: ShadowConfig, log: ShadowLo
 
 def run_shadow(cfg: ShadowConfig, once: bool = False) -> ShadowLog:
     log = ShadowLog(cfg.output_dir)
+    from bree.trust import media as trust_media
+    from bree.trust.audit import AuditLog
+    trust_media.set_audit(AuditLog(Path(cfg.output_dir) / "audit.jsonl"))    # who viewed which clip, purges, raw recording
+    trust_media.get_audit().record("shadow", "shadow_start", cfg.output_dir, cameras=[c.name for c in cfg.cameras],
+                                   record_raw=bool(cfg.record_raw.get("enabled")))
     httpd = None
     if cfg.review_port:
         from bree.dashboard.server import serve

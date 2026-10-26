@@ -1,0 +1,1590 @@
+{
+ "bomFormat": "CycloneDX",
+ "specVersion": "1.5",
+ "version": 1,
+ "metadata": {
+  "component": {
+   "type": "application",
+   "name": "bree-vision"
+  }
+ },
+ "components": [
+  {
+   "type": "library",
+   "name": "anyio",
+   "version": "4.15.1",
+   "purl": "pkg:pypi/anyio@4.15.1",
+   "licenses": [
+    {
+     "license": {
+      "name": "MIT"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "av",
+   "version": "18.1.0",
+   "purl": "pkg:pypi/av@18.1.0",
+   "licenses": [
+    {
+     "license": {
+      "name": "BSD-3-Clause"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "certifi",
+   "version": "2026.10.23",
+   "purl": "pkg:pypi/certifi@2026.10.23",
+   "licenses": [
+    {
+     "license": {
+      "name": "MPL-2.0"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "weak-copyleft"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "charset-normalizer",
+   "version": "3.5.2",
+   "purl": "pkg:pypi/charset-normalizer@3.5.2",
+   "licenses": [
+    {
+     "license": {
+      "name": "MIT"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "cloudpickle",
+   "version": "3.1.2",
+   "purl": "pkg:pypi/cloudpickle@3.1.2",
+   "licenses": [
+    {
+     "license": {
+      "name": "BSD-3-Clause"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "colorama",
+   "version": "0.4.6",
+   "purl": "pkg:pypi/colorama@0.4.6",
+   "licenses": [
+    {
+     "license": {
+      "name": "BSD License"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "contourpy",
+   "version": "1.3.3",
+   "purl": "pkg:pypi/contourpy@1.3.3",
+   "licenses": [
+    {
+     "license": {
+      "name": "BSD License"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "cuda-bindings",
+   "version": "13.4.4",
+   "purl": "pkg:pypi/cuda-bindings@13.4.4",
+   "licenses": [
+    {
+     "license": {
+      "name": "Apache-2.0"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "cuda-pathfinder",
+   "version": "1.8.4",
+   "purl": "pkg:pypi/cuda-pathfinder@1.8.4",
+   "licenses": [
+    {
+     "license": {
+      "name": "Apache-2.0"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "cuda-toolkit",
+   "version": "13.0.3.0",
+   "purl": "pkg:pypi/cuda-toolkit@13.0.3.0",
+   "licenses": [
+    {
+     "license": {
+      "name": "NOASSERTION"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "unknown"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "cycler",
+   "version": "0.12.1",
+   "purl": "pkg:pypi/cycler@0.12.1",
+   "licenses": [
+    {
+     "license": {
+      "name": "BSD License"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "defusedxml",
+   "version": "0.7.1",
+   "purl": "pkg:pypi/defusedxml@0.7.1",
+   "licenses": [
+    {
+     "license": {
+      "name": "PSFL"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "filelock",
+   "version": "4.2.4",
+   "purl": "pkg:pypi/filelock@4.2.4",
+   "licenses": [
+    {
+     "license": {
+      "name": "MIT"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "flatbuffers",
+   "version": "25.12.19",
+   "purl": "pkg:pypi/flatbuffers@25.12.19",
+   "licenses": [
+    {
+     "license": {
+      "name": "Apache 2.0"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "fonttools",
+   "version": "4.67.0",
+   "purl": "pkg:pypi/fonttools@4.67.0",
+   "licenses": [
+    {
+     "license": {
+      "name": "MIT"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "fsspec",
+   "version": "2026.9.0",
+   "purl": "pkg:pypi/fsspec@2026.9.0",
+   "licenses": [
+    {
+     "license": {
+      "name": "BSD-3-Clause"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "h11",
+   "version": "0.16.0",
+   "purl": "pkg:pypi/h11@0.16.0",
+   "licenses": [
+    {
+     "license": {
+      "name": "MIT"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "httpcore",
+   "version": "1.0.9",
+   "purl": "pkg:pypi/httpcore@1.0.9",
+   "licenses": [
+    {
+     "license": {
+      "name": "BSD-3-Clause"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "httpx",
+   "version": "0.28.1",
+   "purl": "pkg:pypi/httpx@0.28.1",
+   "licenses": [
+    {
+     "license": {
+      "name": "BSD-3-Clause"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "idna",
+   "version": "3.20",
+   "purl": "pkg:pypi/idna@3.20",
+   "licenses": [
+    {
+     "license": {
+      "name": "BSD-3-Clause"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "iniconfig",
+   "version": "2.3.1",
+   "purl": "pkg:pypi/iniconfig@2.3.1",
+   "licenses": [
+    {
+     "license": {
+      "name": "MIT"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "Jinja2",
+   "version": "3.1.6",
+   "purl": "pkg:pypi/jinja2@3.1.6",
+   "licenses": [
+    {
+     "license": {
+      "name": "BSD License"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "kiwisolver",
+   "version": "1.5.1",
+   "purl": "pkg:pypi/kiwisolver@1.5.1",
+   "licenses": [
+    {
+     "license": {
+      "name": "BSD License"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "lap",
+   "version": "0.5.13",
+   "purl": "pkg:pypi/lap@0.5.13",
+   "licenses": [
+    {
+     "license": {
+      "name": "BSD-2-Clause"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "MarkupSafe",
+   "version": "3.0.4",
+   "purl": "pkg:pypi/markupsafe@3.0.4",
+   "licenses": [
+    {
+     "license": {
+      "name": "BSD-3-Clause"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "matplotlib",
+   "version": "3.11.2",
+   "purl": "pkg:pypi/matplotlib@3.11.2",
+   "licenses": [
+    {
+     "license": {
+      "name": "Python Software Foundation License"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "ml_dtypes",
+   "version": "0.6.0",
+   "purl": "pkg:pypi/ml_dtypes@0.6.0",
+   "licenses": [
+    {
+     "license": {
+      "name": "Apache-2.0"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "motmetrics",
+   "version": "1.4.0",
+   "purl": "pkg:pypi/motmetrics@1.4.0",
+   "licenses": [
+    {
+     "license": {
+      "name": "MIT"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "mpmath",
+   "version": "1.3.0",
+   "purl": "pkg:pypi/mpmath@1.3.0",
+   "licenses": [
+    {
+     "license": {
+      "name": "BSD"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "networkx",
+   "version": "3.6.1",
+   "purl": "pkg:pypi/networkx@3.6.1",
+   "licenses": [
+    {
+     "license": {
+      "name": "BSD-3-Clause"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "numpy",
+   "version": "2.4.6",
+   "purl": "pkg:pypi/numpy@2.4.6",
+   "licenses": [
+    {
+     "license": {
+      "name": "BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "nvidia-cublas",
+   "version": "13.1.1.3",
+   "purl": "pkg:pypi/nvidia-cublas@13.1.1.3",
+   "licenses": [
+    {
+     "license": {
+      "name": "LicenseRef-NVIDIA-Proprietary"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "proprietary"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "nvidia-cuda-cupti",
+   "version": "13.0.85",
+   "purl": "pkg:pypi/nvidia-cuda-cupti@13.0.85",
+   "licenses": [
+    {
+     "license": {
+      "name": "LicenseRef-NVIDIA-Proprietary"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "proprietary"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "nvidia-cuda-nvrtc",
+   "version": "13.0.88",
+   "purl": "pkg:pypi/nvidia-cuda-nvrtc@13.0.88",
+   "licenses": [
+    {
+     "license": {
+      "name": "LicenseRef-NVIDIA-Proprietary"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "proprietary"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "nvidia-cuda-runtime",
+   "version": "13.0.96",
+   "purl": "pkg:pypi/nvidia-cuda-runtime@13.0.96",
+   "licenses": [
+    {
+     "license": {
+      "name": "LicenseRef-NVIDIA-Proprietary"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "proprietary"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "nvidia-cudnn-cu13",
+   "version": "9.24.0.43",
+   "purl": "pkg:pypi/nvidia-cudnn-cu13@9.24.0.43",
+   "licenses": [
+    {
+     "license": {
+      "name": "LicenseRef-NVIDIA-Proprietary"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "proprietary"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "nvidia-cufft",
+   "version": "12.0.0.61",
+   "purl": "pkg:pypi/nvidia-cufft@12.0.0.61",
+   "licenses": [
+    {
+     "license": {
+      "name": "LicenseRef-NVIDIA-Proprietary"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "proprietary"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "nvidia-cufile",
+   "version": "1.15.1.6",
+   "purl": "pkg:pypi/nvidia-cufile@1.15.1.6",
+   "licenses": [
+    {
+     "license": {
+      "name": "LicenseRef-NVIDIA-Proprietary"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "proprietary"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "nvidia-curand",
+   "version": "10.4.0.35",
+   "purl": "pkg:pypi/nvidia-curand@10.4.0.35",
+   "licenses": [
+    {
+     "license": {
+      "name": "LicenseRef-NVIDIA-Proprietary"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "proprietary"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "nvidia-cusolver",
+   "version": "12.0.4.66",
+   "purl": "pkg:pypi/nvidia-cusolver@12.0.4.66",
+   "licenses": [
+    {
+     "license": {
+      "name": "LicenseRef-NVIDIA-Proprietary"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "proprietary"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "nvidia-cusparse",
+   "version": "12.6.3.3",
+   "purl": "pkg:pypi/nvidia-cusparse@12.6.3.3",
+   "licenses": [
+    {
+     "license": {
+      "name": "LicenseRef-NVIDIA-Proprietary"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "proprietary"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "nvidia-cusparselt-cu13",
+   "version": "0.8.1",
+   "purl": "pkg:pypi/nvidia-cusparselt-cu13@0.8.1",
+   "licenses": [
+    {
+     "license": {
+      "name": "NVIDIA Proprietary Software"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "proprietary"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "nvidia-ml-py",
+   "version": "13.615.71",
+   "purl": "pkg:pypi/nvidia-ml-py@13.615.71",
+   "licenses": [
+    {
+     "license": {
+      "name": "BSD"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "nvidia-nccl-cu13",
+   "version": "2.30.7",
+   "purl": "pkg:pypi/nvidia-nccl-cu13@2.30.7",
+   "licenses": [
+    {
+     "license": {
+      "name": "LicenseRef-NVIDIA-Proprietary"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "proprietary"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "nvidia-nvjitlink",
+   "version": "13.4.92",
+   "purl": "pkg:pypi/nvidia-nvjitlink@13.4.92",
+   "licenses": [
+    {
+     "license": {
+      "name": "LicenseRef-NVIDIA-Proprietary"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "proprietary"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "nvidia-nvshmem-cu13",
+   "version": "3.4.5",
+   "purl": "pkg:pypi/nvidia-nvshmem-cu13@3.4.5",
+   "licenses": [
+    {
+     "license": {
+      "name": "LicenseRef-NVIDIA-Proprietary"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "proprietary"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "nvidia-nvtx",
+   "version": "13.0.85",
+   "purl": "pkg:pypi/nvidia-nvtx@13.0.85",
+   "licenses": [
+    {
+     "license": {
+      "name": "Apache 2.0"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "onnx",
+   "version": "1.23.1",
+   "purl": "pkg:pypi/onnx@1.23.1",
+   "licenses": [
+    {
+     "license": {
+      "name": "Apache-2.0"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "onnxruntime",
+   "version": "1.30.0",
+   "purl": "pkg:pypi/onnxruntime@1.30.0",
+   "licenses": [
+    {
+     "license": {
+      "name": "MIT License"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "onnxslim",
+   "version": "0.1.98",
+   "purl": "pkg:pypi/onnxslim@0.1.98",
+   "licenses": [
+    {
+     "license": {
+      "name": "MIT"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "opencv-python",
+   "version": "5.0.0.93",
+   "purl": "pkg:pypi/opencv-python@5.0.0.93",
+   "licenses": [
+    {
+     "license": {
+      "name": "Apache 2.0"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "opencv-python-headless",
+   "version": "5.0.0.93",
+   "purl": "pkg:pypi/opencv-python-headless@5.0.0.93",
+   "licenses": [
+    {
+     "license": {
+      "name": "Apache 2.0"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "packaging",
+   "version": "26.3",
+   "purl": "pkg:pypi/packaging@26.3",
+   "licenses": [
+    {
+     "license": {
+      "name": "Apache-2.0 OR BSD-2-Clause"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "pandas",
+   "version": "3.1.0",
+   "purl": "pkg:pypi/pandas@3.1.0",
+   "licenses": [
+    {
+     "license": {
+      "name": "BSD-3-Clause"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "pillow",
+   "version": "13.0.0",
+   "purl": "pkg:pypi/pillow@13.0.0",
+   "licenses": [
+    {
+     "license": {
+      "name": "MIT-CMU"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "pluggy",
+   "version": "1.7.0",
+   "purl": "pkg:pypi/pluggy@1.7.0",
+   "licenses": [
+    {
+     "license": {
+      "name": "MIT"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "polars",
+   "version": "2.1.0",
+   "purl": "pkg:pypi/polars@2.1.0",
+   "licenses": [
+    {
+     "license": {
+      "name": "MIT License"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "polars-runtime-32",
+   "version": "2.1.0",
+   "purl": "pkg:pypi/polars-runtime-32@2.1.0",
+   "licenses": [
+    {
+     "license": {
+      "name": "MIT License"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "protobuf",
+   "version": "7.36.2",
+   "purl": "pkg:pypi/protobuf@7.36.2",
+   "licenses": [
+    {
+     "license": {
+      "name": "3-Clause BSD License"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "psutil",
+   "version": "7.2.2",
+   "purl": "pkg:pypi/psutil@7.2.2",
+   "licenses": [
+    {
+     "license": {
+      "name": "BSD-3-Clause"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "pyDeprecate",
+   "version": "0.11.0",
+   "purl": "pkg:pypi/pydeprecate@0.11.0",
+   "licenses": [
+    {
+     "license": {
+      "name": "Apache-2.0"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "Pygments",
+   "version": "2.21.0",
+   "purl": "pkg:pypi/pygments@2.21.0",
+   "licenses": [
+    {
+     "license": {
+      "name": "BSD-2-Clause"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "pyparsing",
+   "version": "3.3.3",
+   "purl": "pkg:pypi/pyparsing@3.3.3",
+   "licenses": [
+    {
+     "license": {
+      "name": "MIT"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "pytest",
+   "version": "9.1.1",
+   "purl": "pkg:pypi/pytest@9.1.1",
+   "licenses": [
+    {
+     "license": {
+      "name": "MIT"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "python-dateutil",
+   "version": "3.0.0",
+   "purl": "pkg:pypi/python-dateutil@3.0.0",
+   "licenses": [
+    {
+     "license": {
+      "name": "Apache-2.0 OR BSD-3-Clause"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "PyYAML",
+   "version": "6.0.3",
+   "purl": "pkg:pypi/pyyaml@6.0.3",
+   "licenses": [
+    {
+     "license": {
+      "name": "MIT"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "requests",
+   "version": "2.34.2",
+   "purl": "pkg:pypi/requests@2.34.2",
+   "licenses": [
+    {
+     "license": {
+      "name": "Apache-2.0"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "scipy",
+   "version": "1.17.1",
+   "purl": "pkg:pypi/scipy@1.17.1",
+   "licenses": [
+    {
+     "license": {
+      "name": "BSD License"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "setuptools",
+   "version": "84.2.1",
+   "purl": "pkg:pypi/setuptools@84.2.1",
+   "licenses": [
+    {
+     "license": {
+      "name": "MIT"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "six",
+   "version": "1.17.0",
+   "purl": "pkg:pypi/six@1.17.0",
+   "licenses": [
+    {
+     "license": {
+      "name": "MIT"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "supervision",
+   "version": "0.30.6",
+   "purl": "pkg:pypi/supervision@0.30.6",
+   "licenses": [
+    {
+     "license": {
+      "name": "MIT"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "sympy",
+   "version": "1.14.0",
+   "purl": "pkg:pypi/sympy@1.14.0",
+   "licenses": [
+    {
+     "license": {
+      "name": "BSD"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "torch",
+   "version": "2.14.0",
+   "purl": "pkg:pypi/torch@2.14.0",
+   "licenses": [
+    {
+     "license": {
+      "name": "Apache-2.0 AND Apache-2.0 WITH LLVM-exception AND BSD-2-Clause AND BSD-3-Clause AND BSL-1.0 AND MIT"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "torchvision",
+   "version": "0.29.0",
+   "purl": "pkg:pypi/torchvision@0.29.0",
+   "licenses": [
+    {
+     "license": {
+      "name": "BSD"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "tqdm",
+   "version": "4.70.1",
+   "purl": "pkg:pypi/tqdm@4.70.1",
+   "licenses": [
+    {
+     "license": {
+      "name": "MPL-2.0 AND MIT"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "weak-copyleft"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "triton",
+   "version": "3.8.0",
+   "purl": "pkg:pypi/triton@3.8.0",
+   "licenses": [
+    {
+     "license": {
+      "name": "MIT"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "typing_extensions",
+   "version": "4.16.0",
+   "purl": "pkg:pypi/typing_extensions@4.16.0",
+   "licenses": [
+    {
+     "license": {
+      "name": "PSF-2.0"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "tzdata",
+   "version": "2026.5",
+   "purl": "pkg:pypi/tzdata@2026.5",
+   "licenses": [
+    {
+     "license": {
+      "name": "Apache-2.0"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "ultralytics",
+   "version": "8.4.166",
+   "purl": "pkg:pypi/ultralytics@8.4.166",
+   "licenses": [
+    {
+     "license": {
+      "name": "AGPL-3.0"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "strong-copyleft"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "ultralytics-platform",
+   "version": "0.1.94",
+   "purl": "pkg:pypi/ultralytics-platform@0.1.94",
+   "licenses": [
+    {
+     "license": {
+      "name": "AGPL-3.0-only"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "strong-copyleft"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "ultralytics-thop",
+   "version": "2.2.3",
+   "purl": "pkg:pypi/ultralytics-thop@2.2.3",
+   "licenses": [
+    {
+     "license": {
+      "name": "AGPL-3.0"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "strong-copyleft"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "urllib3",
+   "version": "2.8.0",
+   "purl": "pkg:pypi/urllib3@2.8.0",
+   "licenses": [
+    {
+     "license": {
+      "name": "MIT"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  },
+  {
+   "type": "library",
+   "name": "xmltodict",
+   "version": "1.0.4",
+   "purl": "pkg:pypi/xmltodict@1.0.4",
+   "licenses": [
+    {
+     "license": {
+      "name": "MIT"
+     }
+    }
+   ],
+   "properties": [
+    {
+     "name": "bree:licence-class",
+     "value": "permissive"
+    }
+   ]
+  }
+ ]
+}

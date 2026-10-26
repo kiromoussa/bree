@@ -355,3 +355,34 @@ def test_healthy_child_is_not_killed(tmp_path):
     hb = tmp_path / "hb"
     code = "import os,time,pathlib\nfor _ in range(8):\n pathlib.Path(os.environ['BREE_HEARTBEAT_FILE']).touch(); time.sleep(0.3)"
     assert supervise.run([sys.executable, "-c", code], hb, stall_s=1.5, ready_s=1, poll_s=0.1) == 0
+
+
+# ---- update / rollback ----------------------------------------------------------------------------------------
+def _run_update(tmp_path, health: str, ref="HEAD", extra_env=None):
+    repo = tmp_path / "repo"
+    if not repo.exists():
+        (repo / "deploy").mkdir(parents=True)
+        (repo / "src").mkdir()
+        (repo / "pyproject.toml").write_text("[project]\nname='x'\n")
+        subprocess.run(["cp", str(ROOT / "deploy/update.sh"), str(repo / "deploy/update.sh")], check=True)
+        for c in (["init", "-q"], ["add", "-A"], ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "v1"]):
+            subprocess.run(["git", "-C", str(repo), *c], check=True)
+    env = {**os.environ, "BREE_HOME": str(tmp_path / "home"), "RESTART_CMD": "true", "HEALTH_CMD": health, "HEALTH_WAIT": "0",
+           "SMOKE_CMD": "true", **(extra_env or {})}
+    return subprocess.run(["sh", str(repo / "deploy/update.sh"), ref], env=env, capture_output=True, text=True)
+
+
+@pytest.mark.skipif(not __import__("shutil").which("git"), reason="needs git")
+def test_update_switches_then_rolls_back_on_failed_health(tmp_path):
+    home = tmp_path / "home"
+    r1 = _run_update(tmp_path, "true", extra_env={"PYTHON": "true", "INSTALL_CMD": "true"})   # `true -m venv` is a no-op: venv step is not under test
+    assert r1.returncode == 0, r1.stderr
+    first = os.readlink(home / "current")
+    (tmp_path / "repo/src/new.py").write_text("x=1\n")
+    for c in (["add", "-A"], ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "v2"]):
+        subprocess.run(["git", "-C", str(tmp_path / "repo"), *c], check=True)
+    time.sleep(1.1)                                                   # release dir names carry a seconds stamp
+    r2 = _run_update(tmp_path, "false", extra_env={"PYTHON": "true", "INSTALL_CMD": "true"})
+    assert r2.returncode == 1 and "rolling back" in r2.stderr
+    assert os.readlink(home / "current") == first                      # back on the first release
+    assert (home / "current/pyproject.toml").exists()

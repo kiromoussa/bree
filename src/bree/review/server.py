@@ -166,6 +166,8 @@ def serve(store: ReviewStore, host: str = "127.0.0.1", port: int = 8090, purge_e
                 body = json.dumps({"alert": alert, "left": left, "items": store.known_items()})
                 return self._send(200, body.encode(), "application/json")
             if path.startswith("/clips/") and (clip := store.clip_file(path[7:])):
+                from bree.trust.media import get_audit
+                get_audit().record(f"local:{self.client_address[0]}", "serve_clip", path[7:])
                 return self._send_clip(clip.read_bytes())
             self._send(404, b"not found")
 
@@ -191,6 +193,9 @@ def serve(store: ReviewStore, host: str = "127.0.0.1", port: int = 8090, purge_e
                                    None if view is None else float(view))
             except (ValueError, KeyError, TypeError) as e:
                 return self._send(400, str(e).encode())
+            from bree.trust.media import get_audit
+            get_audit().record(f"reviewer:{str(d.get('reviewer', ''))[:40]}", "review_decision", str(d["alert_id"]),
+                               decision=str(d["decision"]))
             self._send(200, json.dumps(rec).encode(), "application/json")
 
         def log_message(self, *a):

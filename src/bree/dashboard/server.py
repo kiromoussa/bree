@@ -165,7 +165,22 @@ def serve(state: DashboardState | None, host: str = "127.0.0.1", port: int = 808
                                   [("Content-Range", f"bytes {start}-{end}/{len(data)}"), ("Accept-Ranges", "bytes")])
             self._send(200, data, "video/mp4", [("Accept-Ranges", "bytes")])
 
+        def _local(self) -> bool:
+            """Answer only when the browser asked for this machine by its loopback name: stops DNS rebinding, where a web
+            page the operator opens makes the browser read this server under an attacker's host name."""
+            p = self.server.server_address[1]
+            if self.headers.get("Host", "") in (f"127.0.0.1:{p}", f"localhost:{p}"):
+                return True
+            self._send(403, b"this page only answers on 127.0.0.1")
+            return False
+
+        def _audit(self, action: str, target: str) -> None:
+            from bree.trust.media import get_audit
+            get_audit().record(f"local:{self.client_address[0]}", action, target)
+
         def do_GET(self):  # noqa: N802
+            if host in ("127.0.0.1", "localhost") and not self._local():
+                return
             path = urllib.parse.unquote(self.path.split("?")[0])
             if path == "/" and state is not None:
                 body, ctype = PAGE.encode(), "text/html; charset=utf-8"
@@ -179,6 +194,7 @@ def serve(state: DashboardState | None, host: str = "127.0.0.1", port: int = 808
                 body = json.dumps({"alerts": review.labelled(), "summary": review.summary()}).encode()
                 ctype = "application/json"
             elif path.startswith("/clips/") and review is not None and (clip := review.clip_file(path[7:])):
+                self._audit("serve_clip", path[7:])
                 return self._send_clip(clip.read_bytes())
             else:
                 self.send_response(404); self.end_headers(); return

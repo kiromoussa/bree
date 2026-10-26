@@ -34,6 +34,7 @@ from bree.ingest.source import VideoSource
 from bree.ledger import build_ledger
 from bree.ledger.payments import PaymentSource, MockPayments
 from bree.track.multicam import StoreEvents
+from bree.trust.supervise import Heartbeat
 
 
 @dataclass
@@ -77,6 +78,17 @@ class _Cam:
         self.writer = None
         self.recent: list[Event] = []
         self.reid = None      # ReidExtractor when the store's rules turn re-ID on (set in run_store)
+        self.guard = None     # bree.trust.privacy.Guard: face-detector layer on top of the pose heads (see _guard)
+
+
+def _guard(c: "_Cam"):
+    """Per-camera pixelation guard (heads from pose + a face detector + a short hold). BREE_FACE_GUARD=off turns the face
+    detector layer off for speed benchmarks ONLY: stored frames then carry the pose-based pixelation alone."""
+    import os
+    if c.guard is None:
+        from bree.trust.privacy import Guard
+        c.guard = Guard(profile=getattr(c.store, "privacy_profile", "standard")) if os.environ.get("BREE_FACE_GUARD") != "off" else False
+    return c.guard or None
 
 
 def _obs_to_json(obs: FrameObs, events: list[Event]) -> dict:
@@ -131,6 +143,7 @@ def run_store(cameras: list[CameraInput], backend: PerceptionBackend, out_dir: s
             c.reid = ReidExtractor(embedder)
     payments = payments or MockPayments([])
     sink = AlertSink(out, MultiEvidence([c.evidence for c in cams]) if multi else cams[0].evidence)
+    heartbeat = Heartbeat.from_env()
     summary = RunSummary(source=",".join(str(c.source) for c in cameras), backend=backend.name,
                          video_fps=cams[0].src.fps)
 
@@ -200,7 +213,7 @@ def run_store(cameras: list[CameraInput], backend: PerceptionBackend, out_dir: s
         baskets = {p.track_id: open_baskets.get(fusion.person_id(c.name, p.track_id), []) for p in persons}
         dt = f4 - f0
         fps_ema = 1 / dt if fps_ema is None else 0.9 * fps_ema + 0.1 / max(dt, 1e-6)
-        vis = draw_frame(fr.image, c.store, persons, products, c.recent, baskets, fps_ema, blur=True)
+        vis = draw_frame(fr.image, c.store, persons, products, c.recent, baskets, fps_ema, blur=True, guard=_guard(c))
         c.evidence.add_frame(fr.t, vis)
         if save_video:
             if c.writer is None:
@@ -222,6 +235,7 @@ def run_store(cameras: list[CameraInput], backend: PerceptionBackend, out_dir: s
         if log_frames:   # off for long shadow runs: one line per frame, forever
             c.frames_log.write(json.dumps(_obs_to_json(obs, events)) + "\n")
         summary.frames += 1
+        heartbeat.beat()     # BREE_HEARTBEAT_FILE: the stall watchdog (bree.trust.supervise) sees the frame loop is alive
         last_frame_wall = fr.wall
         if on_frame:
             on_frame(fr, obs, events, ledger, vis)

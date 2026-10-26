@@ -72,6 +72,9 @@ class StoreConfig:
     # `camera.calibration`, the block scripts/calibrate.py writes (full pose). Used by the multi-camera
     # handoff (floor mapping from the pose) and the 3D slot of a pick. None = floor_points only.
     calibration: dict | None = None
+    # `camera.privacy_profile`: "standard" (head from pose / top of the person box) or "overhead" (ceiling camera: the
+    # upper 55% of every person box is pixelated). See bree.trust.privacy.head_regions.
+    privacy_profile: str = "standard"
 
     def floor_homography(self) -> np.ndarray:
         from bree.track.multicam import homography
@@ -119,6 +122,7 @@ def load_store_config(path: str | Path) -> StoreConfig:
         product_classes=raw.get("product_classes", {}),
         floor_points=cam.get("floor_points"),
         calibration=cam.get("calibration"),
+        privacy_profile=cam.get("privacy_profile", "standard"),
     )
 
 

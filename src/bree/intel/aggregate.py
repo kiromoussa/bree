@@ -13,6 +13,9 @@ from datetime import datetime
 from pathlib import Path
 
 
+REGISTER_MIN_STILL_S = 2.0
+
+
 def read_records(paths) -> list[dict]:
     out: list[dict] = []
     for p in ([paths] if isinstance(paths, (str, Path)) else paths):
@@ -62,11 +65,12 @@ def hourly(records: list[dict]) -> dict[str, dict]:
         elif k == "zone":
             h["visits"][r["zone"]] += 1
             h["dwell"][r["zone"]].append(r["dwell_s"])
-            if r["kind"] == "register":
+            if r["kind"] == "register" and r["still_s"] >= REGISTER_MIN_STILL_S:   # standing at the till, not walking past it
                 h["register_visits"].append(r["dwell_s"])
         elif k == "track" and r["role"] == "customer":
-            h["customer_tracks"] += 1
-            h["outcomes"][r["outcome"]] += 1
+            if r["outcome"] != "glimpse":
+                h["customer_tracks"] += 1
+                h["outcomes"][r["outcome"]] += 1
             h["walk_s"].append(r["t1"] - r["t0"])
     out = {}
     for hour, h in sorted(H.items()):

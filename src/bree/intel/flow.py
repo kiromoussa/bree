@@ -46,7 +46,8 @@ class IntelConfig:
     weak_min_obs: int = 8         # 'born' / 'lost' door evidence needs a track seen this many samples (ghosts flicker 3-4)
     side_persist: int = 3         # samples on a side of the door line before it counts as the track's side
     browse_min_s: float = 4.0     # time in browse zones that counts as "visited shelf"
-    register_min_s: float = 3.0   # time in the register zone that counts as "went to register"
+    register_min_s: float = 3.0   # standing still this long in the register zone counts as "went to register"
+    walk_min_s: float = 3.0       # a customer track shorter than this is a glimpse, not a walk (no outcome)
     track: FlowConfig = field(default_factory=FlowConfig)
 
 
@@ -82,6 +83,7 @@ class FlowEngine:
         self.tracker = FlowTracker(self.cfg.track)
         self.tracker.cfg.ignore = list(self.tracker.cfg.ignore) + [p.tolist() for p in layout.ignore]
         self.start = start
+        self.tracker.cfg.soft = [z.polygon.tolist() for z in layout.zone_by_kind("staff")]
         self.ts: dict[int, _TS] = {}
         self._closed_n = 0
         self._next_sample = 0.0
@@ -91,6 +93,7 @@ class FlowEngine:
         self._staff_ids: set[int] = set()
         self.heat = {"customer": np.zeros((36, 64)), "staff": np.zeros((36, 64))}
         self._last_t: float | None = None
+        self.frame_log: list | None = None   # set to [] to keep (t, [(track, role, x, y)]) per frame, for evaluation
         self.mats = layout.zone_by_kind("door")
         self.registers = layout.zone_by_kind("register")
         self.staff_zones = layout.zone_by_kind("staff")
@@ -132,6 +135,8 @@ class FlowEngine:
                 self.heat[role][gy, gx] += dt if dt < 3 else 0.0
             self._door(tr, st, fx, fy, t, out)
             self._zones(tr, st, fx, fy, speed, t, out, role)
+        if self.frame_log is not None:
+            self.frame_log.append((t, [(tr.id, "staff" if tr.id in self._staff_ids else "customer", *self.ts[tr.id].last_foot.tolist()) for tr in seen]))
         # new closures
         closed = self.tracker.closed
         while self._closed_n < len(closed):
@@ -236,10 +241,13 @@ class FlowEngine:
         zk = {}
         for z in st.zone_done:
             zk[z["kind"]] = zk.get(z["kind"], 0.0) + z["dwell_s"]
+            if z["kind"] == "register":
+                zk["register_still"] = zk.get("register_still", 0.0) + z["still_s"]
         out.append({"type": "track", "track": tr.id, "role": role, "t0": round(tr.t0, 2), "t1": round(t1, 2),
                     "ts": self.wall(tr.t0), "obs": st.obs, "path_px": round(st.path_px), "entered": st.entered, "exited": st.exited,
                     "browse_s": round(zk.get("browse", 0.0), 1), "register_s": round(zk.get("register", 0.0), 1),
-                    "outcome": self._outcome(st, zk) if role == "customer" else None})
+                    "register_still_s": round(zk.get("register_still", 0.0), 1),
+                    "outcome": self._outcome(st, zk, t1 - tr.t0) if role == "customer" else None})
         return out
 
     def _ends_towards_door(self, tr: Track) -> bool:
@@ -249,13 +257,15 @@ class FlowEngine:
         d = self.L.door
         return d.signed(pts[-1][1], pts[-1][2]) < d.signed(pts[0][1], pts[0][2]) - 1
 
-    def _outcome(self, st: _TS, zk: dict) -> str:
+    def _outcome(self, st: _TS, zk: dict, life_s: float) -> str:
         """Conversion proxy for one customer walk. Proxies: the camera sees a part of the store and a person can be split into
         two tracks, so 'left_without_register' is an upper bound on walk-outs without a till visit, not a measurement."""
+        if life_s < self.cfg.walk_min_s and not (st.entered or st.exited):
+            return "glimpse"
         shelf = zk.get("browse", 0.0) >= self.cfg.browse_min_s
-        reg = zk.get("register", 0.0) >= self.cfg.register_min_s
+        reg = zk.get("register_still", 0.0) >= self.cfg.register_min_s
         if reg:
-            return "registered" if shelf or st.entered else "registered"
+            return "registered"
         if st.exited and shelf:
             return "left_without_register"
         if st.exited:
@@ -285,9 +295,12 @@ class FlowEngine:
         return out
 
 
-def run_detections(frames: list[dict], layout: Layout, cfg: IntelConfig | None = None, start: datetime | None = None):
+def run_detections(frames: list[dict], layout: Layout, cfg: IntelConfig | None = None, start: datetime | None = None,
+                   keep_frames: bool = False):
     """Run the engine over cached detections. Returns (records, engine)."""
     eng = FlowEngine(layout, cfg, start)
+    if keep_frames:
+        eng.frame_log = []
     recs: list[dict] = []
     for f in frames:
         recs += eng.step(f["t"], f["persons"])

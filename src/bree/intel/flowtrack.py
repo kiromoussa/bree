@@ -35,6 +35,8 @@ class FlowConfig:
     reclaim_px: float = 1.5       # ... when it starts within this many box heights of the lost track's projected foot
     size_ratio: float = 1.7       # a box whose height differs from the track's by more than this factor is another person
     vel_decay: float = 0.9
+    soft: list = field(default_factory=list)     # polygons where weaker boxes may start tracks (behind the counter: ghosts there never count)
+    soft_conf: float = 0.3
     ignore: list = field(default_factory=list)   # polygons (list of [x, y]) where boxes are dropped (foot point inside)
 
 
@@ -128,7 +130,8 @@ class FlowTracker:
         tr.conf_sum += d["conf"]
         tr.lost = False
         tr.path.append((t, float(f[0]), float(f[1]), d["conf"], *[float(v) for v in d["bbox"]]))
-        if not tr.confirmed and tr.hits >= self.cfg.confirm_hits and tr.conf_sum / tr.hits >= self.cfg.confirm_conf:
+        soft = any(_inside(poly, *f) for poly in self.cfg.soft)
+        if not tr.confirmed and tr.hits >= self.cfg.confirm_hits and tr.conf_sum / tr.hits >= (self.cfg.soft_conf if soft else self.cfg.confirm_conf):
             tr.confirmed = True
 
     def step(self, t: float, persons: list[dict]) -> list[Track]:
@@ -136,8 +139,12 @@ class FlowTracker:
         c = self.cfg
         dets = [p for p in persons if p["conf"] >= c.lo_conf
                 and not any(_inside(poly, *foot_of(p["bbox"])) for poly in c.ignore)]
-        hi = [i for i, p in enumerate(dets) if p["conf"] >= c.hi_conf]
-        lo = [i for i, p in enumerate(dets) if p["conf"] < c.hi_conf]
+        def is_hi(p):
+            if p["conf"] >= c.hi_conf:
+                return True
+            return p["conf"] >= c.soft_conf and any(_inside(poly, *foot_of(p["bbox"])) for poly in c.soft)
+        hi = [i for i, p in enumerate(dets) if is_hi(p)]
+        lo = [i for i, p in enumerate(dets) if not is_hi(p)]
         live = self.tracks
         seen: set[int] = set()
         # pass 1: confident boxes onto all tracks

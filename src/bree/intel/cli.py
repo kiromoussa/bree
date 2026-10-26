@@ -42,6 +42,11 @@ def cmd_report(args) -> None:
             for role in heat.files:
                 img = heatmap_overlay(bg, heat[role])
                 cv2.imwrite(str(out / f"heat_{role}.png"), draw_layout(img, L) if L else img)
+                if L is not None:
+                    from bree.intel.render import plan_view
+                    pv = plan_view(heat[role], load_layout(args.layout, (2560, 1440)))
+                    if pv is not None:
+                        cv2.imwrite(str(out / f"plan_{role}.png"), pv)
             print(f"heatmaps in {out} (background is a per-segment median; look before sharing)")
 
 

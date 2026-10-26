@@ -1,0 +1,23 @@
+# Flow layout for the Truman Rd. door camera (channel 7). Coordinates are pixels of a 1280x720 reference frame
+# (scaled to the real frame size at load time). Drawn by eye from one empty-store still: UNCALIBRATED, see docs/ultra/intel.md.
+station: trumanrd
+camera: ch07
+ref_size: [1280, 720]
+# the door threshold; `inside` is the side the store floor is on (a point inside the store)
+door_line: {a: [215, 332], b: [525, 332], inside: [380, 520], margin_px: 14}
+# wall clock: store time = file name time + offset. The DVR overlay clock reads 2 h behind the recorder's file name
+# (unverified: the store may be on Central time; settle with a POS timestamp before joining receipts).
+clock: {file_name_offset_s: -7200}
+zones:
+  - {name: entry_mats,  kind: door,     polygon: [[215, 332], [525, 332], [525, 440], [215, 440]]}
+  - {name: snack_rack,  kind: browse,   polygon: [[0, 360], [235, 360], [235, 720], [0, 720]]}
+  - {name: cooler_corner, kind: browse, polygon: [[100, 300], [235, 300], [235, 380], [100, 380]]}
+  - {name: perfume_stand, kind: browse, polygon: [[235, 440], [680, 440], [680, 720], [235, 720]]}
+  - {name: register,    kind: register, polygon: [[640, 430], [800, 360], [1030, 720], [680, 720]]}
+  - {name: behind_counter, kind: staff, polygon: [[760, 240], [1280, 240], [1280, 720], [1040, 720], [820, 340]]}
+ignore: []
+# schematic floor plan (plan units 0-100, NOT metres): four floor points in the image and where they sit on the plan
+plan:
+  size: [100, 100]
+  image_pts: [[215, 332], [525, 332], [700, 720], [0, 720]]
+  plan_pts: [[18, 5], [42, 5], [80, 95], [0, 95]]

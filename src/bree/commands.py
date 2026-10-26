@@ -166,6 +166,8 @@ def cmd_export(args) -> None:
 
 def register(sub) -> None:
     from bree.cli import RUNTIME_HELP, RUNTIMES
+    from bree.intel.cli import register as register_intel
+    register_intel(sub)
     db = sub.add_parser("dashboard", help="local web dashboard: live alerts + baskets")
     db.add_argument("--source", default=None, help="video/webcam/rtsp; default: a toy clip")
     db.add_argument("--backend", choices=["yolo", "toy", "sim_sku"], default="yolo")

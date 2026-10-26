@@ -98,6 +98,8 @@ class PlanCamera:
     floor_px: list | None = None
     max_range_m: float = 14.0
     notes: str = ""
+    place_mode: str = "feet"          # "feet": bottom of the box on the floor; "centre": box centre at hip height (looks straight down)
+    clock_offset_s: float = 0.0       # add to this camera's recorder time to get store time (measured by bree.fusion.registry)
 
 
 @dataclass
@@ -111,13 +113,15 @@ class Plan:
     def to_dict(self) -> dict:
         return {"station": self.station, "units": "m", "provenance": self.provenance, "regions": self.regions,
                 "cameras": {c.id: {"role": c.role, "heading": c.heading, "camera": c.camera.to_dict(), "floor_px": c.floor_px,
-                                   "max_range_m": c.max_range_m, "notes": c.notes} for c in self.cameras.values()},
+                                   "max_range_m": c.max_range_m, "notes": c.notes, "place_mode": c.place_mode,
+                                   "clock_offset_s": c.clock_offset_s} for c in self.cameras.values()},
                 "links": self.links}
 
     @staticmethod
     def from_dict(d: dict) -> "Plan":
         cams = {k: PlanCamera(k, Camera.from_dict(v["camera"]), v.get("role", ""), v.get("heading", ""), v.get("floor_px"),
-                              v.get("max_range_m", 14.0), v.get("notes", "")) for k, v in d.get("cameras", {}).items()}
+                              v.get("max_range_m", 14.0), v.get("notes", ""), v.get("place_mode", "feet"),
+                              v.get("clock_offset_s", 0.0)) for k, v in d.get("cameras", {}).items()}
         return Plan(d["station"], cams, d.get("regions", {}), d.get("links", []), d.get("provenance", ""))
 
     def save(self, path) -> None:

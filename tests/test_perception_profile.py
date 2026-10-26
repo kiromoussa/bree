@@ -157,3 +157,40 @@ def test_fixture_mask_and_finder():
     p = PerceptionProfile(fixtures=[IgnoreRegion("t", __import__("bree.perception.ghost", fromlist=["x"]).ghost_polygon(fx[0], 0.2))])
     boxes = np.array([[1000, 700, 1060, 760.0], [200, 200, 260, 260.0]])
     assert fixture_mask(p, boxes, (1440, 2560)).tolist() == [False, True]
+
+
+def _run_adaptive(m, frames, conf, box=(2200, 200, 2300, 400), shape=(1440, 2560)):
+    kept = []
+    for _ in range(frames):
+        k = m.update(np.array([box], float), np.array([conf]), shape)
+        kept.append(bool(k[0]))
+    return kept
+
+
+def test_adaptive_ghost_flags_static_low_conf_after_min_seconds():
+    from bree.perception.adaptive import AdaptiveGhostMask
+    m = AdaptiveGhostMask(fps=10, min_s=8)
+    kept = _run_adaptive(m, 200, 0.4)
+    assert all(kept[:70])               # not yet known to be a ghost
+    assert not any(kept[100:])          # flagged after ~8 s
+    # a confident detection in the same place releases the region
+    assert _run_adaptive(m, 1, 0.8)[0]
+    assert _run_adaptive(m, 5, 0.4)[0]
+
+
+def test_adaptive_ghost_ignores_confident_and_moving_boxes():
+    from bree.perception.adaptive import AdaptiveGhostMask
+    m = AdaptiveGhostMask(fps=10, min_s=8)
+    assert all(_run_adaptive(m, 200, 0.9))          # a clerk who stands still and is clearly seen
+    m2 = AdaptiveGhostMask(fps=10, min_s=8)
+    kept = []
+    for i in range(200):                            # a walker: centre moves 0.01 of the frame per frame
+        k = m2.update(np.array([[20 + i * 25, 200, 120 + i * 25, 400]], float), np.array([0.4]), (1440, 2560))
+        kept.append(bool(k[0]))
+    assert all(kept)
+
+
+def test_profile_roundtrip_keeps_adaptive_ghost(tmp_path):
+    p = PerceptionProfile(camera="c", adaptive_ghost_s=8.0)
+    save_profile(p, tmp_path / "p.yaml")
+    assert load_profile(tmp_path / "p.yaml").adaptive_ghost_s == 8.0

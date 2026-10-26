@@ -26,6 +26,8 @@ class ProfiledBackend(YoloBackend):
                          product_conf=profile.product_conf, products=products, runtime=runtime,
                          dedupe_inside=profile.dedupe_inside)
         self.use_pose = profile.pose
+        self.adaptive = None
+        self._fps = 30.0
 
     def __call__(self, image: np.ndarray) -> tuple[Detections, Detections]:
         p = self.profile
@@ -39,6 +41,12 @@ class ProfiledBackend(YoloBackend):
         ok = np.zeros(len(boxes), bool)
         ok[is_person] = keep_mask(p, boxes[is_person], confs[is_person], image.shape[:2])
         is_person = ok
+        if p.adaptive_ghost_s > 0:
+            if self.adaptive is None:
+                from bree.perception.adaptive import AdaptiveGhostMask
+                self.adaptive = AdaptiveGhostMask(self._fps, min_s=p.adaptive_ghost_s)
+            idx = np.where(is_person)[0]
+            is_person[idx[~self.adaptive.update(boxes[idx], confs[idx], image.shape[:2])]] = False
         if self.dedupe_inside:
             is_person &= ~contained(boxes, is_person, self.dedupe_inside)
         is_product &= fixture_mask(p, boxes, image.shape[:2])       # a card terminal in view all day is not a pick
@@ -49,5 +57,6 @@ class ProfiledBackend(YoloBackend):
         return persons, products
 
     def make_tracker(self, fps: float):
+        self._fps = fps
         from bree.perception.gate import GatedTracker
         return GatedTracker(fps, self.profile)

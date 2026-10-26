@@ -7,7 +7,7 @@ A profile is a YAML file (configs/perception/<station>_chNN.yaml, written by bre
     detector: {weights: yolo26s.pt, imgsz: 960, person_conf: 0.3}
     slices: {cols: 2, rows: 2, overlap: 0.2, full_frame: true}
     ignore: [{name: lottery_display, polygon: [[0.84, 0.1], [0.92, 0.1], [0.92, 0.25], [0.84, 0.25]]}]
-    filters: {min_box_h_frac: 0.03, edge_margin_frac: 0.0, edge_conf: 0.0}
+    filters: {min_box_h_frac: 0.03, edge_margin_frac: 0.0, edge_conf: 0.0, adaptive_ghost_s: 0.0}
     pose: {enabled: true}
     tracker: {buffer_s: 2.0, new_track_thresh: 0.5}
     events: {min_track_age_s: 1.0, count_enter_exit: false}
@@ -52,6 +52,7 @@ class PerceptionProfile:
     min_box_h_frac: float = 0.0          # drop person boxes shorter than this fraction of the frame height
     edge_margin_frac: float = 0.0        # boxes whose centre is this close to a frame edge need edge_conf
     edge_conf: float = 0.0
+    adaptive_ghost_s: float = 0.0        # >0: learn static low-confidence ghosts online after this many seconds (bree.perception.adaptive)
     pose: bool = True
     pose_crop: int = 160
     track_buffer_s: float = 2.0
@@ -127,7 +128,7 @@ def _from_dict(d: dict) -> PerceptionProfile:
         ignore=[IgnoreRegion(**r) for r in d.get("ignore", []) or []],
         fixtures=[IgnoreRegion(**r) for r in d.get("fixtures", []) or []],
         min_box_h_frac=flt.get("min_box_h_frac", 0.0), edge_margin_frac=flt.get("edge_margin_frac", 0.0),
-        edge_conf=flt.get("edge_conf", 0.0), pose=pose.get("enabled", True), pose_crop=pose.get("crop", 160),
+        edge_conf=flt.get("edge_conf", 0.0), adaptive_ghost_s=flt.get("adaptive_ghost_s", 0.0), pose=pose.get("enabled", True), pose_crop=pose.get("crop", 160),
         track_buffer_s=trk.get("buffer_s", 2.0), new_track_thresh=trk.get("new_track_thresh"),
         track_high_thresh=trk.get("track_high_thresh"), min_track_age_s=ev.get("min_track_age_s", 0.0),
         count_enter_exit=ev.get("count_enter_exit", True),
@@ -145,7 +146,8 @@ def to_dict(p: PerceptionProfile) -> dict:
         "slices": asdict(p.slices),
         "ignore": [asdict(r) for r in p.ignore],
         "fixtures": [asdict(r) for r in p.fixtures],
-        "filters": {"min_box_h_frac": p.min_box_h_frac, "edge_margin_frac": p.edge_margin_frac, "edge_conf": p.edge_conf},
+        "filters": {"min_box_h_frac": p.min_box_h_frac, "edge_margin_frac": p.edge_margin_frac, "edge_conf": p.edge_conf,
+                    "adaptive_ghost_s": p.adaptive_ghost_s},
         "pose": {"enabled": p.pose, "weights": p.pose_weights, "crop": p.pose_crop},
         "tracker": {"buffer_s": p.track_buffer_s, "new_track_thresh": p.new_track_thresh,
                     "track_high_thresh": p.track_high_thresh},

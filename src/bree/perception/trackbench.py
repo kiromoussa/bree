@@ -63,6 +63,10 @@ def replay(det_file: Path, profile: PerceptionProfile, channel: int, segment: st
     d = json.loads(det_file.read_text())
     eff_fps = d["fps"] / d["stride"]
     trk = GatedTracker(eff_fps, profile)
+    adapt = None
+    if profile.adaptive_ghost_s > 0:
+        from bree.perception.adaptive import AdaptiveGhostMask
+        adapt = AdaptiveGhostMask(eff_fps, min_s=profile.adaptive_ghost_s)
     raw = {}                                      # id -> frame indices (before the gate): needs the inner tracker
     life: dict[int, list[int]] = {}
     alive: list[tuple[float, list[tuple]]] = []   # (t, confirmed person boxes)
@@ -71,6 +75,8 @@ def replay(det_file: Path, profile: PerceptionProfile, channel: int, segment: st
         c = np.array(fr["confs"], float)
         shape = tuple(fr["shape"])
         k = keep_mask(profile, b, c, shape)
+        if adapt is not None:
+            k[np.where(k)[0][~adapt.update(b[k], c[k], shape)]] = False
         det = Detections(b[k].astype(np.float32), c[k].astype(np.float32), ["person"] * int(k.sum()), None)
         from bree.track.bytetrack import Tracker
         inner = Tracker.update(trk, det, Detections.empty(), shape)[0]       # tracker output before the gate

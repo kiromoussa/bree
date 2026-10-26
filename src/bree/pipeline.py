@@ -121,7 +121,8 @@ def run_store(cameras: list[CameraInput], backend: PerceptionBackend, out_dir: s
         raise ValueError(f"cameras {loose} read hub bursts on the hub's clock: give every BurstSource the same t0")
     fusion = StoreEvents({c.name: c.store for c in cameras}, handoff)
     ledger = build_ledger(merge_stores([c.store for c in cameras]), **(ledger_overrides or {}))
-    cams = [_Cam(c, out, f"_{c.name}" if multi else "", max_frames, Tracker) for c in cameras]
+    tracker_cls = getattr(backend, "make_tracker", None) or Tracker    # a profiled backend brings its own tracker
+    cams = [_Cam(c, out, f"_{c.name}" if multi else "", max_frames, tracker_cls) for c in cameras]
     by_name = {c.name: c for c in cams}
     if any(e.r.reid for e in fusion.engines.values()):
         # Body re-ID (never the face). Features stay in memory: nothing below writes them anywhere.

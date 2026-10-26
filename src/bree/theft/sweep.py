@@ -48,6 +48,9 @@ class SweepConfig:
     max_body_move: float = 0.6       # the person's feet may move at most this many body heights in the window: someone
     #                                  walking past a fixture with a swinging arm is not grabbing from it
     max_jump_bh: float = 0.6         # a wrist that moves more than this between two samples is a keypoint glitch: ignored
+    repeat_at_register: bool = False  # repeated reach-ins by someone standing in a register zone are a customer paying and
+    #                                  pointing at the counter display (first real-footage false item, REAL-UNLABELLED): off by
+    #                                  default. A fast straight sweep still fires there.
 
 
 @dataclass
@@ -77,10 +80,11 @@ class SweepDetector:
     def __init__(self, store: StoreConfig, cfg: SweepConfig | None = None):
         self.cfg = cfg or SweepConfig()
         self.zones = store.zones_of("shelf", "cooler")
+        self.registers = store.zones_of("register")
         self.hands: dict[tuple[int, str], _Hand] = {}
         self.body: dict[int, deque] = {}                 # track id -> (t, x, y) of the box foot point
         self.cool: dict[tuple[int, str], float] = {}
-        self.stats = {"person_frames": 0, "with_hand": 0, "events": 0}
+        self.stats = {"person_frames": 0, "with_hand": 0, "events": 0, "repeat_skipped_at_register": 0}
 
     def _zone_of(self, x: float, y: float):
         best, bd = None, self.cfg.zone_pad_px
@@ -123,13 +127,15 @@ class SweepDetector:
                         hd.armed[z.name] = False
                         hd.entries.setdefault(z.name, deque()).append(obs.t)
                     hd.last_in[z.name] = obs.t
-                    ev = self._check(p, name, hd, z.name, h, obs.t, len(inside_now[z.name]))
+                    at_reg = any(r.contains(*p.foot_point()) for r in self.registers)
+                    ev = self._check(p, name, hd, z.name, h, obs.t, len(inside_now[z.name]), at_reg)
                     if ev:
                         out.append(ev)
         self.stats["events"] += len(out)
         return out
 
-    def _check(self, p: PersonObs, hand: str, hd: _Hand, zone: str, body_h: float, t: float, hands_in: int):
+    def _check(self, p: PersonObs, hand: str, hd: _Hand, zone: str, body_h: float, t: float, hands_in: int,
+               at_register: bool = False):
         c = self.cfg
         key = (p.track_id, zone)
         if t - self.cool.get(key, -1e9) < c.cooldown_s:
@@ -150,6 +156,9 @@ class SweepDetector:
                 sweep = {"path_bh": round(path, 2), "speed_bh_s": round(path / span, 2), "straight": round(net / path, 2)}
         ent = [e for e in hd.entries.get(zone, ()) if t - e <= c.repeat_window_s]
         repeat = {"reach_ins": len(ent), "within_s": round(t - ent[0], 1)} if len(ent) >= c.repeat_n else None
+        if repeat and at_register and not c.repeat_at_register:
+            repeat = None
+            self.stats["repeat_skipped_at_register"] += 1
         if not sweep and not repeat:
             return None
         kind = "both" if sweep and repeat or (sweep and hands_in > 1) else "sweep" if sweep else "repeat"

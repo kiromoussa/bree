@@ -61,3 +61,14 @@ def test_hand_jittering_on_the_zone_edge_is_one_reach_not_many():
     det = SweepDetector(STORE)
     path = [(800, 610 if k % 2 else 590) for k in range(120)]      # resting on the lower edge of the shelf, +-10 px
     assert feed(det, path) == []
+
+
+def test_repeat_reach_ins_while_standing_at_the_register_are_a_transaction():
+    reg = Zone("reg", "register", np.array([[0, 0], [2560, 0], [2560, 1440], [0, 1440]], float))
+    store = StoreConfig("t", "c", (2560, 1440), 10, [SHELF, reg], {}, Catalog({}))
+    path = []
+    for _ in range(7):
+        path += [(800, 800)] * 4 + [(800, 650)] + [(800, 450)] * 2 + [(800, 650)]
+    det = SweepDetector(store)
+    assert feed(det, path) == [] and det.stats["repeat_skipped_at_register"] > 0
+    assert len(feed(SweepDetector(store, SweepConfig(repeat_at_register=True)), path)) == 1

@@ -125,8 +125,9 @@ tiny chart text on phones, 5-minute cameras shown as stale, unplayable clips, re
 ## Known gaps
 
 - No live pipeline hook: ingestion is per finished run (`ingest`). A tail/watch mode for `frames.jsonl` is not built.
-- No shelf/cooler signals exist from real footage yet (shelf track output not available when this was written); the
-  shelf screens are exercised only by the simulator.
+- Shelf/cooler: `bree.product.shelfadapt` / `ingest-shelf` convert the shelf track's `events.jsonl` (kind to state table in
+  the module). The only real shelf run available (ch10 dev) had 0 events, so the shelf screens are still only exercised by
+  the simulator and a synthetic adapter test (19 tests now). The `wall` field is read in the machine zone, then the station clock offset is added.
 - No queue or staff-aware numbers for the real store (needs zones the operator has not confirmed).
 - No POS feed, so no sales tiles, no revenue-per-hour, no conversion rate.
 - The webhook sink is a stub by design. No auth beyond a shared token; no per-user accounts.

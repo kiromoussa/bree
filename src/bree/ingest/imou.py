@@ -327,7 +327,16 @@ class ImouSource:
         if clock is None:
             clock = StationClock(float(p["clock_offset"]), "config") if "clock_offset" in p else StationClock()
         self.clock = clock
-        self.health = health or HealthSink(None, p.get("station", ""), self.target.serial, self.target.channel)
+        if health is None:
+            path = None
+            if p.get("station"):      # imou://...?station=<id>: heartbeat where `bree fleet status` looks for it
+                from bree.fleet.registry import Fleet
+                try:
+                    path = Fleet().health_path(p["station"], self.target.channel)
+                except ValueError as e:
+                    raise ImouConfigError(str(e)) from None
+            health = HealthSink(path, p.get("station", ""), self.target.serial, self.target.channel)
+        self.health = health
         self.max_frames, self.min_run_s, self.max_stub_retries = max_frames, min_run_s, max_stub_retries
         self.max_wait_s, self.backoff_cap_s, self.read_timeout_s, self._sleep = max_wait_s, backoff_cap_s, read_timeout_s, sleep
         self.reconnect = True

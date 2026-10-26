@@ -117,6 +117,21 @@ def cmd_fleet(args) -> None:
     sys.exit(1 if bad else 0)
 
 
+def cmd_imou_mock(args) -> None:
+    import time
+    from bree.ingest.imou_mock import APP_ID, APP_SECRET, MockImou
+    with MockImou(channels={int(c): "ok" for c in args.channels.split(",")}, video=args.video) as m:
+        print(f"mock Imou platform up (local, no network, no real device). In another shell:\n"
+              f"  export IMOU_APP_ID={APP_ID} IMOU_APP_SECRET={APP_SECRET} IMOU_BASE_URL={m.base_url}\n"
+              f"  bree run --source imou://{m.serial}/{args.channels.split(',')[0]} --backend toy --no-video --max-frames 50\n"
+              "Ctrl-C to stop.")
+        try:
+            while True:
+                time.sleep(3600)
+        except KeyboardInterrupt:
+            pass
+
+
 def cmd_record(args) -> None:
     from bree.ingest.record import main as record_main
     record_main(args)
@@ -152,6 +167,11 @@ def register(sub) -> None:
     f.add_argument("--data", default=str(DEFAULT_DATA), help="footage root for the privacy check")
     f.add_argument("--live", action="store_true", help="also ask the platform whether the DVR is online (deviceOnline, no stream)")
     f.set_defaults(func=cmd_fleet)
+
+    m = sub.add_parser("imou-mock", help="run a fake Imou platform locally (tests and offline demos of onboard/run/record)")
+    m.add_argument("--channels", default="0,1")
+    m.add_argument("--video", default=None, help="mp4 to serve on every channel (default: a generated test pattern)")
+    m.set_defaults(func=cmd_imou_mock)
 
     r = sub.add_parser("record", help="record rolling segments from a station's DVR (read-only Imou APIs, stops on a stub stream)")
     r.add_argument("--station", required=True)

@@ -22,7 +22,7 @@ from pathlib import Path
 
 import yaml
 
-DEFAULT_ROOT = Path(os.environ.get("BREE_FLEET", Path.home() / ".local/share/bree/fleet"))
+DEFAULT_ROOT = Path.home() / ".local/share/bree/fleet"      # or $BREE_FLEET, read when a Fleet is made
 STALE_AFTER_S = 30.0          # no frame for this long: stale
 DOWN_AFTER_S = 300.0          # no frame for this long: down
 MIN_FREE_GB = 5.0
@@ -59,14 +59,13 @@ class Station:
     def source_url(self, ch: int) -> str:
         c = self.camera(ch)
         q = f"stream={c.stream if c else 'sub'}&station={self.id}"
-        if self.clock_offset_s is not None:
-            q += f"&clock_offset={self.clock_offset_s:.0f}"
+        q += f"&clock_offset={self.clock_offset_s:.0f}" if self.clock_offset_s is not None else "&calibrate_clock=1"
         return f"imou://{self.serial}/{ch}?{q}"
 
 
 class Fleet:
     def __init__(self, root: str | Path | None = None):
-        self.root = Path(root) if root else DEFAULT_ROOT
+        self.root = Path(root) if root else Path(os.environ.get("BREE_FLEET") or DEFAULT_ROOT)
 
     def dir(self, station_id: str) -> Path:
         if not STATION_ID_RE.fullmatch(station_id):

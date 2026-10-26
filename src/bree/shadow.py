@@ -211,6 +211,7 @@ def _run_cameras(name: str, cams: list[Camera], cfg: ShadowConfig, log: ShadowLo
     backend = make_backend(cfg.backend, store, runtime=cfg.runtime)
     inputs = [CameraInput(c.name, c.rtsp_url, s) for c, s in zip(cams, stores)]
     raw_cfg = cfg.record_raw
+    retry_wait = 10
     while not stop.is_set():
         session = time.strftime("%Y%m%dT%H%M%S")
         payments = None
@@ -232,12 +233,19 @@ def _run_cameras(name: str, cams: list[Camera], cfg: ShadowConfig, log: ShadowLo
             print(f"[{name}] stream ended after {s.frames} frames, {len(s.alerts)} would-be alert(s)")
         except IOError:
             print(f"[{name}] cannot open the stream")   # not the URL: it may hold credentials
+        except Exception as e:
+            from bree.ingest.imou import ImouError, StreamStaleError
+            if not isinstance(e, ImouError):
+                raise
+            print(f"[{name}] imou source: {e}")          # ImouError text never holds addresses or secrets
+            retry_wait = 1800 if isinstance(e, StreamStaleError) else 60   # a stub stream is a metered-account problem: do not poll it
         finally:
             for r in recorders.values():
                 r.close()
         if once:
             break
-        stop.wait(10)   # camera dropped: reconnect with a new session
+        stop.wait(retry_wait)   # camera dropped: reconnect with a new session
+        retry_wait = 10
 
 
 def run_shadow(cfg: ShadowConfig, once: bool = False) -> ShadowLog:

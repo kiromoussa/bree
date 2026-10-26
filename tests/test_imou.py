@@ -166,3 +166,44 @@ def test_open_source_dispatches_imou_urls(mock, monkeypatch):
     monkeypatch.setattr(imou, "load_credentials", lambda *a, **k: ImouCredentials(APP_ID, APP_SECRET, "or", mock.base_url))
     s = open_source(f"imou://{mock.serial}/1?stream=main", max_frames=3)
     assert isinstance(s, ImouSource) and len(list(s)) == 3
+
+
+def test_pipeline_runs_on_an_imou_source_end_to_end(mock, monkeypatch, tmp_path):
+    """bree run --source imou://... : the pipeline treats the DVR channel like any camera (toy detector, no GPU)."""
+    from bree.detect.toy import ToyBackend
+    from bree.events.zones import load_store_config
+    from bree.pipeline import run_pipeline
+    from pathlib import Path
+    monkeypatch.setattr(imou, "load_credentials", lambda *a, **k: ImouCredentials(APP_ID, APP_SECRET, "or", mock.base_url))
+    store = load_store_config(Path(__file__).resolve().parents[1] / "configs" / "store_gas_station_small.yaml")
+    s = run_pipeline(f"imou://{mock.serial}/0?station=t", store, ToyBackend(), tmp_path / "o", save_video=False, max_frames=20, verbose=False)
+    assert s.frames == 20 and s.source.startswith("imou://")
+    assert (tmp_path / "o").exists()
+
+
+def test_shadow_survives_an_imou_error_and_does_not_crash(mock, monkeypatch, tmp_path, capsys):
+    from pathlib import Path
+    from bree.shadow import Camera, ShadowConfig, run_shadow
+    monkeypatch.setattr(imou, "load_credentials", lambda *a, **k: ImouCredentials(APP_ID, APP_SECRET, "or", mock.base_url))
+    mock.device_online = True
+    store = str(Path(__file__).resolve().parents[1] / "configs" / "store_gas_station_small.yaml")
+    cfg = ShadowConfig([Camera("cam5", f"imou://{mock.serial}/5", store)], str(tmp_path / "sh"), backend="toy", review_port=0)
+    run_shadow(cfg, once=True)                       # channel 5 is offline in the mock
+    out = capsys.readouterr().out
+    assert "imou source" in out and "offline" in out and "http" not in out
+
+
+def test_station_param_writes_the_heartbeat_the_fleet_reads(mock, monkeypatch, tmp_path):
+    from bree.fleet.registry import CameraEntry, Fleet, Station
+    monkeypatch.setenv("BREE_FLEET", str(tmp_path))
+    monkeypatch.setattr(imou, "load_credentials", lambda *a, **k: ImouCredentials(APP_ID, APP_SECRET, "or", mock.base_url))
+    fleet = Fleet()
+    st = Station("st9", mock.serial, cameras=[CameraEntry(0, "aisle")])
+    fleet.save(st)
+    src = ImouSource(f"imou://{mock.serial}/0?station=st9", max_frames=5)
+    assert len(list(src)) == 5
+    h = fleet.station_health(st)
+    assert h["overall"] == "ok" or h["cameras"][0]["state"] == "stopped"
+    assert fleet.read_heartbeat("st9", 0)["frames"] == 5
+    with pytest.raises(ImouConfigError):
+        ImouSource(f"imou://{mock.serial}/0?station=../x")

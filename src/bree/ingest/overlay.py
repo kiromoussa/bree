@@ -39,8 +39,11 @@ def have_tesseract() -> bool:
 
 def _ocr(binary: np.ndarray, tmp: Path) -> str:
     cv2.imwrite(str(tmp), binary)
-    r = subprocess.run(["tesseract", str(tmp), "-", "--psm", "7", "-c", "tessedit_char_whitelist=0123456789-: "],
-                       capture_output=True, text=True, timeout=20, env={**os.environ, "OMP_THREAD_LIMIT": "1"})
+    try:
+        r = subprocess.run(["tesseract", str(tmp), "-", "--psm", "7", "-c", "tessedit_char_whitelist=0123456789-: "],
+                           capture_output=True, text=True, timeout=60, env={**os.environ, "OMP_THREAD_LIMIT": "1"})
+    except subprocess.TimeoutExpired:       # a loaded machine: count it as an unreadable frame, not a crash
+        return ""
     return r.stdout.strip()
 
 

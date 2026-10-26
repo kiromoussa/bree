@@ -1,6 +1,6 @@
 # Security review: the Imou Open Platform integration
 
-Scope: how BREE reaches the Truman Rd. DVR (serial AH040CBPAZ893C5) through the Imou Open Platform, using
+Scope: how BREE reaches the Truman Rd. DVR (serial <DEVICE_SERIAL>) through the Imou Open Platform, using
 `scripts/imou_record.py` (copy of the recorder, read-only methods only: `accessToken`, `deviceOnline`, `bindDeviceLive`,
 `getLiveStreamInfo`). Evidence: code reading, plus one read-only structure check on 2026-10-25 (`accessToken` and one
 `getLiveStreamInfo`, output reduced to scheme, host suffix, parameter names and a TLS handshake; no stream was pulled and no

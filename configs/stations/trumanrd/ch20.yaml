@@ -1,0 +1,24 @@
+# DRAFT zones drawn by eye from one still, not validated (scripts/theft_stations.py)
+store: {name: 'Truman Rd. store, ch20'}
+camera:
+  id: ch20
+  resolution: [2560, 1440]
+  fps: 30
+zones:
+- name: pump_area
+  kind: shelf
+  polygon:
+  - [1000, 200]
+  - [1800, 200]
+  - [2000, 600]
+  - [800, 600]
+terminals: {pos_1: pump_area}
+catalog:
+  UNKNOWN: {category: unknown, price: 0.0}
+product_classes: {bottle: soda_bottle, cup: soda_bottle, cell phone: phone_accessory}
+rules: {foot_point: bottom}
+ledger: {payment_mode: dwell, max_tier: review}
+theft:
+  role: outdoor
+  staff_zones: []
+  ignore_zones: []

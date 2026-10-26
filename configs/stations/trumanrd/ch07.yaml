@@ -1,0 +1,67 @@
+# DRAFT zones drawn by eye from one still, not validated (scripts/theft_stations.py)
+store: {name: 'Truman Rd. store, ch07'}
+camera:
+  id: ch07
+  resolution: [2560, 1440]
+  fps: 30
+zones:
+- name: front_doors
+  kind: exit
+  polygon:
+  - [450, 660]
+  - [1040, 660]
+  - [1040, 890]
+  - [450, 890]
+- name: register
+  kind: register
+  polygon:
+  - [1300, 800]
+  - [2000, 800]
+  - [2000, 1440]
+  - [1280, 1440]
+- name: drink_fridge
+  kind: cooler
+  polygon:
+  - [280, 300]
+  - [480, 300]
+  - [480, 760]
+  - [280, 760]
+- name: snack_rack_left
+  kind: shelf
+  polygon:
+  - [0, 660]
+  - [460, 660]
+  - [460, 1440]
+  - [0, 1440]
+- name: perfume_case
+  kind: shelf
+  polygon:
+  - [770, 790]
+  - [1300, 790]
+  - [1300, 1440]
+  - [770, 1440]
+- name: counter_display
+  kind: shelf
+  polygon:
+  - [1400, 500]
+  - [1800, 500]
+  - [1920, 840]
+  - [1520, 800]
+terminals: {pos_1: register}
+catalog:
+  UNKNOWN: {category: unknown, price: 0.0}
+product_classes: {bottle: soda_bottle, cup: soda_bottle, cell phone: phone_accessory}
+rules: {foot_point: bottom}
+ledger: {payment_mode: dwell, max_tier: review}
+theft:
+  role: door
+  staff_zones:
+  - name: behind_counter
+    polygon:
+    - [1580, 200]
+    - [2560, 200]
+    - [2560, 1440]
+    - [2000, 1440]
+    - [1860, 1120]
+    - [1700, 760]
+  ignore_zones: []

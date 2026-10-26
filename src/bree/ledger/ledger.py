@@ -79,6 +79,9 @@ class LedgerConfig:
 
     alert_threshold: float = 0.7
     review_threshold: float = 0.4
+    # Highest tier this ledger may emit. "review" = nothing is ever raised to staff, every flag goes to a human reviewer
+    # (POS-less mode, bree.theft.tiers: without receipts "never paid" is a guess).
+    max_tier: str = "alert"
 
     exit_grace_s: float = 5.0        # wait for late POS messages after exit
     max_hold_s: float = 120.0        # longest we hold a decision for a group mate / crowd candidate
@@ -794,6 +797,9 @@ class Ledger:
             for q in party:
                 q.log.append(f"{self.now:7.1f}s alert downgraded to review: identity uncertain "
                              f"({'; '.join(r.identity_uncertain[0] for r in unsure)})")
+        if tier == "alert" and self.cfg.max_tier == "review":
+            tier = "review"
+            reasons.append("capped at review: this ledger never raises an alert (no POS feed)")
         # in a group: the person holding the strongest unpaid item
         return conf, tier, eligible, items, reasons, best_owner
 

@@ -1,0 +1,48 @@
+# DRAFT zones drawn by eye from one still, not validated (scripts/theft_stations.py)
+store: {name: 'Truman Rd. store, ch15'}
+camera:
+  id: ch15
+  resolution: [2560, 1440]
+  fps: 30
+zones:
+- name: cooler_doors
+  kind: cooler
+  polygon:
+  - [40, 840]
+  - [260, 600]
+  - [860, 340]
+  - [1400, 80]
+  - [1430, 460]
+  - [1200, 860]
+  - [940, 1440]
+  - [680, 1440]
+- name: snack_stand
+  kind: shelf
+  polygon:
+  - [1420, 700]
+  - [2000, 700]
+  - [1920, 1340]
+  - [1440, 1300]
+- name: shelves_right
+  kind: shelf
+  polygon:
+  - [1920, 400]
+  - [2560, 460]
+  - [2560, 1240]
+  - [1920, 1220]
+terminals: {pos_1: cooler_doors}
+catalog:
+  UNKNOWN: {category: unknown, price: 0.0}
+product_classes: {bottle: soda_bottle, cup: soda_bottle, cell phone: phone_accessory}
+rules: {foot_point: bottom}
+ledger: {payment_mode: dwell, max_tier: review}
+theft:
+  role: cooler
+  staff_zones: []
+  ignore_zones:
+  - name: lottery_led_display
+    polygon:
+    - [2180, 160]
+    - [2340, 160]
+    - [2340, 340]
+    - [2180, 340]

@@ -151,3 +151,38 @@ def test_score_splits():
     labels = {"segments": {"s1": {"split": "dev", "events": [{"t": 5.5, "dir": "in"}, {"t": 50.0, "dir": "out"}]}}}
     r = ev.score(recs, labels)
     assert r["dev"]["true_pos"] == 1 and r["dev"]["missed"] == 1 and r["dev"]["recall"] == 0.5
+
+
+def _samples(qs, staff=1, dt=5.0):
+    return [{"type": "sample", "t": i * dt, "ts": None, "in_view": q + staff, "customers": q, "staff": staff, "queue": q, "occupancy": None}
+            for i, q in enumerate(qs)]
+
+
+def test_rule_anomalies():
+    from bree.intel.anomaly import rule_anomalies
+    recs = _samples([0, 3, 3, 3, 3, 3, 3, 3, 0])                      # 3+ in the queue for 30 s
+    kinds = [a["kind"] for a in rule_anomalies(recs)]
+    assert "long_queue" in kinds and "unattended_counter" not in kinds
+    recs = _samples([1] * 20, staff=0)                                # 95 s of a customer with nobody behind the counter
+    from bree.intel.anomaly import RuleConfig
+    assert "unattended_counter" not in [a["kind"] for a in rule_anomalies(recs)]          # off by default
+    assert "unattended_counter" in [a["kind"] for a in rule_anomalies(recs, RuleConfig(unattended_s=60.0))]
+    recs = [{"type": "door", "dir": "in", "t": float(i), "via": "line"} for i in range(8)]
+    assert "door_imbalance" in [a["kind"] for a in rule_anomalies(recs)]
+    recs = [{"type": "zone", "kind": "browse", "zone": "snack_rack", "still_s": 400.0, "t_in": 5.0, "ts": None}]
+    assert "loitering" in [a["kind"] for a in rule_anomalies(recs)]
+
+
+def test_baseline_needs_history_and_flags_outliers():
+    from bree.intel.anomaly import Baseline
+
+    def hour(day, v):
+        return {"hour": f"2026-09-{day:02d}T16:00", "coverage_s": 3600.0, "entries_per_hour": v, "queue_mean": None, "register_time_median_s": None}
+    mondays = [hour(d, v) for d, v in zip((7, 14, 21, 28), (20, 22, 19, 21))]      # four Mondays
+    base = Baseline.fit(mondays)
+    assert base.score({"hour": "2026-10-05T16:00", "coverage_s": 3600.0, "entries_per_hour": 21, "queue_mean": None, "register_time_median_s": None}) == []
+    hi = base.score({"hour": "2026-10-05T16:00", "coverage_s": 3600.0, "entries_per_hour": 60, "queue_mean": None, "register_time_median_s": None})
+    assert hi and hi[0]["kind"] == "pattern_high"
+    assert base.score({"hour": "2026-10-06T16:00", "coverage_s": 3600.0, "entries_per_hour": 60, "queue_mean": None, "register_time_median_s": None}) == []   # a Tuesday: no history
+    assert Baseline.fit(mondays[:2]).score({"hour": "2026-10-05T16:00", "coverage_s": 3600.0, "entries_per_hour": 60, "queue_mean": None, "register_time_median_s": None}) == []
+    assert base.score({"hour": "2026-10-05T16:00", "coverage_s": 60.0, "entries_per_hour": 60, "queue_mean": None, "register_time_median_s": None}) == []

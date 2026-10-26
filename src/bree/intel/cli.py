@@ -25,8 +25,13 @@ def cmd_report(args) -> None:
     days = ag.daily(hours)
     ag.to_json(hours, out / "hourly.json")
     ag.to_json(days, out / "daily.json")
+    from bree.intel.anomaly import rule_anomalies
+    anomalies = rule_anomalies(recs)
+    (out / "anomalies.json").write_text(json.dumps(anomalies, indent=1))
     for day, d in days.items():
         text = ag.digest(d)
+        if anomalies:
+            text += "\n- Flags (rules, advisory): " + "; ".join(f"{a['kind']} {a['detail']}" for a in anomalies[:5])
         (out / f"digest_{day}.txt").write_text(text + "\n")
         print(text)
     if args.background:
@@ -48,6 +53,21 @@ def cmd_report(args) -> None:
                     if pv is not None:
                         cv2.imwrite(str(out / f"plan_{role}.png"), pv)
             print(f"heatmaps in {out} (background is a per-segment median; look before sharing)")
+
+
+def cmd_anomalies(args) -> None:
+    from bree.intel import aggregate as ag
+    from bree.intel.anomaly import Baseline, rule_anomalies
+    recs = ag.read_records(args.flow)
+    found = rule_anomalies(recs)
+    if args.history:
+        hist = []
+        for p in args.history:
+            hist += list(json.loads(Path(p).read_text()).values())
+        base = Baseline.fit(hist, args.min_history)
+        for h in ag.hourly(recs).values():
+            found += base.score(h)
+    print(json.dumps(found, indent=1))
 
 
 def cmd_eval(args) -> None:
@@ -92,6 +112,12 @@ def register(sub) -> None:
     e.add_argument("--tol", type=float, default=4.0, help="match tolerance in seconds")
     e.add_argument("--detail", action="store_true")
     e.set_defaults(func=cmd_eval)
+
+    n = s.add_parser("anomalies", help="rule flags (queue, unattended counter, loitering, door imbalance) and, with --history, hour-of-week pattern flags")
+    n.add_argument("flow", nargs="+")
+    n.add_argument("--history", nargs="*", help="hourly.json files from earlier days/weeks")
+    n.add_argument("--min-history", type=int, default=3)
+    n.set_defaults(func=cmd_anomalies)
 
     a = s.add_parser("activity", help="labelling helper: intervals where the door area changes (detector independent)")
     a.add_argument("video", nargs="+")

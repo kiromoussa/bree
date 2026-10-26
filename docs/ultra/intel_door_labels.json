@@ -1,0 +1,216 @@
+{
+ "label_kind": "REAL-MODEL-LABELLED",
+ "labeller": "Claude agent viewing 1 Hz crops of the door area (contact sheets), not human verified. Crossing time = when the feet cross the door threshold, +-1 s. People counted individually (a child counts). Door-activity windows came from a detector-independent frame-difference trigger (ROI around door and mats, mean abs grey diff >= 2.5 at 2 Hz, +-5 s pad); events outside the viewed windows are assumed absent.",
+ "station": "trumanrd",
+ "channel": 7,
+ "splits": {
+  "dev": "tuning allowed (182851, 183357)",
+  "heldout": "184620 was looked at after its v0 run showed a false out/in pair (not clean for v1); 185128 is the clean held-out"
+ },
+ "segments": {
+  "20261025_182851": {
+   "split": "dev",
+   "checked": [
+    [
+     40,
+     83
+    ],
+    [
+     272,
+     291
+    ]
+   ],
+   "events": [
+    {
+     "t": 48.8,
+     "dir": "out"
+    },
+    {
+     "t": 69.8,
+     "dir": "out"
+    },
+    {
+     "t": 73.5,
+     "dir": "out"
+    },
+    {
+     "t": 281.5,
+     "dir": "in"
+    },
+    {
+     "t": 281.8,
+     "dir": "in"
+    }
+   ]
+  },
+  "20261025_183357": {
+   "split": "dev",
+   "checked": [
+    [
+     9,
+     29
+    ],
+    [
+     46,
+     57
+    ],
+    [
+     162,
+     178
+    ],
+    [
+     191,
+     209
+    ],
+    [
+     250,
+     267
+    ]
+   ],
+   "events": [
+    {
+     "t": 17.3,
+     "dir": "out"
+    },
+    {
+     "t": 18.5,
+     "dir": "out"
+    },
+    {
+     "t": 170.5,
+     "dir": "in"
+    },
+    {
+     "t": 199.5,
+     "dir": "in"
+    },
+    {
+     "t": 201.5,
+     "dir": "in"
+    },
+    {
+     "t": 258.5,
+     "dir": "out"
+    }
+   ]
+  },
+  "20261025_184620": {
+   "split": "dev2",
+   "checked": [
+    [
+     6,
+     33
+    ],
+    [
+     50,
+     68
+    ],
+    [
+     90,
+     106
+    ],
+    [
+     180,
+     304
+    ]
+   ],
+   "events": [
+    {
+     "t": 15.0,
+     "dir": "out"
+    },
+    {
+     "t": 24.5,
+     "dir": "out"
+    },
+    {
+     "t": 58.5,
+     "dir": "in"
+    },
+    {
+     "t": 98.0,
+     "dir": "out"
+    },
+    {
+     "t": 188.8,
+     "dir": "in"
+    },
+    {
+     "t": 222.3,
+     "dir": "in"
+    },
+    {
+     "t": 229.0,
+     "dir": "out"
+    },
+    {
+     "t": 250.7,
+     "dir": "out"
+    },
+    {
+     "t": 294.8,
+     "dir": "out"
+    }
+   ],
+   "note": "labelled before the v1 changes; its first system run (v0) showed a false out/in pair at 277.5/278.2 so this segment is no longer a clean held-out for v1: use 185128"
+  },
+  "20261025_185128": {
+   "split": "heldout",
+   "checked": [
+    [
+     17,
+     33
+    ],
+    [
+     38,
+     80
+    ],
+    [
+     105,
+     141
+    ],
+    [
+     147,
+     165
+    ],
+    [
+     174,
+     219
+    ]
+   ],
+   "events": [
+    {
+     "t": 44.5,
+     "dir": "out"
+    },
+    {
+     "t": 52.8,
+     "dir": "out",
+     "ambiguous": true
+    },
+    {
+     "t": 63.2,
+     "dir": "in",
+     "ambiguous": true
+    },
+    {
+     "t": 69.7,
+     "dir": "in"
+    },
+    {
+     "t": 112.8,
+     "dir": "out"
+    },
+    {
+     "t": 154.3,
+     "dir": "in"
+    },
+    {
+     "t": 212.5,
+     "dir": "in"
+    }
+   ],
+   "note": "labelled before any system output on this segment was looked at; the clean held-out for v1"
+  }
+ }
+}

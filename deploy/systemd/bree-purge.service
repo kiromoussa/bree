@@ -1,0 +1,11 @@
+[Unit]
+Description=BREE retention purge (deletes footage and evidence past its limit)
+
+[Service]
+Type=oneshot
+Environment=PYTHONPATH=%h/bree/current/src
+ExecStart=%h/bree/venv/bin/python -m bree.trust purge --policy %h/.config/bree/retention.yaml --apply --audit %h/bree-data/audit.jsonl
+UMask=0077
+Nice=15
+NoNewPrivileges=true
+PrivateTmp=true

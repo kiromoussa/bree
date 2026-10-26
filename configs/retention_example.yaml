@@ -1,0 +1,16 @@
+# Retention policy for `python -m bree.trust purge --policy <this file> [--apply]`.
+# Dry run unless --apply. Ages are from the file's modification time. See docs/ultra/trust.md.
+retention:
+  root: ~/bree-data/shadow           # the shadow run's output_dir; refuses / and the home folder itself
+  max_total_gb: 50                   # emergency cap, oldest first, only over rules marked evictable
+  holds: []                          # globs relative to root that are never deleted, e.g. "alerts/store-0042*"
+                                     # (or put an empty file named .hold in a folder to keep that folder's files)
+  rules:
+    - {name: raw_segments,    glob: "raw/**/*.mp4",    max_age_hours: 24, evictable: true}   # unblurred, faces
+    - {name: node_bursts,     glob: "bursts/**/*",     max_age_hours: 48, evictable: true}   # unblurred, faces
+    - {name: annotated_video, glob: "**/annotated.mp4", max_age_days: 7,  evictable: true}
+    - {name: alert_clips,     glob: "alerts/*.mp4",    max_age_days: 30}
+    - {name: alert_records,   glob: "alerts/*.json",   max_age_days: 90}
+    - {name: review_frames,   glob: "**/frames/*.jpg", max_age_days: 30}
+    - {name: shelf_evidence,  glob: "**/evidence/*.jpg", max_age_days: 30}
+    - {name: frame_logs,      glob: "**/frames.jsonl", max_age_days: 30}

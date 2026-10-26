@@ -27,6 +27,7 @@ wire). A frame's hub time is its monotonic time + that offset; burst.json carrie
 from __future__ import annotations
 
 import hmac
+import os
 import json
 import queue
 import re
@@ -344,7 +345,9 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--out", default="out/hub")
     ap.add_argument("--host", default="0.0.0.0")
     ap.add_argument("--port", type=int, default=8787)
-    ap.add_argument("--token", default="", help="shared secret; nodes send it as a Bearer token")
+    ap.add_argument("--token", default="", help="shared secret; nodes send it as a Bearer token. Visible in `ps`: "
+                    "prefer --token-file or the BREE_HUB_TOKEN environment variable")
+    ap.add_argument("--token-file", default="", help="file holding the shared secret (mode 0600, checked)")
     ap.add_argument("--store", action="append", default=[], metavar="CAMERA=STORE.yaml",
                     help="run the vision pipeline on that camera's bursts (repeatable)")
     ap.add_argument("--backend", default="yolo", choices=["yolo", "toy", "sim_sku"])
@@ -352,11 +355,14 @@ def main(argv: list[str] | None = None) -> None:
                     help="delete stored bursts (raw frames, faces not pixelated) after this many hours; 0 = keep forever")
     a = ap.parse_args(argv)
     stores = dict(s.split("=", 1) for s in a.store)
-    hub = Hub(a.out, a.token, on_burst=pipeline_feed(stores, a.backend) if stores else None,
+    from bree.trust.secrets import resolve_secret
+    token = (resolve_secret(f"file:{a.token_file}") if a.token_file else resolve_secret("env:BREE_HUB_TOKEN")
+             if not a.token and os.environ.get("BREE_HUB_TOKEN") else resolve_secret(a.token)).reveal()
+    hub = Hub(a.out, token, on_burst=pipeline_feed(stores, a.backend) if stores else None,
               retain_s=a.retain_hours * 3600 if a.retain_hours > 0 else None)
     hub.serve(a.host, a.port)
     keep = f"bursts deleted after {a.retain_hours:g} h" if a.retain_hours > 0 else "bursts are NEVER deleted (--retain-hours 0)"
-    print(f"hub listening on {a.host}:{a.port}, storing in {a.out}, {keep}" + ("" if a.token else "  (NO TOKEN SET)"), flush=True)
+    print(f"hub listening on {a.host}:{a.port}, storing in {a.out}, {keep}" + ("" if token else "  (NO TOKEN SET)"), flush=True)
     while True:
         time.sleep(3600)
 

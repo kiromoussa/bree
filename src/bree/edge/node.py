@@ -8,6 +8,7 @@ Needs numpy, OpenCV and PyYAML (and picamera2 on the Pi); nothing else from the 
 """
 from __future__ import annotations
 
+import os
 import threading
 import time
 from concurrent.futures import Future, ThreadPoolExecutor
@@ -58,6 +59,12 @@ def load_node_config(path: str | Path) -> NodeConfig:
     if not zones:
         raise ValueError("no shelf or cooler zone in the config: nothing would ever trigger")
     cam = raw.get("camera", {})
+    tok = str(node.get("token") or "")
+    if tok.startswith(("file:", "env:")):    # keep the shared secret out of the YAML (this file runs on the Pi without bree.trust)
+        if tok.startswith("env:"):
+            node["token"] = os.environ.get(tok[4:], "")
+        else:
+            node["token"] = Path(tok[5:]).expanduser().read_text().strip()
     node["trigger"] = TriggerConfig.from_dict(node.get("trigger"))
     for k in ("main_size",):
         if node.get(k):

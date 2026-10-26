@@ -1,0 +1,36 @@
+# BREE pipeline (shadow mode) as a systemd USER unit. Install with deploy/systemd/install_user.sh (no sudo).
+# Runs the pipeline under the stall watchdog: if the frame loop stops making progress for 2 minutes the unit is
+# restarted. Credentials come from ~/.config/bree/*.env (mode 0600, checked by `bree-trust doctor`), never from argv.
+[Unit]
+Description=BREE shadow-mode pipeline
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=900
+StartLimitBurst=6
+
+[Service]
+Type=notify
+NotifyAccess=main
+WatchdogSec=180
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=60
+Environment=PYTHONUNBUFFERED=1
+Environment=OMP_NUM_THREADS=4
+EnvironmentFile=-%h/.config/bree/imou.env
+WorkingDirectory=%h/bree/current
+Environment=PYTHONPATH=%h/bree/current/src
+# Refuse to start on a dead clock, full disk or world-readable credentials.
+ExecStartPre=%h/bree/venv/bin/python -m bree.trust doctor --data %h/bree-data --audit %h/bree-data/audit.jsonl
+ExecStart=%h/bree/venv/bin/python -m bree.trust.supervise --heartbeat %t/bree/heartbeat --stall-s 120 -- \
+          %h/bree/venv/bin/python -m bree.cli shadow --config %h/.config/bree/shadow.yaml
+RuntimeDirectory=bree
+UMask=0077
+Nice=10
+MemoryHigh=6G
+MemoryMax=8G
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=default.target

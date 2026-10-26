@@ -1,0 +1,10 @@
+[Unit]
+Description=BREE health check (clock, disk, credential permissions, audit chain)
+
+[Service]
+Type=oneshot
+Environment=PYTHONPATH=%h/bree/current/src
+ExecStart=%h/bree/venv/bin/python -m bree.trust doctor --data %h/bree-data --audit %h/bree-data/audit.jsonl --policy %h/.config/bree/retention.yaml
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true

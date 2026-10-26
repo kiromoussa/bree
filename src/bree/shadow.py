@@ -31,7 +31,7 @@ LABELS = ("real_theft", "false_alert", "unsure")
 @dataclass
 class Camera:
     name: str
-    rtsp_url: str          # rtsp:// URL (or a video file / webcam index to replay)
+    rtsp_url: str = field(repr=False)   # rtsp:// URL (or a video file / webcam index to replay); may hold {env:X} / {file:/p}
     store: str             # store layout YAML with this camera's zones
 
 
@@ -53,7 +53,8 @@ class ShadowConfig:
 
 def load_shadow_config(path: str | Path) -> ShadowConfig:
     raw = yaml.safe_load(Path(path).read_text())
-    cams = [Camera(c["name"], str(c["rtsp_url"]), c["store"]) for c in raw["cameras"]]
+    from bree.trust.secrets import expand_refs   # {env:NAME} / {file:/path} in the URL: no password in the YAML
+    cams = [Camera(c["name"], expand_refs(str(c["rtsp_url"])), c["store"]) for c in raw["cameras"]]
     if len({c.name for c in cams}) != len(cams):
         raise ValueError("camera names must be unique")
     mc = raw.get("multicam")

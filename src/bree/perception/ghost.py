@@ -58,6 +58,14 @@ def find_ghosts(dets: list[tuple[np.ndarray, np.ndarray]], shape: tuple[int, int
     return sorted(out, key=lambda g: -g.frac_frames)
 
 
+def find_fixtures(dets: list[tuple[np.ndarray, np.ndarray]], shape: tuple[int, int], radius: float = 0.02,
+                  min_frac: float = 0.7, min_frames: int = 12) -> list[GhostCluster]:
+    """Static product-class detections (a card terminal read as 'cell phone' in 99% of frames): same clustering as
+    ghosts but at any confidence. They are fixtures, not picks. A bottle left on the counter for the whole clip is
+    a fixture too: it only matters again if it moves, which is then a new detection elsewhere."""
+    return find_ghosts(dets, shape, radius, min_frac, max_mean_conf=1.1, max_peak_conf=1.1, min_frames=min_frames)
+
+
 def ghost_polygon(g: GhostCluster, pad: float = 0.5) -> list[list[float]]:
     """Rectangle around the ghost box, grown by `pad` of its size, as a normalised polygon."""
     x0, y0, x1, y1 = g.box

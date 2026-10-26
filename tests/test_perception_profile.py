@@ -146,3 +146,14 @@ def test_calibrate_smoke_on_synthetic_clip(tmp_path):
     save_profile(prof, tmp_path / "p.yaml")
     assert load_profile(tmp_path / "p.yaml").camera == "cam_test"
     assert report["selection"]["label_kind"].startswith("REAL-UNLABELLED") and set(report["candidates"]) >= {"s640"}
+
+
+def test_fixture_mask_and_finder():
+    from bree.perception.ghost import find_fixtures
+    from bree.perception.profile import fixture_mask
+    dets = [(np.array([[1000, 700, 1060, 760.0]]), np.array([0.9 if i % 2 else 0.3])) for i in range(30)]
+    fx = find_fixtures(dets, (1440, 2560))
+    assert len(fx) == 1
+    p = PerceptionProfile(fixtures=[IgnoreRegion("t", __import__("bree.perception.ghost", fromlist=["x"]).ghost_polygon(fx[0], 0.2))])
+    boxes = np.array([[1000, 700, 1060, 760.0], [200, 200, 260, 260.0]])
+    assert fixture_mask(p, boxes, (1440, 2560)).tolist() == [False, True]

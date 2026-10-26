@@ -47,7 +47,8 @@ class PerceptionProfile:
     product_conf: float = 0.25
     dedupe_inside: float = 0.85
     slices: SliceSpec = field(default_factory=SliceSpec)
-    ignore: list[IgnoreRegion] = field(default_factory=list)
+    ignore: list[IgnoreRegion] = field(default_factory=list)          # person ghosts
+    fixtures: list[IgnoreRegion] = field(default_factory=list)        # static product-class objects (card terminal ...)
     min_box_h_frac: float = 0.0          # drop person boxes shorter than this fraction of the frame height
     edge_margin_frac: float = 0.0        # boxes whose centre is this close to a frame edge need edge_conf
     edge_conf: float = 0.0
@@ -83,6 +84,18 @@ def _poly_contains(poly: np.ndarray, pts: np.ndarray) -> np.ndarray:
     return inside
 
 
+def fixture_mask(profile: PerceptionProfile, boxes: np.ndarray, shape: tuple[int, int]) -> np.ndarray:
+    """True for product boxes that are NOT a learned static fixture (centre outside every fixture region)."""
+    keep = np.ones(len(boxes), bool)
+    if not len(boxes) or not profile.fixtures:
+        return keep
+    h, w = shape[:2]
+    pts = np.stack([(boxes[:, 0] + boxes[:, 2]) / 2 / w, (boxes[:, 1] + boxes[:, 3]) / 2 / h], 1)
+    for reg in profile.fixtures:
+        keep &= ~_poly_contains(np.asarray(reg.polygon, float), pts)
+    return keep
+
+
 def keep_mask(profile: PerceptionProfile, boxes: np.ndarray, confs: np.ndarray, shape: tuple[int, int]) -> np.ndarray:
     """Which person boxes survive the profile's filters (ignore regions, minimum height, edge confidence)."""
     h, w = shape[:2]
@@ -112,6 +125,7 @@ def _from_dict(d: dict) -> PerceptionProfile:
         dedupe_inside=det.get("dedupe_inside", 0.85),
         slices=SliceSpec(**{k: v for k, v in sl.items() if k in SliceSpec.__dataclass_fields__}),
         ignore=[IgnoreRegion(**r) for r in d.get("ignore", []) or []],
+        fixtures=[IgnoreRegion(**r) for r in d.get("fixtures", []) or []],
         min_box_h_frac=flt.get("min_box_h_frac", 0.0), edge_margin_frac=flt.get("edge_margin_frac", 0.0),
         edge_conf=flt.get("edge_conf", 0.0), pose=pose.get("enabled", True), pose_crop=pose.get("crop", 160),
         track_buffer_s=trk.get("buffer_s", 2.0), new_track_thresh=trk.get("new_track_thresh"),
@@ -130,6 +144,7 @@ def to_dict(p: PerceptionProfile) -> dict:
                      "product_conf": p.product_conf, "dedupe_inside": p.dedupe_inside},
         "slices": asdict(p.slices),
         "ignore": [asdict(r) for r in p.ignore],
+        "fixtures": [asdict(r) for r in p.fixtures],
         "filters": {"min_box_h_frac": p.min_box_h_frac, "edge_margin_frac": p.edge_margin_frac, "edge_conf": p.edge_conf},
         "pose": {"enabled": p.pose, "weights": p.pose_weights, "crop": p.pose_crop},
         "tracker": {"buffer_s": p.track_buffer_s, "new_track_thresh": p.new_track_thresh,

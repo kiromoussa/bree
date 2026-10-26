@@ -26,7 +26,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from bree.perception.ghost import find_ghosts, ghost_polygon
+from bree.perception.ghost import find_fixtures, find_ghosts, ghost_polygon
 from bree.perception.profile import IgnoreRegion, PerceptionProfile, keep_mask, save_profile
 from bree.perception.sliced import SliceSpec, sliced_predict
 
@@ -77,7 +77,7 @@ def _detect_all(model, frames, wts_imgsz_spec, device, conf=0.15):
 
 def calibrate(video: str, camera: str, role: str, samples: int = 60, max_ms: float | None = None, recover: float = 0.9,
               conf: float = 0.3, device: str | None = None, labels_channel: int | None = None,
-              preview: Path | None = None) -> tuple[PerceptionProfile, dict]:
+              preview: Path | None = None, products: tuple[str, ...] = ("bottle", "cup", "cell phone")) -> tuple[PerceptionProfile, dict]:
     from ultralytics import YOLO
     from bree.perception.sweep import resolve_weights as _weights
     from bree.hw import detect_hardware
@@ -97,6 +97,18 @@ def calibrate(video: str, camera: str, role: str, samples: int = 60, max_ms: flo
     ignore = [IgnoreRegion(f"ghost_{i}", ghost_polygon(g), f"static, mean conf {g.mean_conf}, in {g.frac_frames:.0%} of samples")
               for i, g in enumerate(ghosts)]
     prof = PerceptionProfile(camera=camera, role=role, ignore=ignore, person_conf=conf)
+    # Static product-class detections (fixtures): one plain pass of the product classes over the same frames.
+    m0 = models["yolo26s.pt"]
+    pids = [i for i, n in m0.names.items() if n in products]
+    fixtures = []
+    if pids:
+        pd = []
+        for im in frames:
+            b, c, _ = sliced_predict(m0, im, SliceSpec(), 640, 0.25, pids, device)
+            pd.append((b, c))
+        fixtures = find_fixtures(pd, shape)
+        prof.fixtures = [IgnoreRegion(f"fixture_{i}", ghost_polygon(g, 0.2), f"static product-class box in {g.frac_frames:.0%} of samples")
+                         for i, g in enumerate(fixtures)]
     # Candidate scoring.
     def confident(name):
         out = 0
@@ -105,7 +117,7 @@ def calibrate(video: str, camera: str, role: str, samples: int = 60, max_ms: flo
         return out
     counts = {k: confident(k) for k in results}
     report = {"camera": camera, "role": role, "video": Path(video).name, "samples": len(frames),
-              "frame_shape": list(shape), "ghosts": [g.__dict__ for g in ghosts],
+              "frame_shape": list(shape), "ghosts": [g.__dict__ for g in ghosts], "fixtures": [g.__dict__ for g in fixtures],
               "candidates": {k: {"ms_per_frame": round(v["ms"], 1), "confident_people": counts[k]} for k, v in results.items()}}
     top = max(counts.values())
     ok = [k for k in results if counts[k] >= recover * top and (max_ms is None or results[k]["ms"] <= max_ms)]
@@ -126,7 +138,7 @@ def calibrate(video: str, camera: str, role: str, samples: int = 60, max_ms: flo
         preview.mkdir(parents=True, exist_ok=True)
         im = frames[len(frames) // 2].copy()
         h, w = shape
-        for reg in prof.ignore:
+        for reg in prof.ignore + prof.fixtures:
             pts = (np.array(reg.polygon) * [w, h]).astype(np.int32)
             cv2.polylines(im, [pts], True, (0, 0, 255), 4)
         cv2.imwrite(str(preview / f"{camera}_ghosts.jpg"), cv2.resize(im, (1280, int(1280 * h / w))))
@@ -174,7 +186,7 @@ def main(argv=None) -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
     save_profile(prof, out)
     out.with_suffix(".report.json").write_text(json.dumps(report, indent=1))
-    print(json.dumps({"profile": str(out), "chosen": report["selection"]["chosen"], "ghosts": len(prof.ignore),
+    print(json.dumps({"profile": str(out), "chosen": report["selection"]["chosen"], "ghosts": len(prof.ignore), "fixtures": len(prof.fixtures),
                       "candidates": report["candidates"]}, indent=1))
 
 

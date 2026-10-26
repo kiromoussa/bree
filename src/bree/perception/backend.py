@@ -10,7 +10,7 @@ import numpy as np
 
 from bree.detect.base import Detections
 from bree.detect.yolo import YoloBackend, contained
-from bree.perception.profile import PerceptionProfile, keep_mask
+from bree.perception.profile import PerceptionProfile, fixture_mask, keep_mask
 from bree.perception.sliced import sliced_predict
 
 
@@ -41,6 +41,7 @@ class ProfiledBackend(YoloBackend):
         is_person = ok
         if self.dedupe_inside:
             is_person &= ~contained(boxes, is_person, self.dedupe_inside)
+        is_product &= fixture_mask(p, boxes, image.shape[:2])       # a card terminal in view all day is not a pick
         pb = boxes[is_person]
         kp = self.pose(image, pb) if self.use_pose else None
         persons = Detections(pb, confs[is_person], ["person"] * len(pb), kp)

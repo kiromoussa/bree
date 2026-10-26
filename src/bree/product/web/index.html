@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BREE store view</title>
+<link rel="stylesheet" href="/app.css">
+</head><body>
+<header>
+  <div class="brand"><b id="store">Your store</b><span id="clock" class="muted"></span></div>
+  <nav id="tabs" role="tablist">
+    <button data-tab="now" class="on">Now</button>
+    <button data-tab="today">Day</button>
+    <button data-tab="review">Review <span id="rv-badge" class="pill" hidden></span></button>
+    <button data-tab="reports">Reports</button>
+  </nav>
+</header>
+<div id="trust" class="trust" hidden></div>
+<main>
+  <section id="now"></section>
+  <section id="today" hidden></section>
+  <section id="review" hidden></section>
+  <section id="reports" hidden></section>
+</main>
+<script src="/app.js"></script>
+</body></html>

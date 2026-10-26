@@ -141,7 +141,7 @@ def _frames(path, tracks):
 def test_adapter_filters_flicker_ghosts_and_roles(tmp_path):
     ts = [i * 0.5 for i in range(200)]                                   # 100 s
     tracks = {
-        1: [(t, 100 + t * 4, 400, 0.9) for t in ts[:60]],               # real person walking away from the door
+        1: [(t, 100 + t * 20, 400, 0.9) for t in ts[:60]],               # real person walking away from the door
         2: [(t, 500, 300, 0.9) for t in ts[:3]],                        # 1 s flicker
         3: [(t, 700, 300, 0.5) for t in ts],                           # stationary low-confidence ghost
         4: [(t, 600, 300, 0.2) for t in ts[:40]],                       # low confidence

@@ -40,9 +40,10 @@ class TamperConfig:
     dark_ref_ratio: float = 0.4
     blur_ratio: float = 0.3          # blurred: sharpness below this share of normal (and not covered/dark)
     moved_ncc: float = 0.45          # moved: normalised correlation with the reference below this...
-    moved_changed: float = 0.45      # ...and this share of unmasked cells changed by more than 1 sd
+    moved_changed: float = 0.25      # ...and this share of unmasked cells changed by more than 1 sd
     max_masked: float = 0.6          # more than this share of cells hidden behind people: no verdict (not "moved")
     frozen_diff: float = 0.02        # mean abs thumbnail difference between consecutive samples below this = identical
+    adopt_s: float = 1800.0          # a "moved" alarm that lasts this long is the new normal (furniture moved): relearn the reference
     ref_every_s: float = 10.0        # reference update step (exponential average on quiet cells)
     ref_alpha: float = 0.15
     expect_dark: tuple = ()          # [(start_s_of_day, end_s_of_day)] where darkness is normal (needs `clock`)
@@ -129,7 +130,10 @@ class TamperMonitor:
 
         if self.ref is None:
             self.ref = np.full(thumb.shape, np.nan, np.float32)
-        quiet = not self.active
+        ncc0, ch0, lo0 = self._scene(th, masked)
+        # The reference only learns from frames that still look like the scene (else a slow tamper is "learned" before it is seen).
+        looks_normal = warm or (ncc0 is not None and ncc0 > 0.55 and ch0 < 0.3) or lo0 > c.max_masked
+        quiet = not self.active and looks_normal
         if quiet and (warm or t - self._t_ref >= c.ref_every_s):
             fresh = ~masked
             upd = fresh & np.isnan(self.ref)
@@ -137,12 +141,16 @@ class TamperMonitor:
             both = fresh & ~np.isnan(self.ref) & ~upd
             self.ref[both] = (1 - c.ref_alpha) * self.ref[both] + c.ref_alpha * th[both]
             a = c.ref_alpha if self.ref_std is not None else 1.0
+            # contrast / brightness / sharpness learn only while they are near normal: a slow cover or defocus must not become "normal"
+            sane = self.ref_std is None or (f["std"] > 0.6 * self.ref_std and f["mean"] > 0.6 * self.ref_mean
+                                            and f["lap"] > 0.6 * self.ref_lap)
             for name, v in (("ref_std", f["std"]), ("ref_mean", f["mean"]), ("ref_lap", f["lap"])):
                 old = getattr(self, name)
-                setattr(self, name, v if old is None else (1 - a) * old + a * v)
+                if sane or warm:
+                    setattr(self, name, v if old is None else (1 - a) * old + a * v)
             self._t_ref = t
 
-        ncc, changed, left_out = self._scene(th, masked) if self.ref is not None else (None, None, 1.0)
+        ncc, changed, left_out = ncc0, ch0, lo0
         std_ref = max(self.ref_std or 0.0, 1e-6)
         bad = {k: False for k in KINDS}
         covered = f["std"] < c.uniform_std and f["std"] < c.uniform_ref_ratio * std_ref
@@ -151,7 +159,7 @@ class TamperMonitor:
         bad["covered"] = covered and not (f["mean"] < c.dark_mean)      # black = "dark", flat but lit = "covered"
         bad["dark"] = dark
         bad["blurred"] = (not covered and not dark and self.ref_lap is not None
-                          and f["lap"] < c.blur_ratio * self.ref_lap and self.ref_lap > 50)
+                          and f["lap"] < c.blur_ratio * self.ref_lap and self.ref_lap > 5)
         bad["moved"] = (not covered and not dark and ncc is not None and left_out <= c.max_masked
                         and ncc < c.moved_ncc and changed > c.moved_changed)
         bad["frozen"] = f["diff"] < c.frozen_diff and t - self.t0 > 0.5
@@ -159,6 +167,14 @@ class TamperMonitor:
                      None if not self.ref_lap else f["lap"] / self.ref_lap, "std": f["std"], "mean": f["mean"]}
 
         out = []
+        mv = self.active.get("moved")
+        if mv is not None and t - mv.t_start >= c.adopt_s:      # months of a different view is not tampering any more
+            self.ref = None
+            self.ref_std = self.ref_mean = self.ref_lap = None
+            self.t0 = t                                           # relearn: warm-up again
+            self.active.pop("moved")
+            self.bad_since["moved"] = self.ok_since["moved"] = None
+            return [TamperEvent("moved", "end", t, mv.t_start, mv.severity, dict(mv.evidence, adopted_new_normal=True))]
         for k in KINDS:
             if bad[k] and not warm:
                 self.ok_since[k] = None

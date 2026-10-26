@@ -31,11 +31,13 @@ class ReplayResult:
     persons_engine: int = 0
     engine_log: list[str] = field(default_factory=list)
     decisions: list[dict] = field(default_factory=list)
+    observed: dict = field(default_factory=dict)             # observer name -> everything it returned (sweeps, incidents, ...)
 
 
 def replay_cache(cache_dir: str | Path, station: Station, gate: GateConfig | None = None,
                  ledger_overrides: dict | None = None, rules: dict | None = None, camera: str | None = None,
-                 gated: bool = True) -> ReplayResult:
+                 gated: bool = True, observers: dict | None = None) -> ReplayResult:
+    """`observers`: name -> object with update(FrameObs) -> list; each sees the gated observations (same ones the engine sees)."""
     from bree.track.multicam import StoreEvents
     info = load_info(cache_dir)
     cam = camera or station.name
@@ -47,11 +49,14 @@ def replay_cache(cache_dir: str | Path, station: Station, gate: GateConfig | Non
     ledger = build_ledger(store, **{**POSLESS_LEDGER, **(ledger_overrides or {})})
     g = ObsGate(gate or GateConfig(**station.gate), station.staff, station.ignore) if gated else None
     raw_ids, eng_ids, events, alerts = set(), set(), [], []
+    observed = {k: [] for k in (observers or {})}
     for obs in load_frames(cache_dir):
         raw_ids.update(p.track_id for p in obs.persons)
         if g is not None:
             obs = g.update(obs)
         eng_ids.update(p.track_id for p in obs.persons)
+        for name, ob in (observers or {}).items():
+            observed[name] += ob.update(obs)
         evs = fusion.update(cam, obs)
         for ev in evs:
             alerts += ledger.on_event(ev)
@@ -69,4 +74,4 @@ def replay_cache(cache_dir: str | Path, station: Station, gate: GateConfig | Non
         camera=cam, segment=Path(cache_dir).name, duration_s=info.duration_s, alerts=alerts, events=events,
         event_counts=dict(Counter(e.type.value for e in events)), gate_stats=dict(g.stats) if g else {},
         persons_raw=len(raw_ids), persons_engine=len(eng_ids), engine_log=list(fusion.engines[cam].log),
-        decisions=list(ledger.decisions))
+        decisions=list(ledger.decisions), observed=observed)

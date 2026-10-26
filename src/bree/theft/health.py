@@ -23,7 +23,7 @@ def grey_small(img: np.ndarray, width: int = ANALYSIS_W) -> np.ndarray:
 def frame_features(grey: np.ndarray, prev_thumb: np.ndarray | None = None) -> tuple[dict, np.ndarray]:
     """(feature dict, thumbnail uint8 (18, 32)) for one analysis-size grey frame. `diff` is the mean absolute
     difference to `prev_thumb` (0..255), 0.0 when there is none."""
-    lap = cv2.Laplacian(grey, cv2.CV_32F)
+    lap = cv2.Laplacian(cv2.GaussianBlur(grey, (0, 0), 1.0), cv2.CV_32F)     # denoised first: sensor noise must not count as detail
     thumb = cv2.resize(grey, THUMB, interpolation=cv2.INTER_AREA)
     edges = cv2.Canny(grey, 60, 140)
     f = {

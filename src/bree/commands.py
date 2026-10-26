@@ -226,3 +226,6 @@ def register(sub) -> None:
     d = sub.add_parser("demo", help="toy clips end to end with a scorecard")
     d.add_argument("--out", default=str(ROOT / "out" / "demo"))
     d.set_defaults(func=cmd_demo)
+
+    from bree.theft import cli as theft_cli     # theft-shadow / theft-rates / theft-sim (bree.theft)
+    theft_cli.register(sub)

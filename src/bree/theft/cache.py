@@ -122,3 +122,29 @@ def load_frames(cache_dir: str | Path) -> Iterator[FrameObs]:
 def load_health(cache_dir: str | Path) -> dict:
     z = np.load(cache_paths(cache_dir)[1], allow_pickle=False)
     return {"t": z["t"], "x": z["x"], "names": [str(n) for n in z["names"]], "thumbs": z["thumbs"]}
+
+
+def recompute_health(video: str | Path, cache_dir: str | Path, stride: int | None = None) -> int:
+    """Rewrite only health.npz of an existing cache (after a change to bree.theft.health). Same frames as the cache."""
+    import cv2
+    info = load_info(cache_dir)
+    stride = stride or info.stride
+    cap = cv2.VideoCapture(str(video))
+    rows, thumbs, ts, prev, i = [], [], [], None, 0
+    while True:
+        if not cap.grab():
+            break
+        if i % stride == 0:
+            ok, img = cap.retrieve()
+            if not ok:
+                break
+            feats, thumb = frame_features(grey_small(img), prev)
+            prev = thumb
+            rows.append([feats[k] for k in FEATURES])
+            thumbs.append(thumb)
+            ts.append(i / info.fps)
+        i += 1
+    cap.release()
+    np.savez_compressed(cache_paths(cache_dir)[1], t=np.array(ts, np.float32), x=np.array(rows, np.float32),
+                        names=np.array(FEATURES), thumbs=np.array(thumbs, np.uint8))
+    return len(ts)

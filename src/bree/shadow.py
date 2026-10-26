@@ -161,6 +161,15 @@ class ShadowLog:
             decided = n["real_theft"] + n["false_alert"]
             out[tier] = {"total": len(sel), **n, "unlabelled": len(sel) - sum(n.values()),
                          "precision": round(n["real_theft"] / decided, 3) if decided else None}
+        # Records from bree.theft carry `kind` (theft_review, tamper, after_hours, loiter, bulk_grab): counts per kind.
+        kinds = {r["kind"] for r in rows if r.get("kind")}
+        if kinds:
+            out["by_kind"] = {}
+            for k in sorted(kinds | {"theft_review"}):
+                sel = [r for r in rows if r.get("kind", "theft_review") == k]
+                n = {lab: sum(1 for r in sel if r["label"] and r["label"]["label"] == lab) for lab in LABELS}
+                dec = n["real_theft"] + n["false_alert"]
+                out["by_kind"][k] = {"total": len(sel), **n, "precision": round(n["real_theft"] / dec, 3) if dec else None}
         return out
 
 

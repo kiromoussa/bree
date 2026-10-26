@@ -70,7 +70,8 @@ button{cursor:pointer} button.on{background:var(--fg);color:var(--bg)} .tag{font
 </style></head><body>
 <header><h1>BREE shadow review</h1><span class="muted">Would-be alerts. Staff never saw these.</span>
 <label>Reviewer <input id="who" placeholder="your name"></label>
-<label><input type="checkbox" id="todo"> unlabelled only</label><span class="muted" id="sum"></span></header>
+<label><input type="checkbox" id="todo"> unlabelled only</label>
+<label>Show <select id="kind"><option value="">everything</option></select></label><span class="muted" id="sum"></span></header>
 <main id="list" class="muted">loading</main>
 <script>
 const $=id=>document.getElementById(id);
@@ -78,19 +79,26 @@ function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt
 try{$('who').value=localStorage.getItem('who')||''}catch(e){}
 $('who').onchange=()=>{try{localStorage.setItem('who',$('who').value)}catch(e){}};
 const NAMES={real_theft:'Real theft',false_alert:'False alert',unsure:'Unsure'};
+const KIND_NAMES={real_theft:'Real issue',false_alert:'False alarm',unsure:'Unsure'};   // tamper, after-hours, loitering, bulk-grab items
+const KINDS={theft_review:'theft review',tamper:'camera tamper',after_hours:'after hours',loiter:'loitering',bulk_grab:'bulk grab / sweep'};
+const names=a=>(a.kind&&a.kind!=='theft_review')?KIND_NAMES:NAMES;
 function pct(p){return p==null?'n/a':(100*p).toFixed(0)+'%'}
 async function load(){const d=await (await fetch('/api/review')).json();const s=d.summary;
-$('sum').textContent=`${s.labelled}/${s.would_be_alerts} labelled · ${s.retracted} retracted by a late receipt · precision: alert tier ${pct(s.alert.precision)}, review tier ${pct(s.review.precision)}`;
-const rows=d.alerts.slice().reverse().filter(a=>!$('todo').checked||!a.label);
+$('sum').textContent=`${s.labelled}/${s.would_be_alerts} labelled · ${s.retracted} retracted by a late receipt · precision: alert tier ${pct(s.alert.precision)}, review tier ${pct(s.review.precision)}`+(s.by_kind?' · by kind: '+Object.entries(s.by_kind).map(([k,v])=>`${KINDS[k]||k} ${v.real_theft}/${v.real_theft+v.false_alert} real`).join(', '):'');
+const ks=[...new Set(d.alerts.map(a=>a.kind||'theft_review'))];const sel=$('kind');
+if(sel.options.length!==ks.length+1){const cur=sel.value;sel.innerHTML='<option value="">everything</option>'+ks.map(k=>`<option value="${k}">${esc(KINDS[k]||k)}</option>`).join('');sel.value=cur;}
+const byP=d.alerts.some(a=>a.priority!=null);   // a review queue with priorities (bree.theft): highest first, newest first among equals
+const rows=d.alerts.slice().reverse().filter(a=>(!$('todo').checked||!a.label)&&(!sel.value||(a.kind||'theft_review')===sel.value));
+if(byP)rows.sort((a,b)=>(b.priority??-1)-(a.priority??-1));
 $('list').innerHTML=rows.map(a=>{const clip='/clips/'+encodeURIComponent(a.id);const r=a.retraction;return `<div class="card ${a.tier}${r?' retracted':''}" data-id="${esc(a.id)}">
 <div>${a.clip?`<video src="${clip}" controls muted loop playsinline preload="metadata"></video><div class="muted"><a href="${clip}" download>download clip</a> (heads pixelated)</div>`:'<span class="muted">no clip</span>'}</div>
-<div><b>${a.tier.toUpperCase()}</b> · conf ${a.confidence.toFixed(2)} · ${esc(a.camera)} · person ${a.person_id} · ${esc(a.time)}
-${a.concealment_seen?' <span class="tag">concealment seen</span>':''}
+<div><b>${esc((a.kind&&a.kind!=='theft_review'?(KINDS[a.kind]||a.kind):a.tier).toUpperCase())}</b>${a.priority!=null?` <span class="tag" title="${esc((a.priority_why||[]).join('; '))}">priority ${a.priority.toFixed(0)}</span>`:` · conf ${a.confidence.toFixed(2)}`} · ${esc(a.camera)} · ${a.kind&&a.kind!=='theft_review'?'':`person ${a.person_id} · `}${esc(a.time)}
+${a.headline?`<div>${esc(a.headline)}</div>`:''}${a.concealment_seen?' <span class="tag">concealment seen</span>':''}
 ${r?`<div><span class="tag">${r.tier==='retracted'?'RETRACTED':'DOWNGRADED TO '+esc(r.tier.toUpperCase())}</span> <span class="muted">${esc(r.time)}: ${esc(r.reasons[0])}</span></div>`:''}
-<div>Basket: ${esc(a.basket.join(', ')||'none')}</div><div>Unpaid: ${esc(a.unpaid.map(i=>i.category).join(', '))}</div>
-<div class="muted">${esc(a.reasons.join('; '))}</div>
-<details><summary class="muted">audit log</summary><pre>${esc(a.audit_log.join('\\n'))}</pre></details>
-<div class="row">${Object.keys(NAMES).map(k=>`<button data-l="${k}" class="${a.label&&a.label.label===k?'on':''}">${NAMES[k]}</button>`).join('')}
+${(a.kind&&a.kind!=='theft_review')?'':`<div>Basket: ${esc((a.basket||[]).join(', ')||'none')}</div><div>Unpaid: ${esc((a.unpaid||[]).map(i=>i.category).join(', '))}</div>`}
+<div class="muted">${esc((a.reasons||[]).join('; '))}</div>
+<details><summary class="muted">audit log</summary><pre>${esc((a.audit_log||[]).join('\\n'))}</pre></details>
+<div class="row">${Object.keys(NAMES).map(k=>`<button data-l="${k}" class="${a.label&&a.label.label===k?'on':''}">${names(a)[k]}</button>`).join('')}
 <input class="note" placeholder="note (optional)" value="${esc(a.label?a.label.note:'')}"></div>
 <div class="muted">${a.label?`labelled ${esc(NAMES[a.label.label])} by ${esc(a.label.reviewer)} at ${esc(a.label.ts)}`:'not labelled yet'}</div></div></div>`}).join('')||'nothing to review';}
 $('list').onclick=async e=>{const b=e.target.closest('button[data-l]');if(!b)return;const card=b.closest('.card');
@@ -98,7 +106,7 @@ if(!$('who').value.trim()){alert('Enter your name first');$('who').focus();retur
 const r=await fetch('/api/review/label',{method:'POST',headers:{'Content-Type':'application/json'},
 body:JSON.stringify({id:card.dataset.id,label:b.dataset.l,reviewer:$('who').value,note:card.querySelector('.note').value})});
 if(!r.ok){alert(await r.text());return}load();};
-$('todo').onchange=load;load();
+$('todo').onchange=load;$('kind').onchange=load;load();
 </script></body></html>"""
 
 

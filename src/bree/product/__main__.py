@@ -71,12 +71,17 @@ def cmd_ingest(args):
     data = Path(args.data)
     st = load_station(args.station or (data / "station.yaml" if (data / "station.yaml").is_file() else None))
     log = SignalLog(data / "signals", st.tz)
-    start = segment_start(args.segment) + st.clock_offset_s if args.start_ts is None else args.start_ts
+    try:
+        start = (segment_start(args.segment) if args.start_ts is None else args.start_ts) + st.clock_offset_s
+        sc = load_store_config(args.store_yaml) if args.store_yaml else None
+        if not Path(args.frames).is_file():
+            raise ValueError(f"no such file: {args.frames}")
+    except (ValueError, OSError) as e:
+        sys.exit(f"ingest: {e}")
     cfg = AdaptConfig(store=st.store_id, camera=args.camera, role=args.role, source=args.source,
                       queue_zone=args.queue_zone, staff_zone=args.staff_zone)
-    sc = load_store_config(args.store_yaml) if args.store_yaml else None
     sigs, rep = adapt_run(args.frames, start, cfg, sc)
-    log.append(sigs)
+    rep["written"] = log.append(sigs, dedupe=True)    # re-running the same ingest adds nothing
     print(rep)
 
 
@@ -84,8 +89,13 @@ def cmd_ingest_shelf(args):
     from bree.product.shelfadapt import adapt_shelfstate
     data = Path(args.data)
     st = load_station(args.station or (data / "station.yaml" if (data / "station.yaml").is_file() else None))
-    sigs, rep = adapt_shelfstate(args.events, st.store_id, args.camera, args.source, clock_offset_s=st.clock_offset_s)
-    SignalLog(data / "signals", st.tz).append(sigs)
+    log = SignalLog(data / "signals", st.tz)
+    try:
+        sigs, rep = adapt_shelfstate(args.events, st.store_id, args.camera, args.source, tz=log.tz,
+                                     clock_offset_s=st.clock_offset_s)
+    except OSError as e:
+        sys.exit(f"ingest-shelf: {e}")
+    rep["written"] = log.append(sigs, dedupe=True)
     print(rep)
 
 

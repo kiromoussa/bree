@@ -4,6 +4,11 @@ The shelf track writes one change per line ({"camera_id","t","kind","region_id",
 Each becomes one `shelf` signal: zone = region_id, meta.state from KIND_STATE, value = 1 for a good state and
 0.5 / 0 for low / empty (a rough fullness, not a measured one). Evidence image paths are NOT copied (the log
 holds no images). Nothing here reads video.
+
+`door_change` (a cooler-door region whose fill moved a little) maps to "unknown", not "door_open": it has not been
+validated on real footage and the default cooler_open rule would otherwise raise a false "door looks open" alert.
+Clock: `wall` is the runner's naive local time. Apply a clock correction in ONE place: either the shelf runner's
+`--clock-offset-h` or `clock_offset_s` here (the CLI passes the station's), never both.
 """
 from __future__ import annotations
 
@@ -17,19 +22,24 @@ from bree.product.signals import Signal
 KIND_STATE = {
     "stock_down": ("low", 0.5), "low_stock": ("low", 0.4), "empty_facing": ("empty", 0.0),
     "restock": ("ok", 1.0), "floor_cleared": ("ok", 1.0),
-    "door_ajar": ("door_open", None), "door_change": ("door_open", None),
+    "door_ajar": ("door_open", None), "door_change": ("unknown", None),
     "floor_spill": ("dirty", None), "floor_object": ("misplaced", None), "layout_change": ("misplaced", None),
 }
 
 
 def adapt_shelfstate(events_jsonl: str | Path, store: str, camera: str | None = None, source: str = "real_unlabelled",
                      tz=None, clock_offset_s: float = 0.0, min_conf: float = 0.0) -> tuple[list[Signal], dict]:
-    """`wall` (naive ISO local time, written by the shelf runner) is read in `tz` (default: this machine's zone)."""
+    """`wall` (naive ISO local time, written by the shelf runner) is read in `tz` (pass the STATION zone; the
+    machine's zone is only a fallback). A malformed line is counted in `skipped`, never fatal."""
     tz = tz or dt.datetime.now().astimezone().tzinfo
     out, skipped = [], {"no_wall": 0, "unknown_kind": 0, "low_conf": 0, "bad_line": 0}
     for line in Path(events_jsonl).read_text().splitlines():
+        if not line.strip():
+            continue
         try:
             e = json.loads(line)
+            if not isinstance(e, dict):
+                raise ValueError
         except ValueError:
             skipped["bad_line"] += 1
             continue
@@ -39,11 +49,16 @@ def adapt_shelfstate(events_jsonl: str | Path, store: str, camera: str | None = 
         if not e.get("wall"):
             skipped["no_wall"] += 1
             continue
-        if float(e.get("conf", 1.0)) < min_conf:
+        try:
+            conf = float(1.0 if e.get("conf") is None else e["conf"])
+            ts = dt.datetime.fromisoformat(e["wall"]).replace(tzinfo=tz).timestamp() + clock_offset_s
+        except (TypeError, ValueError):
+            skipped["bad_line"] += 1
+            continue
+        if conf < min_conf:
             skipped["low_conf"] += 1
             continue
         state, full = KIND_STATE[e["kind"]]
-        ts = dt.datetime.fromisoformat(e["wall"]).replace(tzinfo=tz).timestamp() + clock_offset_s
         # door/spill/object have no fullness; 0.0 would read as "empty", so use the neutral 1.0 and let meta.state speak
         out.append(Signal(ts=ts, kind="shelf", value=1.0 if full is None else full, store=store,
                           camera=camera or e.get("camera_id", "store"), zone=e.get("region_id") or "whole",

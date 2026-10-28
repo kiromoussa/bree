@@ -310,3 +310,59 @@ def test_shelfstate_adapter(tmp_path):
     assert [s.meta["state"] for s in sigs] == ["low", "door_open"]
     assert sigs[1].value == 1.0 and sigs[0].zone == "cooler1" and sigs[0].source == "real_unlabelled"
     assert rep["skipped"] == {"no_wall": 1, "unknown_kind": 1, "low_conf": 0, "bad_line": 1}
+
+
+# ---- robustness (review findings)
+def test_adapt_survives_odd_frames(tmp_path):
+    import json as _j
+    from bree.product.adapt import AdaptConfig, adapt_run
+    lines = ["not json", _j.dumps([1]), _j.dumps({"persons": []}), _j.dumps({"t": "x"}),
+             _j.dumps({"t": 0.0, "persons": [{"bbox": [0, 0, 10, 10]}, {"id": 1}, {"id": 2, "bbox": [0, 0, 10, 10]}]}),
+             _j.dumps({"t": 1.0, "persons": None}), _j.dumps({"t": 1e9, "persons": []}),
+             _j.dumps({"t": 0.5, "persons": []}), '{"t": NaN}', _j.dumps({"t": 2.0, "persons": []})]
+    f = tmp_path / "frames.jsonl"
+    f.write_text("\n".join(lines))
+    sigs, rep = adapt_run(f, 1_000_000.0, AdaptConfig(), None)
+    assert rep["bad_frames"] == 7 and rep["bad_persons"] == 2
+    assert len(sigs) < 10 and max(s.ts for s in sigs) <= 1_000_000.0 + 2.0
+
+
+def test_adapt_empty_and_clock_jump_bounded(tmp_path):
+    from bree.product.adapt import AdaptConfig, adapt_run
+    f = tmp_path / "frames.jsonl"
+    f.write_text("")
+    assert adapt_run(f, 0.0, AdaptConfig(), None)[1]["signals"] >= 1
+    f.write_text('{"t":0,"persons":[]}\n{"t":100000,"persons":[]}\n')
+    assert adapt_run(f, 0.0, AdaptConfig(), None)[1]["bad_frames"] == 1
+
+
+def test_shelfadapt_bad_lines_and_door_change(tmp_path):
+    import json as _j
+    from bree.product.shelfadapt import adapt_shelfstate
+    good = {"kind": "stock_down", "region_id": "r1", "conf": 0.8, "wall": "2026-10-25T12:00:00"}
+    ev = [good, {**good, "wall": "bad"}, {**good, "conf": None}, [1], {**good, "kind": "door_change"}]
+    f = tmp_path / "events.jsonl"
+    f.write_text("\n".join(_j.dumps(e) for e in ev) + "\n{oops\n\n")
+    sigs, rep = adapt_shelfstate(f, "s", tz=dt.timezone.utc)
+    assert rep["skipped"]["bad_line"] == 3 and len(sigs) == 3
+    assert [s.meta["state"] for s in sigs] == ["low", "low", "unknown"]
+
+
+def test_log_dedupe_makes_reingest_idempotent(tmp_path):
+    from bree.product.signals import Signal, SignalLog
+    log = SignalLog(tmp_path, "America/Chicago")
+    batch = [Signal(ts=1_800_000_000.0 + i, kind="occupancy", value=1, camera="c") for i in range(3)]
+    assert log.append(batch, dedupe=True) == 3
+    assert log.append(batch, dedupe=True) == 0
+    assert len(log.read()) == 3
+
+
+def test_post_non_object_body_is_400(tmp_path):
+    from bree.product.app import ProductApp
+    from bree.product.signals import SignalLog
+    from bree.product.station import Station
+    from bree.review.store import ReviewStore
+    app = ProductApp(SignalLog(tmp_path / "s", None), Station(), ReviewStore(tmp_path / "r"))
+    import pytest
+    with pytest.raises(ValueError):
+        app.decide([1])

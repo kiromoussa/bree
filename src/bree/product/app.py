@@ -199,6 +199,8 @@ class ProductApp:
     def decide(self, body: dict) -> dict:
         if self.review is None:
             raise ValueError("no review store configured")
+        if not isinstance(body, dict):
+            raise ValueError("body must be a JSON object")
         dec = body.get("decision")
         if dec not in DECISION_LABELS:
             raise ValueError(f"decision must be one of {list(DECISION_LABELS)}")

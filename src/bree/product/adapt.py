@@ -84,22 +84,47 @@ class _Track:
         return self.pts[-1][0]
 
 
-def _tracks(frames_jsonl: str | Path):
+MAX_JUMP_S = 300.0      # a frame this far past the previous one is a clock glitch, not footage
+MAX_RUN_S = 86400.0     # hard cap on one run's length (bounds every sampling loop)
+
+
+def _tracks(frames_jsonl: str | Path, rep: dict | None = None):
+    """Tracks and run length from frames.jsonl. Odd records are skipped and counted in `rep['bad_frames']`:
+    non-JSON or non-object lines, a missing / non-finite / negative `t`, a `t` that goes backwards or jumps
+    more than MAX_JUMP_S ahead (one bad timestamp must not stretch the run), persons without id or bbox."""
     tr: dict[int, _Track] = {}
     last_t = 0.0
+    bad = {"bad_frames": 0, "bad_persons": 0}
     with open(frames_jsonl, encoding="utf-8") as f:
         for line in f:
             try:
                 fr = json.loads(line)
             except ValueError:
+                bad["bad_frames"] += 1
                 continue
-            t = float(fr["t"])
-            last_t = max(last_t, t)
-            for p in fr.get("persons", []):
-                x1, y1, x2, y2 = p["bbox"]
-                k = tr.setdefault(p["id"], _Track(p["id"]))
+            try:
+                t = float(fr.get("t"))
+            except (AttributeError, TypeError, ValueError):
+                bad["bad_frames"] += 1
+                continue
+            if not math.isfinite(t) or t < last_t or t - last_t > MAX_JUMP_S or t > MAX_RUN_S:
+                bad["bad_frames"] += 1
+                continue
+            last_t = t
+            for p in fr.get("persons") or []:
+                try:
+                    x1, y1, x2, y2 = (float(v) for v in p["bbox"])
+                    tid, conf = p["id"], float(p.get("conf", 1.0))
+                    if not all(math.isfinite(v) for v in (x1, y1, x2, y2, conf)):
+                        raise ValueError
+                    k = tr.setdefault(tid, _Track(tid))
+                except (KeyError, TypeError, ValueError):
+                    bad["bad_persons"] += 1
+                    continue
                 k.pts.append((t, (x1 + x2) / 2, y2))
-                k.confs.append(float(p.get("conf", 1.0)))
+                k.confs.append(conf)
+    if rep is not None:
+        rep.update(bad)
     return tr, last_t
 
 
@@ -150,8 +175,10 @@ def adapt_run(frames_jsonl: str | Path, start_ts: float, cfg: AdaptConfig, store
     if cfg.role not in ROLES:
         raise ValueError(f"role must be one of {sorted(ROLES)}")
     allow = ROLES[cfg.role]
-    tracks, dur = _tracks(frames_jsonl)
+    odd: dict = {}
+    tracks, dur = _tracks(frames_jsonl, odd)
     keep, rep = qualify(tracks, cfg)
+    rep.update(odd)
     base = start_ts + cfg.clock_offset_s
     meta0 = {"role": cfg.role, **cfg.extra_meta}
 

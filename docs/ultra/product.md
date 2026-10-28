@@ -1,7 +1,8 @@
 # Operator product: dashboard, digest, review, notifications
 
 Track `ultra/product`. Code: `src/bree/product/`, tests: `tests/test_product.py`, scripts: `scripts/product_shot.js`
-(headless Firefox screenshots), `scripts/product_eval_occupancy.py`. Nothing here talks to the network, nothing
+(headless Firefox screenshots), `scripts/product_eval_occupancy.py`. The `src/bree/product` package makes no network calls (the only networked code on this branch is
+`scripts/imou_record.py`, read-only against Imou with an allow-list of four methods); nothing
 here stores images except what the existing review store already holds (head-pixelated clips).
 
 ## What it is
@@ -83,7 +84,12 @@ share of labelled frames where the count equals the label. `scripts/product_eval
 | ch15 | dev / heldout | 40 / 40 | 100% / 68% | 100% / 92% | 0 / -0.07 |
 | ch29 | dev / heldout | 40 / 40 | 92% / 48% | 85% / 45% | -0.05 / -0.65 |
 
-Reading: the filter is **not** an occupancy accuracy win overall. It removes ghost boxes (ch12 dev, ch15 held-out)
+Reading: the filter is **not** shown to help. It is neutral to slightly harmful on ch07 (dev 82% -> 78%; held-out
+62% -> 65%, about one frame on 40) and harmful on ch14 (to 0%); only ch12 dev (n=15) and ch15 held-out clearly improve.
+Bias is negative nearly everywhere (it under-counts). Dev and held-out are neighbouring minutes of the same afternoon,
+so they are not independent, and the defaults were chosen after looking at this same footage's churn in the earlier
+baselines, so "frozen, not tuned" means not changed during this eval, not blind. Do not cite these as proof the adapter
+works. Earlier note kept: the filter is **not** an occupancy accuracy win overall. It removes ghost boxes (ch12 dev, ch15 held-out)
 but on ch14, where real people are small and low confidence, it removes every true person (negative result: the
 0.45 confidence floor is wrong for that camera; a per-camera floor is needed and must be tuned on dev labels only).
 ch29 held-out under-counts people at the frame edge whatever the filter. Its purpose is event counts (door, dwell),
@@ -93,7 +99,11 @@ counts of about 2-3 and about 8 entries (REAL-UNLABELLED, no truth). Do not quot
 ### Real-footage replay
 
 `bree-data/product/trumanrd/` (local only): 11 baseline runs (6 cameras, 20 min of one afternoon) ingested as
-REAL-UNLABELLED signals. The dashboard shows 8 came in, 3 most inside at once, with a banner saying so. Station time zone is
+REAL-UNLABELLED signals. The dashboard shows 8 came in, 3 most inside at once, with a banner saying so. These are REAL-UNLABELLED and
+internally shaky (10 door_out vs 8 door_in; three door_in within 3 s, likely tracker fragments or a group; a track
+counts as door_in if merely born within 150 px of a door zone, which includes re-identification after an id switch).
+Do not quote them as traffic. Also ch14 occupancy/dwell in that replay used the 0.45 floor that removes every true
+person there, so treat ch14 rows as low-trust (and the "most inside at once" max across cameras with them). Station time zone is
 ASSUMED America/Chicago and the DVR clock offset is unreconciled, so the hour labels are unconfirmed.
 Daily/weekly numbers for this store are not meaningful with 20 minutes of footage.
 
@@ -116,7 +126,7 @@ no images and no identities. Reviewer names are free text typed by the owner.
 
 ## Verification
 
-`pytest tests/test_product.py` (18 tests, synthetic): contract validation, atomic bad batch, torn lines, metrics
+`pytest tests/test_product.py` (synthetic, 24 tests incl. odd-input cases): contract validation, atomic bad batch, torn lines, metrics
 edge cases, notifier timing/cooldown/gap rules, webhook never sends, adapter filters and role rules, digests
 (escaping, empty days, weekly compare), server API, auth, CSRF content type, review decision flow, alert monitor.
 Screenshots were taken at 420 px and 1100 px with `scripts/product_shot.js` and viewed (found and fixed:
@@ -126,10 +136,28 @@ tiny chart text on phones, 5-minute cameras shown as stale, unplayable clips, re
 
 - No live pipeline hook: ingestion is per finished run (`ingest`). A tail/watch mode for `frames.jsonl` is not built.
 - Shelf/cooler: `bree.product.shelfadapt` / `ingest-shelf` convert the shelf track's `events.jsonl` (kind to state table in
-  the module). The only real shelf run available (ch10 dev) had 0 events, so the shelf screens are still only exercised by
-  the simulator and a synthetic adapter test (19 tests now). The `wall` field is read in the machine zone, then the station clock offset is added.
+  the module). Real shelf runs: ch10 dev had 0 events; ch10 held-out has 2 stock_down events (fountain_counter, conf 0.77) that have
+not been ingested or checked. `door_change` maps to "unknown" (not "door_open") until validated, so it cannot trigger the
+cooler-open alert. Odd/malformed lines are counted and skipped. So the shelf screens are still only exercised by
+  the simulator and a synthetic adapter test (24 tests now). `wall` is read in the station zone, then the station `clock_offset_s` is added; do not also pass the shelf runner's `--clock-offset-h`.
 - No queue or staff-aware numbers for the real store (needs zones the operator has not confirmed).
 - No POS feed, so no sales tiles, no revenue-per-hour, no conversion rate.
 - The webhook sink is a stub by design. No auth beyond a shared token; no per-user accounts.
 - Weekly digest is untested on real data (only about 20 minutes exist).
 - The review screen only records Theft / Not theft / Can't tell; wrong-item correction exists in the store but not in the UI.
+
+## Robustness and ingest semantics (review fixes)
+
+- `adapt_run` skips and counts (`bad_frames`, `bad_persons` in the report) lines that are not JSON objects, lack `t`,
+  have non-finite or negative `t`, go backwards, or jump more than 300 s ahead; persons without `id`/`bbox` are skipped.
+  Run length is capped at 24 h, so one bad timestamp cannot make sampling loops unbounded.
+- `ingest` and `ingest-shelf` dedupe on (ts, camera, kind, zone, source, track/event): re-running the same ingest writes
+  nothing new. The station `clock_offset_s` is applied to both `--segment` and `--start-ts`. Bad paths give a CLI error.
+- A file name time (`--segment`) is read in the MACHINE's zone, not the station's; ingesting on a machine in another
+  zone shifts every signal. Use `--start-ts` there. (Recording the recorder zone in station.yaml is not built.)
+- POST with a non-object JSON body returns 400.
+- Token mode is plain HTTP on a LAN: the cookie has no `Secure` flag and the token is printed in the start-up URL. Low
+  security, LAN only; do not expose beyond the LAN.
+- Keeping the computer awake: a systemd-inhibit lock (pid 6126, sleep:idle:handle-lid-switch) started 21:51:50 for 86400 s,
+  so it ends about 21:51 on 2026-10-26 and needs renewing; it is not open-ended.
+- Not done: door-event debounce, per-camera `min_conf`.

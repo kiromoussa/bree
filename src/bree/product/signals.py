@@ -105,9 +105,23 @@ class SignalLog:
     def _file(self, day: dt.date) -> Path:
         return self.dir / f"signals-{day:%Y%m%d}.jsonl"
 
-    def append(self, signals) -> int:
-        """Validate and append. Invalid signals raise before anything is written."""
+    @staticmethod
+    def _key(s: Signal) -> tuple:
+        return (round(s.ts, 3), s.camera, s.kind, s.zone, s.source, s.meta.get("track"), s.meta.get("event"))
+
+    def append(self, signals, dedupe: bool = False) -> int:
+        """Validate and append. Invalid signals raise before anything is written. With `dedupe`, signals already
+        in the log (same ts, camera, kind, zone, source, track/event) are skipped, so re-ingesting a run is
+        harmless; returns the number actually written."""
         sigs = [s.validate() for s in ([signals] if isinstance(signals, Signal) else list(signals))]
+        if dedupe and sigs:
+            have = {self._key(x) for x in self.read(min(s.ts for s in sigs) - 1, max(s.ts for s in sigs) + 1)}
+            fresh = []
+            for s in sigs:
+                if self._key(s) not in have:
+                    have.add(self._key(s))
+                    fresh.append(s)
+            sigs = fresh
         by_day: dict[dt.date, list[str]] = {}
         for s in sigs:
             by_day.setdefault(local_date(s.ts, self.tz), []).append(json.dumps(s.to_dict(), separators=(",", ":")))

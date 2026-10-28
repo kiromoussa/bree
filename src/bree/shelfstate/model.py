@@ -45,7 +45,7 @@ class ShelfStateConfig:
     dynamic_thr: float = 0.30
     # persistence
     settle_s: float = 12.0
-    clear_s: float = 6.0          # no person box on the cell for this long
+    clear_s: float = 15.0         # no person box on the cell for this long (6 s let a person walking off read as a layout change)
     still_s: float = 3.0          # no motion on the cell for this long
     cooldown_s: float = 20.0
     patience_s: float = 10.0

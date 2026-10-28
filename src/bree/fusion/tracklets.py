@@ -80,10 +80,14 @@ def load_segment(path: Path) -> list[tuple[float, list[dict]]]:
     return out
 
 
-def load_camera(cache: Path, cam: str, t_from: float | None = None, t_to: float | None = None) -> list[tuple[float, list[dict]]]:
+def load_camera(cache: Path, cam: str, t_from: float | None = None, t_to: float | None = None,
+                offsets: dict[str, float] | None = None) -> list[tuple[float, list[dict]]]:
+    """All cached frames of a camera. `offsets` maps segment name to seconds added to the recorder clock (the DVR clock
+    offset of that segment, bree.fusion.clock), so every camera ends up on the DVR's one clock; t_from/t_to are on that clock."""
     out = []
     for p in sorted((cache / f"ch{cam}").glob("*.jsonl")):
-        out += load_segment(p)
+        o = (offsets or {}).get(p.stem, 0.0)
+        out += [(t + o, d) for t, d in load_segment(p)]
     if t_from is not None:
         out = [x for x in out if x[0] >= t_from]
     if t_to is not None:

@@ -14,18 +14,23 @@ import numpy as np
 from bree.fusion.tracklets import Tracklet, SEGMENT_FMT
 
 
-def frame_at(station: Path, cam: str, t_store: float, offset_s: float = 0.0, width: int = 960):
-    """The frame of camera `cam` nearest to store-clock time t_store (recorder-clock epoch seconds plus the camera's
-    clock offset), shrunk to `width`. None when no recorded segment covers it."""
+def frame_at(station: Path, cam: str, t_store: float, offsets: dict[str, float] | None = None, width: int = 960):
+    """The frame of camera `cam` nearest to DVR-clock time t_store (epoch seconds), shrunk to `width`. `offsets` maps a
+    segment name (file stem) to the seconds that put its recorder clock on the DVR clock (clock_offsets.json).
+    (None, 1.0) when no recorded segment covers it."""
     import cv2
     from datetime import datetime
-    t_cam = t_store - offset_s
     for p in sorted((station / f"ch{cam}").glob("*.mp4")):
-        t0 = datetime.strptime(p.stem, SEGMENT_FMT).timestamp()
-        if t0 <= t_cam < t0 + 299.5:
+        if p.stat().st_size < 1e6:
+            continue
+        t0 = datetime.strptime(p.stem, SEGMENT_FMT).timestamp() + (offsets or {}).get(p.stem, 0.0)
+        if t0 <= t_store < t0 + 299.5:
             cap = cv2.VideoCapture(str(p))
             fps = cap.get(cv2.CAP_PROP_FPS) or 30.3
-            cap.set(cv2.CAP_PROP_POS_FRAMES, int(round((t_cam - t0) * fps)))
+            if t_store - t0 > cap.get(cv2.CAP_PROP_FRAME_COUNT) / fps:
+                cap.release()
+                continue
+            cap.set(cv2.CAP_PROP_POS_FRAMES, int(round((t_store - t0) * fps)))
             ok, im = cap.read()
             cap.release()
             if not ok:
@@ -50,17 +55,17 @@ def pixelate_boxes(im: np.ndarray, boxes, scale: float, frac: float = 0.2, block
         im[y0:y1h, x0:x1] = cv2.resize(small, (w, h), interpolation=cv2.INTER_NEAREST)
 
 
-def sheet(station: Path, t_store: float, cams: list[str], offsets: dict[str, float], tracklets: dict[str, list[Tracklet]],
+def sheet(station: Path, t_store: float, cams: list[str], offsets: dict[str, dict[str, float]], tracklets: dict[str, list[Tracklet]],
           width: int = 640, cols: int = 3, labels: dict[tuple[str, int], str] | None = None, pixelate: bool = True) -> np.ndarray:
     import cv2
     tiles = []
     for cam in cams:
-        im, s = frame_at(station, cam, t_store, offsets.get(cam, 0.0), width)
+        im, s = frame_at(station, cam, t_store, offsets.get(cam), width)
         if im is None:
             im = np.zeros((int(width * 9 / 16), width, 3), np.uint8)
             s = 1.0
         boxes = []
-        t_cam = t_store - offsets.get(cam, 0.0)
+        t_cam = t_store                       # tracklets are already on the DVR clock
         for tl in tracklets.get(cam, []):
             i = tl.at(t_cam, 0.25)
             if i is not None:
